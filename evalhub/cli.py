@@ -9,6 +9,10 @@ from rich.table import Table
 
 from evalhub.benchmarks import DATASET_HUB, DATASET_MAP, EVALUATE_DATASETS, THIRD_PARTY_DATASETS
 from evalhub.benchmarks.base import Dataset
+from evalhub.cot.aggregate import aggregate_judge_votes
+from evalhub.cot.extract import extract_correct_generations
+from evalhub.cot.metrics import apply_cot_metrics
+from evalhub.cot.pipeline import finalize_cot_pipeline
 from evalhub.gen import generate
 from evalhub.inference.schemas import GenerationConfig
 from evalhub.utils.typer import options
@@ -23,6 +27,14 @@ app = typer.Typer(
     add_completion=True,
     rich_markup_mode="rich",
 )
+
+cot_app = typer.Typer(
+    name="cot",
+    help="CoT-Pass@K post-processing pipeline (extract / aggregate / metrics).",
+    add_completion=False,
+    rich_markup_mode="rich",
+)
+app.add_typer(cot_app, name="cot")
 
 
 @app.command()
@@ -108,6 +120,73 @@ def list_tasks():
         else:
             assert task in EVALUATE_DATASETS, f"Dataset {task} is not supported for evaluation"
             console.print(f"evalhub eval --tasks {task} --solutions ./results/{task}.jsonl --output-dir ./results")
+
+
+@cot_app.command("extract")
+def cot_extract(
+    base_results: Annotated[Path, typer.Option(help="Path to the base eval *_results.jsonl")],
+    base_raw: Annotated[Path, typer.Option(help="Path to the base gen *_raw.jsonl")],
+    output: Annotated[Path, typer.Option(help="Output JSONL: one record per correct generation")],
+    max_tasks: Annotated[int | None, typer.Option(help="Optional cap on number of tasks to process")] = None,
+):
+    r"""Extract correct base generations into a judge-input JSONL."""
+    written = extract_correct_generations(
+        base_results_path=base_results,
+        base_raw_path=base_raw,
+        output_path=output,
+        max_tasks=max_tasks,
+    )
+    console.print(f"[green]Wrote {written} judge-input records -> {output}[/green]")
+
+
+@cot_app.command("aggregate")
+def cot_aggregate(
+    judge_solutions: Annotated[Path, typer.Option(help="Path to the judge gen *_solutions/.jsonl")],
+    output: Annotated[Path, typer.Option(help="Output JSONL: one majority verdict per generation")],
+):
+    r"""Majority-vote yes/no judge outputs into per-generation verdicts."""
+    written = aggregate_judge_votes(judge_solutions_path=judge_solutions, output_path=output)
+    console.print(f"[green]Wrote {written} majority verdicts -> {output}[/green]")
+
+
+@cot_app.command("metrics")
+def cot_metrics(
+    base_results: Annotated[Path, typer.Option(help="Path to the base eval *_results.jsonl")],
+    majority: Annotated[Path, typer.Option(help="Path to the majority verdicts JSONL")],
+    output: Annotated[Path, typer.Option(help="Output JSONL: results with CoT-adjusted correct[] and pass_at_k")],
+    summary: Annotated[Path, typer.Option(help="Output JSON: aggregate pass_at_k and cons_at_k under the CoT veto")],
+    stats: Annotated[Path | None, typer.Option(help="Optional output JSON: per-class generation counts")] = None,
+):
+    r"""Apply the CoT veto and recompute Pass@K / Cons@K."""
+    result = apply_cot_metrics(
+        base_results_path=base_results,
+        majority_path=majority,
+        output_results_path=output,
+        summary_path=summary,
+        stats_path=stats,
+    )
+    console.print(f"[green]CoT metrics -> {summary}[/green]")
+    console.print(result)
+
+
+@cot_app.command("finalize")
+def cot_finalize(
+    base_results: Annotated[Path, typer.Option(help="Path to the base eval *_results.jsonl")],
+    base_raw: Annotated[Path, typer.Option(help="Path to the base gen *_raw.jsonl")],
+    judge_solutions: Annotated[Path, typer.Option(help="Path to the judge gen *_solutions/.jsonl")],
+    output_dir: Annotated[Path, typer.Option(help="Directory to write intermediate and final files")],
+    benchmark: Annotated[str, typer.Option(help="Benchmark short name (used as filename stem)")],
+):
+    r"""Run extract -> aggregate -> metrics in one shot from local files."""
+    result = finalize_cot_pipeline(
+        base_results_path=base_results,
+        base_raw_path=base_raw,
+        judge_solutions_path=judge_solutions,
+        output_dir=output_dir,
+        benchmark=benchmark,
+    )
+    console.print(f"[green]CoT pipeline complete -> {result.summary_path}[/green]")
+    console.print(result.summary)
 
 
 def main():

@@ -152,6 +152,12 @@ class GenerationConfig:
             "help": "Maximum number of conversation turns",
         },
     )
+    model_state: str = field(
+        default="non-think",
+        metadata={
+            "help": "Model state used to pick the upstream chat template: base, non-think, or think.",
+        },
+    )
 
     def __post_init__(self):
         self.output_dir = Path(self.output_dir)
@@ -159,6 +165,9 @@ class GenerationConfig:
             self.tasks = [task.strip() for task in self.tasks[0].split(",")]
         if self.tool_config:
             self.tool_config = Path(self.tool_config)
+        from evalhub.utils.model_state import normalise_state
+
+        self.model_state = normalise_state(self.model_state)
 
     def __setitem__(self, key, value):
         r"""Support dictionary-style item assignment."""

@@ -4,6 +4,7 @@ from evalhub.inference.generator import LLMGenerator
 from evalhub.inference.multiturn import MultiTurnGenerator
 from evalhub.inference.schemas import GenerationConfig
 from evalhub.utils.logger import logger
+from evalhub.utils.model_state import resolve_template_path
 
 
 def generate(config: GenerationConfig, task: str, override_args: str | None) -> None:
@@ -11,6 +12,11 @@ def generate(config: GenerationConfig, task: str, override_args: str | None) -> 
     assert task in DATASET_MAP, f"Dataset {task} not supported for generation"
     dataset: Dataset = DATASET_MAP[task](name=task, config=config, override_args=override_args)
     logger.info(f"Successfully loaded {task} dataset, length: {len(dataset)}")
+
+    logger.info(f"Model state: {config.model_state}")
+    template_path = resolve_template_path(config.sampling_params.model, config.model_state)
+    if template_path is not None:
+        logger.info(f"Expected upstream chat template: {template_path}")
 
     if config.system_prompt == "":
         system_prompt = None
