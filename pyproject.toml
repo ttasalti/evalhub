@@ -49,6 +49,7 @@ dev = [
 # All production dependencies
 base = [
     "numpy",
+    "pandas",
     "psutil",
     "orjson",
     "openai",
@@ -71,9 +72,18 @@ sglang = [
     "sglang-router",
 ]
 
+# Reporting & dashboard (aggregation, plotting, Streamlit UI)
+report = [
+    "pandas",
+    "matplotlib",
+    "seaborn",
+    "streamlit",
+    "plotly",
+]
+
 # Complete set (all + dev)
 all = [
-    "evalhub[base,dev,sglang]",
+    "evalhub[base,dev,sglang,report]",
 ]
 
 [project.scripts]
