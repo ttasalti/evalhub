@@ -15,6 +15,7 @@ from evalhub.cot.metrics import apply_cot_metrics
 from evalhub.cot.pipeline import finalize_cot_pipeline
 from evalhub.gen import generate
 from evalhub.inference.schemas import GenerationConfig
+from evalhub.report._cli import cmd_aggregate, cmd_dashboard, cmd_plot
 from evalhub.utils.typer import options
 from evalhub.view import view_results
 
@@ -35,6 +36,14 @@ cot_app = typer.Typer(
     rich_markup_mode="rich",
 )
 app.add_typer(cot_app, name="cot")
+
+report_app = typer.Typer(
+    name="report",
+    help="Aggregate evaluation summaries, render plots, and launch the dashboard.",
+    add_completion=False,
+    rich_markup_mode="rich",
+)
+app.add_typer(report_app, name="report")
 
 
 @app.command()
@@ -187,6 +196,49 @@ def cot_finalize(
     )
     console.print(f"[green]CoT pipeline complete -> {result.summary_path}[/green]")
     console.print(result.summary)
+
+
+@report_app.command("aggregate")
+def report_aggregate(
+    results_root: Annotated[Path, typer.Option(help="Root directory produced by evalhub eval / cot finalize")],
+    output: Annotated[Path, typer.Option(help="Destination CSV for the long-form aggregated table")],
+):
+    r"""Walk ``results_root`` and write a master long-form CSV.
+
+    Every ``*_summary.json`` (base eval) and ``*_cot_summary.json`` (CoT-vetted
+    eval) discovered under the root contributes one row per K to the CSV.
+    """
+    out = cmd_aggregate(results_root, output)
+    console.print(f"[green]Aggregated CSV -> {out}[/green]")
+
+
+@report_app.command("plot")
+def report_plot(
+    csv: Annotated[Path, typer.Option(help="Path to the aggregated CSV produced by `report aggregate`")],
+    output_dir: Annotated[Path, typer.Option(help="Directory where plot files will be written")],
+    format: Annotated[str, typer.Option(help="Output format: png | pdf | both")] = "png",
+):
+    r"""Render the publication-ready plot set from an aggregated CSV."""
+    written = cmd_plot(csv, output_dir, format)
+    total = sum(len(paths) for paths in written.values())
+    console.print(f"[green]Rendered {total} file(s) under {output_dir}[/green]")
+    for name, paths in written.items():
+        for path in paths:
+            console.print(f"  - {name}: {path}")
+
+
+@report_app.command("dashboard")
+def report_dashboard(
+    csv: Annotated[Path, typer.Option(help="Path to the aggregated CSV produced by `report aggregate`")],
+    results_root: Annotated[
+        Path | None,
+        typer.Option(help="Optional path to OUTPUT_ROOT; enables the drill-down tab"),
+    ] = None,
+    port: Annotated[int, typer.Option(help="Streamlit server port")] = 8501,
+):
+    r"""Launch the Streamlit dashboard for the aggregated CSV."""
+    rc = cmd_dashboard(csv, results_root, port)
+    raise typer.Exit(code=rc)
 
 
 def main():
