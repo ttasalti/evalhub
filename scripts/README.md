@@ -8,18 +8,76 @@ orchestrators and helper sub-pipelines (`vllm*.sh`, `judge_vllm3.sh`,
 `configs/`, `utils/`) were deleted because their logic now lives inside the
 Python package and is exercised via `evalhub` CLI commands.
 
-Newly created for this project:
+## Layout
 
 | File | Purpose |
 |---|---|
-| `run_cot_pass_at_k.sh` | Single end-to-end CoT-Pass@K pipeline. Reads an env file, starts a vLLM server with the target model + its registered chat template, runs `evalhub gen` + `evalhub eval`, then repeats for the judge model, then calls `evalhub cot finalize`. Environment-agnostic — Slurm wrapping is left to the caller. |
-| `cot_pipeline.env.example` | Annotated default values. Copy to `cot_pipeline.env` and edit. |
+| `lib/pipeline_common.sh` | **Shared bash library** — env loading, template resolution, vLLM start/stop, default population, canonical output-path composition, and the high-level `pipeline_run_*` stage runners. Sourced by every orchestrator. |
+| `run_eval_only.sh` | Stage 1 only: base generation + base evaluation. Produces `*_results.jsonl` + `*_summary.json` under the canonical layout. |
+| `run_judge_only.sh` | Stages 2+3 over an existing base run: extract correct generations, run the judge LLM, majority-vote, CoT-Pass@K. |
+| `run_end_to_end.sh` | All three stages — canonical replacement for the legacy `run_cot_pass_at_k.sh`. |
+| `run_cot_pass_at_k.sh` | **Deprecated** — thin shim that execs `run_end_to_end.sh`. Kept so existing job scripts keep working. |
+| `cot_pipeline.env.example` | Annotated default values grouped by which scripts consume them. Copy to `cot_pipeline.env` and edit. |
 | `templates/` | Jinja chat templates per `(model_family, state)`. Selected by `evalhub.utils.model_state` and passed to `vllm serve --chat-template`. |
 
-Usage:
+## Quick start
 
 ```bash
 cp scripts/cot_pipeline.env.example scripts/cot_pipeline.env
-# edit scripts/cot_pipeline.env ...
-scripts/run_cot_pass_at_k.sh
+# edit scripts/cot_pipeline.env: set TARGET_MODEL, JUDGE_MODEL, BENCHMARK, ...
+scripts/run_end_to_end.sh scripts/cot_pipeline.env
 ```
+
+Each script also supports `--help` for an inline env-var contract:
+
+```bash
+scripts/run_eval_only.sh --help
+scripts/run_judge_only.sh --help
+scripts/run_end_to_end.sh --help
+```
+
+## Required env per script
+
+| Script | Required env | Notable optional env |
+|---|---|---|
+| `run_eval_only.sh`  | `TARGET_MODEL`, `BENCHMARK` | every `TARGET_*` sampling knob, `OUTPUT_ROOT`, `TARGET_PORT`, `HEALTH_TIMEOUT` |
+| `run_judge_only.sh` | `JUDGE_MODEL`, `BENCHMARK`, `TARGET_MODEL`, and **either** `BASE_RESULTS_DIR` **or** `BASE_RESULTS_FILE`+`BASE_RAW_FILE` | every `JUDGE_*` sampling knob, `OUTPUT_ROOT`, `JUDGE_PORT`, `HEALTH_TIMEOUT` |
+| `run_end_to_end.sh` | `TARGET_MODEL`, `JUDGE_MODEL`, `BENCHMARK` | every `TARGET_*` / `JUDGE_*` knob, ports, paths |
+
+## HPC / nscluster (Slurm) usage
+
+The scripts are intentionally **environment-agnostic** — they do not embed
+`#SBATCH` directives so they remain portable across HPC sites. Wrap them in
+a one-line `sbatch` invocation, or copy the recommended header from the
+docstring at the top of each script. Example wrapper for nscluster:
+
+```bash
+#!/usr/bin/env bash
+#SBATCH --job-name=evalhub-e2e
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:2
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=128G
+#SBATCH --time=24:00:00
+#SBATCH --output=logs/slurm-%j.out
+
+module load cuda/12.4
+source ~/venvs/evalhub/bin/activate
+scripts/run_end_to_end.sh scripts/cot_pipeline.env
+```
+
+For multi-benchmark sweeps, submit one Slurm job per benchmark with an env
+override:
+
+```bash
+for bench in aime2024 aime2025 aime2026; do
+    BENCHMARK="${bench}" sbatch slurm_wrapper.sh
+done
+```
+
+## After the run — aggregation & dashboard
+
+Once you have one or more populated `OUTPUT_ROOT` directories, the new
+`evalhub report` sub-app aggregates every summary file into a master CSV and
+launches a Streamlit dashboard. See [`docs/reporting.md`](../docs/reporting.md)
+for the full walk-through.
