@@ -12,6 +12,8 @@
     <a href="#-features">✨ Features</a> •
     <a href="#-installation">📦 Installation</a> •
     <a href="#-quick-start">🚀 Quick Start</a> •
+    <a href="#-cot-passk-pipeline">🧠 CoT-Pass@K Pipeline</a> •
+    <a href="#-reporting--dashboard">📊 Reporting & Dashboard</a> •
     <a href="#-development">🛠 Development</a> •
     <a href="#-roadmap">🛣 Roadmap</a>
 </p>
@@ -103,6 +105,45 @@ For more commands, please refer to [docs/cmds.md](docs/cmds.md).
 
 > [!Note]
 > `view` is supported for math and livecodebench tasks only now!
+
+## 🧠 CoT-Pass@K Pipeline
+
+EvalHub ships a chain-of-thought-aware Pass@K extension: every base-correct
+generation is checked by a stronger judge LLM, and the per-generation verdicts
+are majority-voted to either keep or veto the original "correct" label.
+
+End-to-end orchestrators live under [`scripts/`](scripts/README.md) and share a
+common bash library:
+
+| Script | What it runs |
+|---|---|
+| `scripts/run_eval_only.sh` | Base generation + base evaluation only. |
+| `scripts/run_judge_only.sh` | Judge stage over an existing base run (handy for re-judging with a different judge). |
+| `scripts/run_end_to_end.sh` | Full target → judge → CoT finalize. Canonical replacement for the legacy `run_cot_pass_at_k.sh`. |
+
+All three are env-driven (`scripts/cot_pipeline.env.example` documents every knob)
+and Slurm-wrappable. See [`docs/onboarding.md`](docs/onboarding.md) for a
+five-minute walk-through on a small model.
+
+## 📊 Reporting & Dashboard
+
+The `evalhub report` sub-app aggregates every summary file under an
+`OUTPUT_ROOT` into a single long-form CSV, renders publication-ready plots,
+and launches a Streamlit + Plotly dashboard for interactive analysis:
+
+```bash
+# 1. Aggregate every {benchmark}_summary.json / *_cot_summary.json into one CSV
+evalhub report aggregate --results-root ./results --output ./report.csv
+
+# 2. Render PNG + PDF plots (Pass@K curves, base-vs-CoT bars, heatmaps, veto rate)
+evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
+
+# 3. Launch the interactive dashboard
+evalhub report dashboard --csv ./report.csv --results-root ./results --port 8501
+```
+
+Install the optional dependency group first: `uv pip install -e ".[report]"`.
+Full walk-through and CSV schema in [`docs/reporting.md`](docs/reporting.md).
 
 ## 🛠 Development
 
