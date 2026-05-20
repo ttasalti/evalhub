@@ -55,3 +55,9 @@ Test your dataset integration:
    ```bash
    evalhub eval --tasks your_dataset_name --solutions ./results/your_dataset_name.jsonl --output-dir ./results
    ```
+
+## See also
+
+- [`onboarding.md`](onboarding.md) — five-minute walk-through from clone to dashboard.
+- [`reporting.md`](reporting.md) — full reference for the `evalhub report` sub-app, the long-form CSV schema, and the Streamlit dashboard tabs.
+- [`../scripts/README.md`](../scripts/README.md) — HPC orchestrator scripts (`run_eval_only.sh`, `run_judge_only.sh`, `run_end_to_end.sh`) and their env contracts.

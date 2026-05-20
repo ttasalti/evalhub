@@ -14,3 +14,22 @@
 06/06/2025 update: We have added an experimental feature referencing verl's implementation: integration of multi-turn and tool calls.
 
 06/30/2025 update: We have integrated most of the benchmarks from the Qwen3 technical report (excluding those that already have official implementations).
+
+05/20/2026 update: Major refactor adding a result aggregation surface and
+splitting the orchestrator script.
+
+- New `evalhub report` sub-app with `aggregate`, `plot`, and `dashboard`
+  commands. Every `*_summary.json` / `*_cot_summary.json` under an
+  `OUTPUT_ROOT` is parsed into a long-form pandas DataFrame and written to a
+  master CSV; `plot` renders Pass@K curves, base-vs-CoT bars, a Pass@1
+  heatmap, and CoT veto-rate bars; `dashboard` launches a Streamlit + Plotly
+  UI for interactive filtering and drill-down. Lives in `evalhub/report/`.
+- Bash orchestrator split into `scripts/run_eval_only.sh`,
+  `scripts/run_judge_only.sh`, and `scripts/run_end_to_end.sh`, all sharing
+  helpers from `scripts/lib/pipeline_common.sh`. The legacy
+  `scripts/run_cot_pass_at_k.sh` is now a thin deprecation shim that execs
+  `run_end_to_end.sh`.
+- New optional-deps group `report = [pandas, matplotlib, seaborn, streamlit,
+  plotly]`; `pandas` was added to the existing `base` group.
+- New docs `docs/reporting.md` (CSV schema + dashboard tour) and
+  `docs/onboarding.md` (five-minute demo for new developers).

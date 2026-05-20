@@ -10,7 +10,7 @@ Modified for CoT-Pass@K support:
 
 | Path | Change |
 |---|---|
-| `cli.py` | Added the `cot` Typer sub-app with `extract`, `aggregate`, `metrics`, `finalize` commands. |
+| `cli.py` | Added the `cot` Typer sub-app (`extract`, `aggregate`, `metrics`, `finalize`) and the `report` Typer sub-app (`aggregate`, `plot`, `dashboard`). |
 | `gen.py` | Logs the resolved chat template and `model_state` at run start. |
 | `inference/schemas.py` | Added the `model_state` field on `GenerationConfig` (`base` / `non-think` / `think`). |
 | `benchmarks/__init__.py` | Re-exports the new `cot` sub-package. |
@@ -24,3 +24,4 @@ Newly created for this project:
 | [`cot/`](./cot/README.md) | Pure-Python CoT-Pass@K post-processing pipeline. |
 | [`benchmarks/cot/`](./benchmarks/cot/README.md) | Parameterised LLM-as-a-Judge dataset. |
 | `utils/model_state.py` | Model + state → chat template registry. |
+| `report/` | Result aggregation, publication-ready plots, and a Streamlit + Plotly dashboard. Powers `evalhub report aggregate / plot / dashboard`. See [`../docs/reporting.md`](../docs/reporting.md). |

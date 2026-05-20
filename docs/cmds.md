@@ -94,3 +94,37 @@ We will provide you with feedback of public test cases results to help you impro
 
 evalhub gen --model "$HOME/models/Qwen2.5-7B-Instruct" --tasks livecodebench --output-dir $HOME/metrics/Qwen2.5-7B-Instruct/ --max-tokens $max_tokens --temperature $temperature --top-p $top_p  --enable-multiturn --system-prompt "$system_prompt" --callback "evalhub.callback.code_callback.CodeCallback"
 ```
+
+### CoT-Pass@K orchestrators
+
+The orchestrator scripts under `scripts/` chain `evalhub gen`, `evalhub eval`,
+and the `evalhub cot ...` post-processing stages together. All three are
+env-driven; see `scripts/cot_pipeline.env.example` for every knob.
+
+```bash
+# Stage 1 only — base generation + base evaluation.
+scripts/run_eval_only.sh scripts/cot_pipeline.env
+
+# Stages 2+3 only — judge an existing base run, then finalize.
+BASE_RESULTS_DIR="$HOME/metrics/Qwen2.5-7B-Instruct/aime2025" \
+    scripts/run_judge_only.sh scripts/cot_pipeline.env
+
+# Full pipeline.
+scripts/run_end_to_end.sh scripts/cot_pipeline.env
+```
+
+### Report aggregation & dashboard
+
+```bash
+# 1. Sweep every {benchmark}_summary.json / *_cot_summary.json into one CSV.
+evalhub report aggregate --results-root ./results --output ./report.csv
+
+# 2. Render publication-ready static plots.
+evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
+
+# 3. Launch the interactive Streamlit dashboard.
+evalhub report dashboard --csv ./report.csv --results-root ./results --port 8501
+```
+
+See [reporting.md](reporting.md) for the CSV schema and dashboard tour, or
+[onboarding.md](onboarding.md) for a five-minute end-to-end demo.
