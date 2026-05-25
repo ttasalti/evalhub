@@ -196,9 +196,6 @@ See [docs/history.md](docs/history.md) for more details.
 - [LiveCodeBench](https://github.com/LiveCodeBench/LiveCodeBench)
 - [verl](https://github.com/volcengine/verl)
 
-> [!Important]
-
-
 ## 📄 License
 
 This project is licensed under the terms of the MIT license.
