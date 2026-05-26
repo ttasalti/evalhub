@@ -53,6 +53,7 @@ source "${SCRIPT_DIR}/lib/pipeline_common.sh"
 
 pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-}}"
 
+apply_legacy_env_aliases
 require_env TARGET_MODEL BENCHMARK
 apply_target_defaults
 apply_common_defaults

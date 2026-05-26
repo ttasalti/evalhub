@@ -60,11 +60,93 @@ require_env() {
 # ---------------------------------------------------------------------------
 pipeline_init_paths() {
     : "${PROJECT_ROOT:?PROJECT_ROOT must be set before calling pipeline_init_paths}"
-    OUTPUT_ROOT="${OUTPUT_ROOT:-${PROJECT_ROOT}/results}"
+    OUTPUT_ROOT="${OUTPUT_ROOT:-${RESULTS_ROOT_DIR:-${RESULTS_BASE_DIR:-${PROJECT_ROOT}/results}}}"
     LOG_DIR_LOCAL="${LOG_DIR:-${PROJECT_ROOT}/logs}"
     mkdir -p "${OUTPUT_ROOT}" "${LOG_DIR_LOCAL}"
     export OUTPUT_ROOT
     export LOG_DIR_LOCAL
+}
+
+# ---------------------------------------------------------------------------
+# Legacy env aliases — accept the variable names used by the old vllm3.sh
+# orchestrator verbatim. New TARGET_*/JUDGE_* names take precedence when set;
+# otherwise we fall back to the legacy BASE_*/PORT/TEMPERATURE/etc. spellings.
+# Also maps THINK_MODE -> TARGET_STATE/JUDGE_STATE.
+# ---------------------------------------------------------------------------
+apply_legacy_env_aliases() {
+    : "${TARGET_MODEL:=${MODEL:-}}"
+    : "${TARGET_TEMPERATURE:=${TEMPERATURE:-${B_TEMP:-}}}"
+    : "${TARGET_N_SAMPLES:=${N_SAMPLES:-${BASE_N_SAMPLES:-}}}"
+    : "${TARGET_MAX_COMPLETION_TOKENS:=${MAX_COMPLETION_TOKENS:-${BASE_MAX_COMPLETION_TOKENS:-}}}"
+    : "${TARGET_NUM_WORKERS:=${BASE_NUM_WORKERS:-}}"
+    : "${TARGET_TOP_P:=${BASE_TOP_P:-}}"
+    : "${TARGET_FREQUENCY_PENALTY:=${BASE_FREQUENCY_PENALTY:-}}"
+    : "${TARGET_PRESENCE_PENALTY:=${BASE_PRESENCE_PENALTY:-}}"
+    : "${TARGET_TIMEOUT:=${BASE_TIMEOUT:-}}"
+    : "${TARGET_STOP:=${BASE_STOP:-}}"
+    : "${TARGET_SYSTEM_PROMPT:=${BASE_SYSTEM_PROMPT:-}}"
+    : "${TARGET_OVERRIDE_ARGS:=${BASE_OVERRIDE_ARGS:-}}"
+    : "${TARGET_TOOL_CONFIG:=${BASE_TOOL_CONFIG:-}}"
+    : "${TARGET_CALLBACK:=${BASE_CALLBACK:-}}"
+    : "${TARGET_MAX_TURNS:=${BASE_MAX_TURNS:-}}"
+    : "${TARGET_ENABLE_MULTITURN:=${BASE_ENABLE_MULTITURN:-}}"
+    : "${TARGET_RESUME:=${BASE_RESUME:-}}"
+    : "${TARGET_PARALLEL_COUNT:=${BASE_PARALLEL_COUNT:-}}"
+    : "${TARGET_PORT:=${PORT:-}}"
+    : "${JUDGE_TEMPERATURE:=${JUDGE_TEMP:-}}"
+
+    # THINK_MODE was the old binary toggle. Honour it when TARGET_STATE is unset.
+    if [[ -n "${THINK_MODE:-}" && -z "${TARGET_STATE:-}" ]]; then
+        local tm
+        tm="$(echo "${THINK_MODE}" | tr '[:upper:]' '[:lower:]')"
+        if [[ "${tm}" == "true" ]]; then
+            TARGET_STATE="think"
+        else
+            TARGET_STATE="non-think"
+        fi
+    fi
+
+    # Soft defaults for vLLM runtime knobs that the old script exported.
+    export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+    export VLLM_USE_TRITON_FLASH_ATTN="${VLLM_USE_TRITON_FLASH_ATTN:-0}"
+}
+
+# ---------------------------------------------------------------------------
+# Model class detection — mirrors the old get_clean_model_name(): models whose
+# name contains "base", "e2b", or "e4b" are treated as base models.
+# ---------------------------------------------------------------------------
+detect_model_class() {
+    local m_lower
+    m_lower="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+    if [[ "${m_lower}" == *"base"* || "${m_lower}" == *"e2b"* || "${m_lower}" == *"e4b"* ]]; then
+        echo "base"
+    else
+        echo "instruct"
+    fi
+}
+
+# Old-style clean name: base models -> "${basename}"; instruct/judge models ->
+# "${basename}_think-${THINK_MODE}". THINK_MODE is derived from TARGET_STATE
+# when the caller has only set the new-style variable.
+target_clean_name() {
+    local model="$1"
+    local class
+    class="$(detect_model_class "${model}")"
+    local base
+    base="$(basename "${model}")"
+    if [[ "${class}" == "base" ]]; then
+        echo "${base}"
+    else
+        local think="${THINK_MODE:-}"
+        if [[ -z "${think}" ]]; then
+            if [[ "${TARGET_STATE:-non-think}" == "think" ]]; then
+                think="true"
+            else
+                think="false"
+            fi
+        fi
+        echo "${base}_think-${think}"
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -207,23 +289,27 @@ apply_common_defaults() {
     HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-1800}"
 }
 
-# Compose the canonical target output directory:
-#   ${OUTPUT_ROOT}/<model>_state-<state>_t<T>_max<N>/<benchmark>
+# Compose the canonical target output directory matching the legacy layout:
+#   base models:     ${OUTPUT_ROOT}/base/<model>_t<T>_max<N>/<benchmark>
+#   instruct models: ${OUTPUT_ROOT}/instruct/<model>_think-<bool>_t<T>_max<N>/<benchmark>
 compose_target_dir() {
     local benchmark="$1"
-    local model_clean
-    model_clean="$(basename "${TARGET_MODEL}")_state-${TARGET_STATE}"
-    echo "${OUTPUT_ROOT}/${model_clean}_t${TARGET_TEMPERATURE}_max${TARGET_MAX_COMPLETION_TOKENS}/${benchmark}"
+    local class clean
+    class="$(detect_model_class "${TARGET_MODEL}")"
+    clean="$(target_clean_name "${TARGET_MODEL}")"
+    echo "${OUTPUT_ROOT}/${class}/${clean}_t${TARGET_TEMPERATURE}_max${TARGET_MAX_COMPLETION_TOKENS}/${benchmark}"
 }
 
-# Compose the canonical judgment output directory:
-#   ${OUTPUT_ROOT}/judgments/<target>_judged_by_<judge>_t<T>_max<N>/<benchmark>
+# Compose the canonical judgment output directory matching the legacy layout:
+#   ${OUTPUT_ROOT}/<target_class>/judgments/
+#       <target_clean>_evaluated_by_<judge_basename>_<JUDGE_MAX>/<benchmark>_t<JUDGE_TEMP>
 compose_judge_dir() {
     local benchmark="$1"
-    local target_clean judge_clean
-    target_clean="$(basename "${TARGET_MODEL}")_state-${TARGET_STATE}"
-    judge_clean="$(basename "${JUDGE_MODEL}")_state-${JUDGE_STATE}"
-    echo "${OUTPUT_ROOT}/judgments/${target_clean}_judged_by_${judge_clean}_t${JUDGE_TEMPERATURE}_max${JUDGE_MAX_COMPLETION_TOKENS}/${benchmark}"
+    local class target_clean judge_clean
+    class="$(detect_model_class "${TARGET_MODEL}")"
+    target_clean="$(target_clean_name "${TARGET_MODEL}")"
+    judge_clean="$(basename "${JUDGE_MODEL}")"
+    echo "${OUTPUT_ROOT}/${class}/judgments/${target_clean}_evaluated_by_${judge_clean}_${JUDGE_MAX_COMPLETION_TOKENS}/${benchmark}_t${JUDGE_TEMPERATURE}"
 }
 
 # ---------------------------------------------------------------------------

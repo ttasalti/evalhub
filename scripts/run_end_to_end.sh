@@ -56,6 +56,7 @@ source "${SCRIPT_DIR}/lib/pipeline_common.sh"
 
 pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/cot_pipeline.env}}"
 
+apply_legacy_env_aliases
 require_env TARGET_MODEL JUDGE_MODEL BENCHMARK
 apply_target_defaults
 apply_judge_defaults
