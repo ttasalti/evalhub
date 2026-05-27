@@ -66,7 +66,7 @@ pipeline_register_cleanup
 
 pipeline_log "==[1/1]== Base generation & evaluation =================================="
 start_vllm "${TARGET_MODEL}" "${TARGET_PORT}" "${TARGET_PARALLEL_COUNT}" "${TARGET_STATE}" \
-    "${LOG_DIR_LOCAL}/vllm_target_${TARGET_PORT}.log"
+    "${LOG_DIR_LOCAL}/vllm_target_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
 export HOSTED_VLLM_API_BASE="http://127.0.0.1:${TARGET_PORT}/v1"
 export HOSTED_VLLM_API_KEY="EMPTY"
 

@@ -107,11 +107,12 @@ pipeline_register_cleanup
 
 pipeline_log "==[2/3]== Judge generation & evaluation ================================="
 start_vllm "${JUDGE_MODEL}" "${JUDGE_PORT}" "${JUDGE_PARALLEL_COUNT}" "${JUDGE_STATE}" \
-    "${LOG_DIR_LOCAL}/vllm_judge_${JUDGE_PORT}.log"
+    "${LOG_DIR_LOCAL}/vllm_judge_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
 export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
 export HOSTED_VLLM_API_KEY="EMPTY"
 
-judge_solutions="$(pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}")"
+pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}"
+judge_solutions="${JUDGE_SOLUTIONS_OUT}"
 stop_vllm
 
 pipeline_log "==[3/3]== Aggregate majority vote & CoT-Pass@K =========================="

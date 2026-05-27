@@ -20,22 +20,25 @@
 # A defaults sample lives at scripts/cot_pipeline.env.example.
 #
 # ----------------------------------------------------------------------------
-# Recommended Slurm header for nscluster (single GPU node):
-#   #SBATCH --job-name=evalhub-e2e
-#   #SBATCH --partition=gpu
-#   #SBATCH --gres=gpu:2          # one for target, one for judge if same node
-#   #SBATCH --cpus-per-task=32
-#   #SBATCH --mem=128G
-#   #SBATCH --time=24:00:00
-#   #SBATCH --output=logs/slurm-%j.out
+# Slurm (nscluster):
+#   sbatch scripts/run_end_to_end.sh scripts/qwen_demo.env
+#
+#SBATCH --job-name=evalhub-e2e
+#SBATCH --gres=gpu:nvidia_a100-pcie-40gb:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=30G
+#SBATCH --time=12:00:00
+#SBATCH --nodelist=nscluster
+#SBATCH --output=logs/%x-%j.out 
+#SBATCH -e logs/%x-%j.err 
 # ----------------------------------------------------------------------------
 #
 # Usage:
-#   scripts/run_end_to_end.sh                    # uses $EVALHUB_PIPELINE_ENV
-#   scripts/run_end_to_end.sh path/to/e2e.env    # explicit env file
-#   scripts/run_end_to_end.sh --help             # print env contract and exit
+#   sbatch scripts/run_end_to_end.sh scripts/qwen_demo.env
+#   bash   scripts/run_end_to_end.sh scripts/qwen_demo.env
+#   scripts/run_end_to_end.sh --help
 #
-# Required env: TARGET_MODEL, JUDGE_MODEL, BENCHMARK
+# Required env: TARGET_MODEL, JUDGE_MODEL, BENCHMARK (or BENCHMARKS)
 # Optional env: every TARGET_*/JUDGE_* knob documented in
 #               scripts/cot_pipeline.env.example, plus OUTPUT_ROOT, TARGET_PORT,
 #               JUDGE_PORT, HEALTH_TIMEOUT, LOG_DIR.
@@ -47,14 +50,54 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     exit 0
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# Under Slurm, BASH_SOURCE[0] points to the spool copy of the script, not the
+# project tree. Use SLURM_SUBMIT_DIR (the directory sbatch was called from) as
+# the authoritative project root instead.
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+    PROJECT_ROOT="${SLURM_SUBMIT_DIR}"
+    SCRIPT_DIR="${PROJECT_ROOT}/scripts"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+fi
 cd "${PROJECT_ROOT}"
+
+# Activate the project conda environment and ensure its bin directory comes
+# first in PATH (conda activate alone may not override ~/.local/bin).
+if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
+    source /opt/Anaconda-2021.05/etc/profile.d/conda.sh
+    conda activate evalhub_env
+fi
+export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
 
 # shellcheck source=lib/pipeline_common.sh
 source "${SCRIPT_DIR}/lib/pipeline_common.sh"
 
-pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/cot_pipeline.env}}"
+pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/qwen_demo.env}}"
+
+# If BENCHMARKS (plural) is set and BENCHMARK is not, loop over each entry by
+# re-invoking this script once per benchmark so every run gets a clean vLLM lifecycle.
+if [[ -n "${BENCHMARKS:-}" && -z "${BENCHMARK:-}" ]]; then
+    _env_arg="${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/qwen_demo.env}}"
+    for _bm in ${BENCHMARKS}; do
+        BENCHMARK="${_bm}" bash "${BASH_SOURCE[0]}" "${_env_arg}"
+    done
+
+    # All benchmarks finished — produce master CSV + plots once.
+    apply_legacy_env_aliases
+    pipeline_init_paths
+    pipeline_log "==[REPORT]== Aggregating results + rendering plots ===================="
+    mkdir -p "${OUTPUT_ROOT}/plots"
+    evalhub report aggregate \
+        --results-root "${OUTPUT_ROOT}" \
+        --output "${OUTPUT_ROOT}/report.csv"
+    evalhub report plot \
+        --csv "${OUTPUT_ROOT}/report.csv" \
+        --output-dir "${OUTPUT_ROOT}/plots" \
+        --format both
+    pipeline_log "[DONE] Report CSV + plots written under ${OUTPUT_ROOT}"
+    exit 0
+fi
 
 apply_legacy_env_aliases
 require_env TARGET_MODEL JUDGE_MODEL BENCHMARK
@@ -74,7 +117,7 @@ pipeline_register_cleanup
 # --------------------------------------------------------------------------
 pipeline_log "==[1/3]== Base generation & evaluation =================================="
 start_vllm "${TARGET_MODEL}" "${TARGET_PORT}" "${TARGET_PARALLEL_COUNT}" "${TARGET_STATE}" \
-    "${LOG_DIR_LOCAL}/vllm_target_${TARGET_PORT}.log"
+    "${LOG_DIR_LOCAL}/vllm_target_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
 export HOSTED_VLLM_API_BASE="http://127.0.0.1:${TARGET_PORT}/v1"
 export HOSTED_VLLM_API_KEY="EMPTY"
 
@@ -98,11 +141,12 @@ if [[ ! -s "${JUDGE_INPUT}" ]]; then
 fi
 
 start_vllm "${JUDGE_MODEL}" "${JUDGE_PORT}" "${JUDGE_PARALLEL_COUNT}" "${JUDGE_STATE}" \
-    "${LOG_DIR_LOCAL}/vllm_judge_${JUDGE_PORT}.log"
+    "${LOG_DIR_LOCAL}/vllm_judge_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
 export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
 export HOSTED_VLLM_API_KEY="EMPTY"
 
-judge_solutions="$(pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}")"
+pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}"
+judge_solutions="${JUDGE_SOLUTIONS_OUT}"
 stop_vllm
 
 # --------------------------------------------------------------------------

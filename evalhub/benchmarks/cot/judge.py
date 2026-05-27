@@ -94,7 +94,7 @@ class CoTJudgeDataset(MathDataset):
         if not original_task_id:
             return MISSING_QUESTION_SENTINEL
 
-        benchmark_name = original_task_id.split("/", 1)[0].lower()
+        benchmark_name = original_task_id.split("/", 1)[0].lower().replace("-", "_")
         if benchmark_name not in cache:
             cache[benchmark_name] = self._load_source_benchmark(benchmark_name)
 

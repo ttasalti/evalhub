@@ -193,3 +193,4 @@ cython_debug/
 images/
 scripts/gemma4_pipeline.env
 *.env
+results_demo/

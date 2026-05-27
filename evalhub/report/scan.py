@@ -46,6 +46,17 @@ _JUDGE_DIR_RE = re.compile(
     r"_t(?P<temp>[0-9.]+)_max(?P<max>\d+)$"
 )
 
+# Legacy judgment dir produced by compose_judge_dir in pipeline_common.sh:
+# "<target>_evaluated_by_<judge>_<max>", with the benchmark subdir holding
+# the temperature as "<benchmark>_t<T>". Both fields are extracted in
+# _build_cot_record so the scanner picks up CoT runs from these directories.
+_LEGACY_JUDGE_DIR_RE = re.compile(
+    r"^(?P<target>.+?)_evaluated_by_(?P<judge>.+?)_(?P<max>\d+)$"
+)
+_LEGACY_BENCHMARK_TEMP_RE = re.compile(
+    r"^(?P<benchmark>.+?)_t(?P<temp>[0-9.]+)$"
+)
+
 
 @dataclass(frozen=True)
 class ParsedBaseDir:
@@ -128,16 +139,28 @@ def parse_base_dirname(name: str) -> ParsedBaseDir | None:
 def parse_judge_dirname(name: str) -> ParsedJudgeDir | None:
     """Parse a judgment directory name. Returns ``None`` if it doesn't match."""
     match = _JUDGE_DIR_RE.match(name)
-    if match is None:
-        return None
-    return ParsedJudgeDir(
-        target_model=match.group("target"),
-        target_state=match.group("target_state"),
-        judge_model=match.group("judge"),
-        judge_state=match.group("judge_state"),
-        temperature=float(match.group("temp")),
-        max_completion_tokens=int(match.group("max")),
-    )
+    if match is not None:
+        return ParsedJudgeDir(
+            target_model=match.group("target"),
+            target_state=match.group("target_state"),
+            judge_model=match.group("judge"),
+            judge_state=match.group("judge_state"),
+            temperature=float(match.group("temp")),
+            max_completion_tokens=int(match.group("max")),
+        )
+    legacy = _LEGACY_JUDGE_DIR_RE.match(name)
+    if legacy is not None:
+        # Temperature is encoded in the benchmark subdir, not here; the real
+        # value is filled in by _build_cot_record from _LEGACY_BENCHMARK_TEMP_RE.
+        return ParsedJudgeDir(
+            target_model=legacy.group("target"),
+            target_state="unknown",
+            judge_model=legacy.group("judge"),
+            judge_state="unknown",
+            temperature=0.0,
+            max_completion_tokens=int(legacy.group("max")),
+        )
+    return None
 
 
 def _summary_to_pass_at_k(summary: dict) -> dict[int, float]:
@@ -197,11 +220,20 @@ def _build_cot_record(
     """Build a :class:`RunRecord` for a ``{benchmark}_cot_summary.json`` file."""
     benchmark_dir = summary_path.parent
     run_dir = benchmark_dir.parent
-    benchmark = benchmark_dir.name
     parsed = parse_judge_dirname(run_dir.name)
     if parsed is None:
         logger.debug(f"Skipping unrecognised judgment dir: {run_dir}")
         return None
+
+    # Legacy benchmark dir embeds the judge temperature: "<benchmark>_t<T>".
+    bench_match = _LEGACY_BENCHMARK_TEMP_RE.match(benchmark_dir.name)
+    if bench_match is not None:
+        benchmark = bench_match.group("benchmark")
+        temperature = float(bench_match.group("temp"))
+    else:
+        benchmark = benchmark_dir.name
+        temperature = parsed.temperature
+
     summary = _read_json(summary_path)
     stats_path = benchmark_dir / f"{benchmark}_cot_stats.json"
     stats = _read_json(stats_path) if stats_path.exists() else None
@@ -212,12 +244,12 @@ def _build_cot_record(
         eval_type="cot_eval",
         model=parsed.target_model,
         state=_validate_state(parsed.target_state),
-        temperature=parsed.temperature,
+        temperature=temperature,
         max_completion_tokens=parsed.max_completion_tokens,
         benchmark=benchmark,
         judge_model=parsed.judge_model,
         judge_state=_validate_state(parsed.judge_state),
-        judge_temperature=parsed.temperature,
+        judge_temperature=temperature,
         judge_max_completion_tokens=parsed.max_completion_tokens,
         pass_at_k=_summary_to_pass_at_k(summary),
         cons_at_k=float(summary.get("cons_at_k", 0.0) or 0.0),

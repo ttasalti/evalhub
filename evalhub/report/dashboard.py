@@ -34,6 +34,27 @@ def _require_streamlit():
     return st, px
 
 
+_LANGUAGE_SUFFIXES = ("_tr", "_pt", "_es", "_fr", "_de", "_zh", "_ar", "_ja", "_ru", "_it")
+
+
+def _derive_benchmark_family(name: str) -> str:
+    """Strip a known language suffix so language variants share a family.
+
+    Examples:
+        aime2026     -> aime2026
+        aime2026_tr  -> aime2026
+        aime2026_pt  -> aime2026
+        math500      -> math500
+    """
+    if not isinstance(name, str):
+        return name
+    lower = name.lower()
+    for suffix in _LANGUAGE_SUFFIXES:
+        if lower.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
 def _load_csv(csv_path: Path) -> pd.DataFrame:
     import pandas as pd
 
@@ -41,6 +62,8 @@ def _load_csv(csv_path: Path) -> pd.DataFrame:
     # k can legitimately be NaN for empty-pass_at_k stubs; cast non-null values to int.
     if "k" in df.columns:
         df["k"] = df["k"].astype("Int64")
+    if "benchmark" in df.columns:
+        df["benchmark_family"] = df["benchmark"].map(_derive_benchmark_family)
     return df
 
 
@@ -62,11 +85,26 @@ def _filter_panel(st, df: pd.DataFrame) -> pd.DataFrame:
         "Benchmark", sorted(df["benchmark"].dropna().unique()),
         default=sorted(df["benchmark"].dropna().unique()),
     )
+
+    # Judge filters — only present on cot_eval rows; base_eval rows have NaN
+    # for judge_model/judge_state. We keep base_eval rows through the filter
+    # by accepting both the selected judges and the NaN case.
+    judge_model_options = sorted(df["judge_model"].dropna().unique())
+    judge_models = st.sidebar.multiselect(
+        "Judge model", judge_model_options, default=judge_model_options,
+    )
+    judge_state_options = sorted(df["judge_state"].dropna().unique())
+    judge_states = st.sidebar.multiselect(
+        "Judge state", judge_state_options, default=judge_state_options,
+    )
+
     out = df[
         df["eval_type"].isin(eval_types)
         & df["model"].isin(models)
         & df["state"].isin(states)
         & df["benchmark"].isin(benchmarks)
+        & (df["judge_model"].isin(judge_models) | df["judge_model"].isna())
+        & (df["judge_state"].isin(judge_states) | df["judge_state"].isna())
     ]
     return out
 
@@ -142,6 +180,118 @@ def _tab_veto(st, px, df: pd.DataFrame) -> None:
     st.plotly_chart(fig, use_container_width=True)
 
 
+def _tab_language(st, px, df: pd.DataFrame) -> None:
+    """Compare the same benchmark family across language variants.
+
+    Picks one ``benchmark_family`` (e.g. ``aime2026``) and renders a Pass@K
+    curve per language variant, faceted by judge model so both judged and
+    unjudged runs can be inspected side-by-side. ``eval_type`` becomes the
+    line dash so base vs CoT-vetted curves overlay cleanly.
+    """
+    st.subheader("Same benchmark across languages")
+    if "benchmark_family" not in df.columns:
+        st.info("No benchmark_family column. Reload the dashboard.")
+        return
+    families = sorted(df["benchmark_family"].dropna().unique())
+    if not families:
+        st.info("No benchmark families to compare.")
+        return
+    family_pick = st.selectbox("Benchmark family", families)
+    sub = df[(df["benchmark_family"] == family_pick) & df["pass_at_k"].notna()]
+    if sub.empty:
+        st.info(f"No rows for family {family_pick!r}.")
+        return
+
+    judge_label = sub["judge_model"].fillna("(no judge)")
+    sub = sub.assign(judge_label=judge_label)
+
+    fig = px.line(
+        sub.sort_values("k"),
+        x="k",
+        y="pass_at_k",
+        color="benchmark",          # language variants differ in color
+        line_dash="eval_type",      # base_eval vs cot_eval
+        symbol="model",             # target model
+        facet_col="judge_label",    # judge model (or "(no judge)")
+        facet_col_wrap=2,
+        markers=True,
+        log_x=True,
+        range_y=[0.0, 1.0],
+    )
+    fig.update_layout(
+        legend_title_text="Benchmark / language",
+        xaxis_title="K",
+        yaxis_title="Pass@K",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption(
+        "Colour = language variant. Dash = base_eval (solid) vs cot_eval (dashed). "
+        "Symbol = target model. Each facet is a different judge model "
+        "(or '(no judge)' for the base-only runs)."
+    )
+
+
+def _tab_pass_vs_cot(st, px, df: pd.DataFrame) -> None:
+    """Pass@K vs CoT-Pass@K story — judge'ın eklediği (veya çaldığı) skor.
+
+    Pivots base_eval and cot_eval Pass@K side by side per (model, benchmark, K)
+    and draws the delta as a grouped bar chart. Positive delta means the
+    judge vetoed at least one base-correct generation (so CoT is stricter).
+    """
+    st.subheader("Pass@K vs CoT-Pass@K — judge'ın etkisi")
+    sub = df.dropna(subset=["k", "pass_at_k"])
+    if sub.empty:
+        st.info("No Pass@K data to compare.")
+        return
+    pivot = sub.pivot_table(
+        index=["model", "benchmark", "k"],
+        columns="eval_type",
+        values="pass_at_k",
+        aggfunc="mean",
+    ).reset_index()
+    if "base_eval" not in pivot.columns or "cot_eval" not in pivot.columns:
+        st.info(
+            "Bu görsel için CSV'de hem base_eval hem cot_eval satırlarına "
+            "ihtiyaç var. Filtre seçimini gevşetmeyi dene."
+        )
+        return
+    pivot = pivot.dropna(subset=["base_eval", "cot_eval"])
+    if pivot.empty:
+        st.info("Matched base/cot row pair bulunamadı.")
+        return
+    pivot["delta"] = pivot["base_eval"] - pivot["cot_eval"]
+
+    st.markdown(
+        "**Pozitif Δ** = judge en az 1 base-correct generation'ı reddetti → "
+        "CoT veto bir miktar Pass@K kaybettirdi (judge daha sıkı).  \n"
+        "**Sıfır Δ** = judge'ın etkisi yok.  \n"
+        "**Sayılar:** rows = (model, benchmark, K); columns = base_eval, "
+        "cot_eval, delta (= base − cot)."
+    )
+    pivot_display = pivot.copy()
+    for col in ("base_eval", "cot_eval", "delta"):
+        pivot_display[col] = pivot_display[col].round(4)
+    st.dataframe(pivot_display, use_container_width=True, hide_index=True)
+
+    fig = px.bar(
+        pivot,
+        x="benchmark",
+        y="delta",
+        color="model",
+        barmode="group",
+        facet_col="k",
+        range_y=[
+            min(0.0, float(pivot["delta"].min()) - 0.01),
+            max(0.05, float(pivot["delta"].max()) + 0.01),
+        ],
+    )
+    fig.update_layout(
+        yaxis_title="Pass@K − CoT-Pass@K (judge degradation)",
+        xaxis_title="Benchmark",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
 def _tab_drilldown(st, df: pd.DataFrame, results_root: Path | None) -> None:
     st.subheader("Drill-down")
     if results_root is None:
@@ -212,16 +362,28 @@ def main() -> None:
 
     df = _load_csv(csv_path)
     filtered = _filter_panel(st, df)
-    tabs = st.tabs(["Overview", "Pass@K", "Heatmap", "CoT veto", "Drill-down"])
+    tabs = st.tabs([
+        "Overview",
+        "Pass@K",
+        "Language comparison",
+        "Pass vs CoT",
+        "Heatmap",
+        "CoT veto",
+        "Drill-down",
+    ])
     with tabs[0]:
         _tab_overview(st, filtered)
     with tabs[1]:
         _tab_pass_at_k(st, px, filtered)
     with tabs[2]:
-        _tab_heatmap(st, px, filtered)
+        _tab_language(st, px, filtered)
     with tabs[3]:
-        _tab_veto(st, px, filtered)
+        _tab_pass_vs_cot(st, px, filtered)
     with tabs[4]:
+        _tab_heatmap(st, px, filtered)
+    with tabs[5]:
+        _tab_veto(st, px, filtered)
+    with tabs[6]:
         _tab_drilldown(st, filtered, results_root)
 
 

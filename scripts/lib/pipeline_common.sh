@@ -109,6 +109,15 @@ apply_legacy_env_aliases() {
     # Soft defaults for vLLM runtime knobs that the old script exported.
     export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
     export VLLM_USE_TRITON_FLASH_ATTN="${VLLM_USE_TRITON_FLASH_ATTN:-0}"
+    # vLLM 0.19 defaults V1 engine to multiprocess (forks EngineCore as a
+    # separate subprocess). For TP=1 servers that doubles host RAM because
+    # torch + CUDA libs + Inductor cache get loaded twice. Force in-process
+    # V1 engine to match the legacy V0 single-process footprint.
+    export VLLM_ENABLE_V1_MULTIPROCESSING="${VLLM_ENABLE_V1_MULTIPROCESSING:-0}"
+    # Force Python output to be unbuffered so evalhub gen/eval failures show
+    # up in Slurm .err immediately rather than getting lost when a subprocess
+    # crashes before flushing its line buffer.
+    export PYTHONUNBUFFERED="${PYTHONUNBUFFERED:-1}"
 }
 
 # ---------------------------------------------------------------------------
@@ -170,13 +179,44 @@ start_vllm() {
     else
         pipeline_log "No registered template for ${model}/${state} — using tokenizer default."
     fi
+
+    # Optional vLLM runtime knobs — TARGET_* applied to the target server,
+    # JUDGE_* to the judge server. Role decided by matching the port.
+    local role="TARGET"
+    [[ -n "${JUDGE_PORT:-}" && "${port}" == "${JUDGE_PORT}" ]] && role="JUDGE"
+    local _gmu="${role}_GPU_MEMORY_UTILIZATION"
+    local _mml="${role}_MAX_MODEL_LEN"
+    local _ee="${role}_ENFORCE_EAGER"
+    local _ss="${role}_SWAP_SPACE"
+    local _dt="${role}_DTYPE"
+    local _kvd="${role}_KV_CACHE_DTYPE"
+    local _extra="${role}_VLLM_EXTRA_ARGS"
+
+    [[ -n "${!_gmu:-}" ]] && args+=(--gpu-memory-utilization "${!_gmu}")
+    [[ -n "${!_mml:-}" ]] && args+=(--max-model-len "${!_mml}")
+    [[ -n "${!_ss:-}" ]]  && args+=(--swap-space "${!_ss}")
+    [[ -n "${!_dt:-}" ]]  && args+=(--dtype "${!_dt}")
+    [[ -n "${!_kvd:-}" ]] && args+=(--kv-cache-dtype "${!_kvd}")
+    [[ "${!_ee:-false}" == "true" ]] && args+=(--enforce-eager)
+    local _extra_val="${!_extra:-}"
+    if [[ -n "${_extra_val}" ]]; then
+        # shellcheck disable=SC2206
+        args+=( ${_extra_val} )
+    fi
+
     python -m vllm.entrypoints.openai.api_server "${args[@]}" >>"${log_file}" 2>&1 &
     SERVER_PID=$!
     local waited=0
     local timeout="${HEALTH_TIMEOUT:-1800}"
     until curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; do
         if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
-            pipeline_die "vLLM died on port ${port}. See ${log_file}"
+            {
+                echo ""
+                echo "=== vLLM died on port ${port} — full log dump (${log_file}) ==="
+                cat "${log_file}" 2>/dev/null || true
+                echo "=== end vLLM log dump ==="
+            } >&2
+            pipeline_die "vLLM died on port ${port}."
         fi
         sleep 5
         waited=$((waited + 5))
@@ -235,6 +275,11 @@ build_gen_args() {
     [[ -n "${!state_var:-}" ]]              && out_array+=(--model-state "${!state_var}")
     [[ "${!emt_var:-false}" == "true" ]]    && out_array+=(--enable-multiturn)
     [[ "${!resume_var:-false}" == "true" ]] && out_array+=(--resume)
+    # Final `return 0` is critical: when both bool flags are "false" (the
+    # default), the last `[[ ]] && cmd` short-circuits and the function would
+    # otherwise return 1, tripping `set -e` in the caller and killing the
+    # pipeline silently right after `start_vllm` reported healthy.
+    return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -261,6 +306,13 @@ apply_target_defaults() {
     TARGET_RESUME="${TARGET_RESUME:-false}"
     TARGET_PARALLEL_COUNT="${TARGET_PARALLEL_COUNT:-1}"
     TARGET_PORT="${TARGET_PORT:-30000}"
+    TARGET_GPU_MEMORY_UTILIZATION="${TARGET_GPU_MEMORY_UTILIZATION:-}"
+    TARGET_MAX_MODEL_LEN="${TARGET_MAX_MODEL_LEN:-}"
+    TARGET_ENFORCE_EAGER="${TARGET_ENFORCE_EAGER:-false}"
+    TARGET_SWAP_SPACE="${TARGET_SWAP_SPACE:-}"
+    TARGET_DTYPE="${TARGET_DTYPE:-}"
+    TARGET_KV_CACHE_DTYPE="${TARGET_KV_CACHE_DTYPE:-}"
+    TARGET_VLLM_EXTRA_ARGS="${TARGET_VLLM_EXTRA_ARGS:-}"
 }
 
 apply_judge_defaults() {
@@ -283,6 +335,13 @@ apply_judge_defaults() {
     JUDGE_RESUME="${JUDGE_RESUME:-false}"
     JUDGE_PARALLEL_COUNT="${JUDGE_PARALLEL_COUNT:-1}"
     JUDGE_PORT="${JUDGE_PORT:-30001}"
+    JUDGE_GPU_MEMORY_UTILIZATION="${JUDGE_GPU_MEMORY_UTILIZATION:-}"
+    JUDGE_MAX_MODEL_LEN="${JUDGE_MAX_MODEL_LEN:-}"
+    JUDGE_ENFORCE_EAGER="${JUDGE_ENFORCE_EAGER:-false}"
+    JUDGE_SWAP_SPACE="${JUDGE_SWAP_SPACE:-}"
+    JUDGE_DTYPE="${JUDGE_DTYPE:-}"
+    JUDGE_KV_CACHE_DTYPE="${JUDGE_KV_CACHE_DTYPE:-}"
+    JUDGE_VLLM_EXTRA_ARGS="${JUDGE_VLLM_EXTRA_ARGS:-}"
 }
 
 apply_common_defaults() {
@@ -373,7 +432,10 @@ pipeline_run_judge_gen_eval() {
         --solutions "${judge_solutions}" \
         --output-dir "${judge_dir}" \
         --override-args "${judge_override}"
-    echo "${judge_solutions}"
+    # Return via global var instead of stdout capture — evalhub gen/eval write
+    # GenerationConfig dumps and progress bars to stdout, which would
+    # contaminate `$(...)` command substitution in the caller.
+    JUDGE_SOLUTIONS_OUT="${judge_solutions}"
 }
 
 # Emit the canonical "no base-correct samples" stub. Used by both
