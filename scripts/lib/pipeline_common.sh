@@ -41,6 +41,37 @@ pipeline_load_env() {
     source "${env_file}"
     set +a
     pipeline_log "Loaded env file: ${env_file}"
+
+    # Optional secrets file — gitignored, holds HF_TOKEN and similar. Located
+    # next to the main env file (or at scripts/secrets.env). Silently skipped
+    # when absent so the pipeline still runs in environments that don't need
+    # HF auth (e.g. anonymous Hub access for public datasets).
+    local env_dir secrets_candidates secrets_file
+    env_dir="$(dirname "${env_file}")"
+    secrets_candidates=(
+        "${env_dir}/secrets.env"
+        "${SCRIPT_DIR:-}/secrets.env"
+    )
+    for secrets_file in "${secrets_candidates[@]}"; do
+        if [[ -n "${secrets_file}" && -f "${secrets_file}" ]]; then
+            set -a
+            # shellcheck disable=SC1090
+            source "${secrets_file}"
+            set +a
+            pipeline_log "Loaded secrets file: ${secrets_file}"
+            break
+        fi
+    done
+
+    # Per-job override file produced by scripts/submit.sh. Sourced LAST so
+    # CLI overrides win over both the main env file and secrets.env.
+    if [[ -n "${EVALHUB_OVERRIDES_FILE:-}" && -f "${EVALHUB_OVERRIDES_FILE}" ]]; then
+        set -a
+        # shellcheck disable=SC1090
+        source "${EVALHUB_OVERRIDES_FILE}"
+        set +a
+        pipeline_log "Loaded CLI overrides file: ${EVALHUB_OVERRIDES_FILE}"
+    fi
 }
 
 require_env() {

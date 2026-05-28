@@ -119,11 +119,39 @@ common bash library:
 |---|---|
 | `scripts/run_eval_only.sh` | Base generation + base evaluation only. |
 | `scripts/run_judge_only.sh` | Judge stage over an existing base run (handy for re-judging with a different judge). |
-| `scripts/run_end_to_end.sh` | Full target → judge → CoT finalize. Canonical replacement for the legacy `run_cot_pass_at_k.sh`. |
+| `scripts/run_end_to_end.sh` | Full target → judge → CoT finalize → report. The canonical single-job orchestrator. |
 
 All three are env-driven (`scripts/cot_pipeline.env.example` documents every knob)
 and Slurm-wrappable. See [`docs/onboarding.md`](docs/onboarding.md) for a
 five-minute walk-through on a small model.
+
+For a hands-on Turkish-language guide to running, debugging, and extending
+the pipeline on your own, see [`docs/user_guide.md`](docs/user_guide.md).
+[`docs/scripts.md`](docs/scripts.md) and [`docs/evalhub.md`](docs/evalhub.md)
+give catalog-style references for every shell script and Python module.
+
+For a single run with CLI-chosen model + benchmark (no env file editing):
+
+```bash
+scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \
+    --model Qwen/Qwen3.5-0.8B-Base \
+    --judge Qwen/Qwen3.5-0.8B \
+    --benchmarks "aime2026 aime2026_tr aime2026_pt"
+```
+
+For multi-model / multi-benchmark / multi-temperature sweeps, use the DAG
+submitter:
+
+```bash
+scripts/orchestrate.sh scripts/configs/base.env sequential \
+    --models "Qwen/Qwen3.5-0.8B-Base meta-llama/Llama-3.1-8B" \
+    --benchmarks "aime2026 math500" \
+    --judge Qwen/Qwen3.5-0.8B
+```
+
+`scripts/submit.sh` and `scripts/orchestrate.sh` both accept the same CLI
+override flags (`--model`, `--benchmark[s]`, `--judge`, ...) so the env
+file stays static while runs vary.
 
 ## 📊 Reporting & Dashboard
 

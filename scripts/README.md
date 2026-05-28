@@ -15,17 +15,31 @@ Python package and is exercised via `evalhub` CLI commands.
 | `lib/pipeline_common.sh` | **Shared bash library** — env loading, template resolution, vLLM start/stop, default population, canonical output-path composition, and the high-level `pipeline_run_*` stage runners. Sourced by every orchestrator. |
 | `run_eval_only.sh` | Stage 1 only: base generation + base evaluation. Produces `*_results.jsonl` + `*_summary.json` under the canonical layout. |
 | `run_judge_only.sh` | Stages 2+3 over an existing base run: extract correct generations, run the judge LLM, majority-vote, CoT-Pass@K. |
-| `run_end_to_end.sh` | All three stages — canonical replacement for the legacy `run_cot_pass_at_k.sh`. |
-| `run_cot_pass_at_k.sh` | **Deprecated** — thin shim that execs `run_end_to_end.sh`. Kept so existing job scripts keep working. |
+| `run_end_to_end.sh` | All three stages + report — single Slurm job, base + judge + CoT finalize + report. |
+| `run_report.sh` | Just the report stage (`evalhub report aggregate + plot`); used as the DAG tail. |
+| `submit.sh` | Thin wrapper that reads `SLURM_*` from the env file and accepts CLI overrides (`--model`, `--benchmark`, `--judge`, ...). |
+| `orchestrate.sh` | Multi-model × multi-benchmark × multi-temperature DAG submitter with dependency chains. |
 | `cot_pipeline.env.example` | Annotated default values grouped by which scripts consume them. Copy to `cot_pipeline.env` and edit. |
+| `configs/base.env` | Generic, model/benchmark-agnostic config; designed for CLI overrides. |
+| `configs/qwen_0.8b_demo.env` | Concrete demo config (Qwen 0.8B + 3 AIME benchmarks). |
+| `secrets.env.example` | Template for HF_TOKEN and similar secrets. Copy to `secrets.env` (gitignored). |
 | `templates/` | Jinja chat templates per `(model_family, state)`. Selected by `evalhub.utils.model_state` and passed to `vllm serve --chat-template`. |
 
 ## Quick start
 
 ```bash
-cp scripts/cot_pipeline.env.example scripts/cot_pipeline.env
-# edit scripts/cot_pipeline.env: set TARGET_MODEL, JUDGE_MODEL, BENCHMARK, ...
-scripts/run_end_to_end.sh scripts/cot_pipeline.env
+# Concrete demo — Qwen 0.8B on 3 AIME benchmarks (no edits needed):
+sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
+
+# Pick model + benchmark dynamically with a generic config + CLI overrides:
+scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \
+    --model Qwen/Qwen3.5-0.8B-Base \
+    --judge Qwen/Qwen3.5-0.8B \
+    --benchmarks "aime2026 aime2026_tr aime2026_pt"
+
+# Multi-model sweep:
+scripts/orchestrate.sh scripts/configs/base.env sequential \
+    --models "A B" --benchmarks "x y" --judge Z
 ```
 
 Each script also supports `--help` for an inline env-var contract:

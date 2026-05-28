@@ -2,9 +2,8 @@
 # ============================================================================
 # scripts/run_end_to_end.sh
 #
-# Full CoT-Pass@K pipeline: base generation -> judge -> CoT finalization.
-# This is the canonical replacement for the legacy run_cot_pass_at_k.sh; that
-# file is now a thin deprecation shim that delegates here.
+# Full CoT-Pass@K pipeline: base generation -> judge -> CoT finalization
+# -> report aggregation + plots (when BENCHMARKS plural triggers the loop).
 #
 # Pipeline stages
 #   1. start vLLM with the target model + its chat template
@@ -21,7 +20,7 @@
 #
 # ----------------------------------------------------------------------------
 # Slurm (nscluster):
-#   sbatch scripts/run_end_to_end.sh scripts/qwen_demo.env
+#   sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 #
 #SBATCH --job-name=evalhub-e2e
 #SBATCH --gres=gpu:nvidia_a100-pcie-40gb:1
@@ -34,8 +33,8 @@
 # ----------------------------------------------------------------------------
 #
 # Usage:
-#   sbatch scripts/run_end_to_end.sh scripts/qwen_demo.env
-#   bash   scripts/run_end_to_end.sh scripts/qwen_demo.env
+#   sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
+#   bash   scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 #   scripts/run_end_to_end.sh --help
 #
 # Required env: TARGET_MODEL, JUDGE_MODEL, BENCHMARK (or BENCHMARKS)
@@ -73,12 +72,12 @@ export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
 # shellcheck source=lib/pipeline_common.sh
 source "${SCRIPT_DIR}/lib/pipeline_common.sh"
 
-pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/qwen_demo.env}}"
+pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/configs/qwen_0.8b_demo.env}}"
 
 # If BENCHMARKS (plural) is set and BENCHMARK is not, loop over each entry by
 # re-invoking this script once per benchmark so every run gets a clean vLLM lifecycle.
 if [[ -n "${BENCHMARKS:-}" && -z "${BENCHMARK:-}" ]]; then
-    _env_arg="${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/qwen_demo.env}}"
+    _env_arg="${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/configs/qwen_0.8b_demo.env}}"
     for _bm in ${BENCHMARKS}; do
         BENCHMARK="${_bm}" bash "${BASH_SOURCE[0]}" "${_env_arg}"
     done

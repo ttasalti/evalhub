@@ -124,6 +124,16 @@ def apply_cot_metrics(
             total_tasks += 1
             record["correct"] = correct_arr
             record["pass_at_k"] = new_pass_at_k
+            # Per-task 4-way breakdown of the K generations after CoT veto.
+            # Mirrors the global stats dict but scoped to this single task so
+            # drill-down tooling can answer "how often did THIS question get
+            # vetoed?" without recounting client-side.
+            record["per_task_counts"] = {
+                "true": true_count,
+                "false": false_count,
+                "cot_false": cot_false_count,
+                "invalid_format": invalid_count,
+            }
             f_out.write(orjson.dumps(record) + b"\n")
 
     if total_tasks == 0:

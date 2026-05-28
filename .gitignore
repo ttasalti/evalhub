@@ -153,6 +153,15 @@ ENV/
 env.bak/
 venv.bak/
 
+# Secrets (HF_TOKEN etc.) loaded by pipeline_common.sh:pipeline_load_env.
+# Tracked .env files under scripts/ are intentional config; secrets.env is not.
+scripts/secrets.env
+scripts/*/secrets.env
+
+# Auto-generated CLI override files from scripts/submit.sh
+scripts/.overrides_*.env
+scripts/*/.overrides_*.env
+
 # Spyder project settings
 .spyderproject
 .spyproject

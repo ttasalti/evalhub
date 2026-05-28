@@ -84,6 +84,19 @@ class MathDataset(Dataset):
                 majority_vote = get_majority_vote(solutions)
                 is_correct_majority = self.check_correct(majority_vote, ground_truth, task_id)
 
+                # Per-task 4-way breakdown of the K generations.  At base-eval
+                # time the judge hasn't run yet, so cot_false / invalid_format
+                # are always 0; they exist to keep the schema consistent with
+                # CoT records produced by `evalhub cot metrics`.
+                true_count = sum(1 for x in is_correct if x is True)
+                false_count = sum(1 for x in is_correct if x is False)
+                per_task_counts = {
+                    "true": true_count,
+                    "false": false_count,
+                    "cot_false": 0,
+                    "invalid_format": 0,
+                }
+
                 result = {
                     "task_id": task_id,
                     "solutions": solutions,
@@ -92,6 +105,7 @@ class MathDataset(Dataset):
                     "pass_at_k": pass_at_k,
                     "majority_vote": majority_vote,
                     "is_correct_majority": is_correct_majority,
+                    "per_task_counts": per_task_counts,
                 }
 
                 progress.update(eval_task, advance=1)
