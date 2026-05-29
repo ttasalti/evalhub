@@ -1,3 +1,4 @@
+import csv
 from collections import defaultdict
 from os import PathLike
 from pathlib import Path
@@ -117,11 +118,20 @@ class MathDataset(Dataset):
             k: sum(result["pass_at_k"].get(k, 0) for result in results) / total for k in results[0]["pass_at_k"]
         }
         cons_at_k = correct / total
+        n_generations = len(results[0]["solutions"])
+
+        # Aggregate per-task counts so summary.json carries totals (true/false/
+        # cot_false/invalid_format) instead of forcing downstream tooling to
+        # re-derive them from the per-task results.jsonl. cot_false /
+        # invalid_format are always 0 at base time; they exist for schema
+        # symmetry with the CoT-eval summary.
+        true_count_total = sum(r["per_task_counts"]["true"] for r in results)
+        false_count_total = sum(r["per_task_counts"]["false"] for r in results)
 
         # Log metrics
         for k, value in pass_at_k.items():
             logger.info(f"Pass@{k}: {value:.2%}")
-        logger.info(f"Cons@{len(results[0]['solutions'])}: {cons_at_k:.2%}")
+        logger.info(f"Cons@{n_generations}: {cons_at_k:.2%}")
 
         # Save detailed results
         result_path = output_dir / f"{self.name}_results.jsonl"
@@ -137,6 +147,62 @@ class MathDataset(Dataset):
 
         # Save summary
         summary_path = output_dir / f"{self.name}_summary.json"
+        summary = {
+            "pass_at_k": pass_at_k,
+            "cons_at_k": cons_at_k,
+            "total_tasks": total,
+            "total_generations": total * n_generations,
+            "true_count": true_count_total,
+            "false_count": false_count_total,
+            "cot_false_count": 0,
+            "invalid_format_count": 0,
+        }
         with open(summary_path, "wb") as f:
-            f.write(orjson.dumps({"pass_at_k": pass_at_k, "cons_at_k": cons_at_k}))
+            f.write(orjson.dumps(summary))
         logger.info(f"Evaluation summary saved to {summary_path}")
+
+        # Per-task CSV — one row per task_id with all the data a researcher
+        # typically wants in Excel: per-K pass rates, the four count buckets,
+        # ground truth, majority vote, and whether the majority was correct.
+        csv_path = output_dir / f"{self.name}_per_task.csv"
+        write_per_task_csv(results, csv_path, has_cot=False)
+        logger.info(f"Per-task CSV saved to {csv_path}")
+
+
+def write_per_task_csv(
+    results: list[dict[str, Any]],
+    csv_path: PathLike,
+    has_cot: bool,
+) -> None:
+    """Write per-task CSV with K-axis pass@k columns, counts, and ground truth.
+
+    When ``has_cot`` is True the CSV's count columns reflect post-judge values
+    (cot_false / invalid_format may be > 0). When False they are always 0 in
+    those columns — convenient for diff-ing base vs CoT runs side by side.
+    """
+    if not results:
+        return
+    k_keys = sorted(results[0].get("pass_at_k", {}).keys(), key=lambda x: int(x))
+    fieldnames = (
+        ["task_id", "true", "false", "cot_false", "invalid_format"]
+        + [f"pass@{k}" for k in k_keys]
+        + ["ground_truth", "majority_vote", "is_correct_majority"]
+    )
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for r in results:
+            counts = r.get("per_task_counts", {})
+            row = {
+                "task_id": r["task_id"],
+                "true": counts.get("true", 0),
+                "false": counts.get("false", 0),
+                "cot_false": counts.get("cot_false", 0),
+                "invalid_format": counts.get("invalid_format", 0),
+                "ground_truth": r.get("ground_truth", ""),
+                "majority_vote": r.get("majority_vote", ""),
+                "is_correct_majority": r.get("is_correct_majority", ""),
+            }
+            for k in k_keys:
+                row[f"pass@{k}"] = r["pass_at_k"].get(k, "")
+            writer.writerow(row)

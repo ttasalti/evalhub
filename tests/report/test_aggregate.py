@@ -16,16 +16,19 @@ from evalhub.report.scan import scan_results  # noqa: E402
 
 
 def test_long_columns_are_canonical_order():
-    assert LONG_COLUMNS[0:6] == [
+    assert LONG_COLUMNS[0:7] == [
         "model",
         "state",
         "temperature",
         "max_tokens",
+        "n_samples",
         "benchmark",
         "eval_type",
     ]
     assert "pass_at_k" in LONG_COLUMNS
     assert "cot_false_count" in LONG_COLUMNS
+    assert "n_samples" in LONG_COLUMNS
+    assert "judge_n_samples" in LONG_COLUMNS
 
 
 def test_build_dataframe_explodes_pass_at_k(fake_results_root):

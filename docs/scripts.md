@@ -165,8 +165,8 @@ scripts/orchestrate.sh scripts/configs/base.env parallel \
 | `stop_vllm` | SERVER_PID'i kill eder |
 | `pipeline_register_cleanup` | trap EXIT stop_vllm |
 | `build_gen_args ROLE ARRAY` | TARGET_/JUDGE_ knob'larından `evalhub gen --flag VAL` args üretir, sonu `return 0` |
-| `compose_target_dir BENCHMARK` | `${OUTPUT_ROOT}/${class}/${clean}_t${T}_max${N}/${benchmark}` |
-| `compose_judge_dir BENCHMARK` | `${OUTPUT_ROOT}/${class}/judgments/${target}_evaluated_by_${judge}_${max}/${benchmark}_t${TEMP}` |
+| `compose_target_dir BENCHMARK` | V2 layout: `${OUTPUT_ROOT}/${clean}__state-${TARGET_STATE}__t${T}__max${N}__n${TARGET_N_SAMPLES}/${benchmark}` |
+| `compose_judge_dir BENCHMARK` | V2 nested: `<target_root>/judged_by/${judge_clean}__state-${JUDGE_STATE}__t${JT}__max${JN}__n${JUDGE_N_SAMPLES}/${benchmark}` |
 | `pipeline_run_target_gen_eval DIR BM` | `evalhub gen` + `evalhub eval` |
 | `pipeline_run_judge_gen_eval DIR INPUT` | `evalhub gen` + `evalhub eval` for judge. Return: global `JUDGE_SOLUTIONS_OUT` |
 | `pipeline_write_empty_cot_summary DIR BM` | Boş cot_summary.json yaz (0 base-correct durumu için stub) |

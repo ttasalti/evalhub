@@ -79,7 +79,10 @@ pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/configs/qwen_0.8b_
 if [[ -n "${BENCHMARKS:-}" && -z "${BENCHMARK:-}" ]]; then
     _env_arg="${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/configs/qwen_0.8b_demo.env}}"
     for _bm in ${BENCHMARKS}; do
-        BENCHMARK="${_bm}" bash "${BASH_SOURCE[0]}" "${_env_arg}"
+        # Child runs handle their own REPORT stage; that produces a stale
+        # OUTPUT_ROOT/report.csv after each one. The final aggregate below
+        # overwrites it with the full set so the leftover state is harmless.
+        BENCHMARK="${_bm}" EVALHUB_SKIP_REPORT=1 bash "${BASH_SOURCE[0]}" "${_env_arg}"
     done
 
     # All benchmarks finished — produce master CSV + plots once.
@@ -134,29 +137,51 @@ evalhub cot extract \
     --output "${JUDGE_INPUT}"
 
 if [[ ! -s "${JUDGE_INPUT}" ]]; then
-    pipeline_log "No correct base generations; CoT-Pass@K = 0 by definition. Stopping."
+    pipeline_log "No correct base generations; CoT-Pass@K = 0 by definition."
     pipeline_write_empty_cot_summary "${JUDGE_DIR}" "${BENCHMARK}"
-    exit 0
+    # Fall through to Stage 4 so the empty-result run still contributes to
+    # report.csv + plots; the empty summary's note column flags it.
+    EVALHUB_SKIP_JUDGE=1
 fi
 
-start_vllm "${JUDGE_MODEL}" "${JUDGE_PORT}" "${JUDGE_PARALLEL_COUNT}" "${JUDGE_STATE}" \
-    "${LOG_DIR_LOCAL}/vllm_judge_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
-export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
-export HOSTED_VLLM_API_KEY="EMPTY"
+if [[ -z "${EVALHUB_SKIP_JUDGE:-}" ]]; then
+    start_vllm "${JUDGE_MODEL}" "${JUDGE_PORT}" "${JUDGE_PARALLEL_COUNT}" "${JUDGE_STATE}" \
+        "${LOG_DIR_LOCAL}/vllm_judge_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
+    export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
+    export HOSTED_VLLM_API_KEY="EMPTY"
 
-pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}"
-judge_solutions="${JUDGE_SOLUTIONS_OUT}"
-stop_vllm
+    pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}"
+    judge_solutions="${JUDGE_SOLUTIONS_OUT}"
+    stop_vllm
+
+    # ----------------------------------------------------------------------
+    # Stage 3 — aggregate majority vote, apply CoT veto, produce summary
+    # ----------------------------------------------------------------------
+    pipeline_log "==[3/3]== CoT-Pass@K aggregation ========================================"
+    evalhub cot finalize \
+        --base-results "${TARGET_DIR}/${BENCHMARK}_results.jsonl" \
+        --base-raw "${TARGET_DIR}/${BENCHMARK}_raw.jsonl" \
+        --judge-solutions "${judge_solutions}" \
+        --output-dir "${JUDGE_DIR}" \
+        --benchmark "${BENCHMARK}"
+
+    pipeline_log "[DONE] CoT-Pass@K summary written under ${JUDGE_DIR}"
+fi
 
 # --------------------------------------------------------------------------
-# Stage 3 — aggregate majority vote, apply CoT veto, produce summary
+# Stage 4 — Aggregate report + plots so the OUTPUT_ROOT looks end-to-end
+# complete after every run (single benchmark or final tail of a sweep).
+# Skipped when invoked from the BENCHMARKS plural loop (parent runs its own).
 # --------------------------------------------------------------------------
-pipeline_log "==[3/3]== CoT-Pass@K aggregation ========================================"
-evalhub cot finalize \
-    --base-results "${TARGET_DIR}/${BENCHMARK}_results.jsonl" \
-    --base-raw "${TARGET_DIR}/${BENCHMARK}_raw.jsonl" \
-    --judge-solutions "${judge_solutions}" \
-    --output-dir "${JUDGE_DIR}" \
-    --benchmark "${BENCHMARK}"
-
-pipeline_log "[DONE] CoT-Pass@K summary written under ${JUDGE_DIR}"
+if [[ -z "${EVALHUB_SKIP_REPORT:-}" ]]; then
+    pipeline_log "==[4/4]== Aggregating results + rendering plots ===================="
+    mkdir -p "${OUTPUT_ROOT}/plots"
+    evalhub report aggregate \
+        --results-root "${OUTPUT_ROOT}" \
+        --output "${OUTPUT_ROOT}/report.csv"
+    evalhub report plot \
+        --csv "${OUTPUT_ROOT}/report.csv" \
+        --output-dir "${OUTPUT_ROOT}/plots" \
+        --format both
+    pipeline_log "[DONE] Report CSV + plots written under ${OUTPUT_ROOT}"
+fi

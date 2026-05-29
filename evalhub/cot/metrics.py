@@ -78,6 +78,11 @@ def apply_cot_metrics(
         "invalid_count": 0,
     }
 
+    # Collect updated records so we can emit a per-task CSV after the streaming
+    # pass. Each record is small (counts + a few strings) so the memory cost is
+    # ~tasks*~1KB even for n=64 generations.
+    csv_rows: list[dict[str, Any]] = []
+
     with base_results_path.open("rb") as f_in, output_results_path.open("wb") as f_out:
         for line in f_in:
             line = line.strip()
@@ -112,6 +117,7 @@ def apply_cot_metrics(
                 new_pass_at_k[str(k)] = value
                 sum_pass_at_k[str(k)] += value
 
+            is_consensus_correct = False
             if solutions:
                 sol_strs = ["" if s is None else str(s) for s in solutions]
                 majority_answer, _ = Counter(sol_strs).most_common(1)[0]
@@ -134,14 +140,27 @@ def apply_cot_metrics(
                 "cot_false": cot_false_count,
                 "invalid_format": invalid_count,
             }
+            # Reflect post-veto consensus correctness so the CSV row matches
+            # the recomputed Cons@K aggregate.
+            record["is_correct_majority"] = is_consensus_correct
             f_out.write(orjson.dumps(record) + b"\n")
+            csv_rows.append(record)
 
     if total_tasks == 0:
         raise ValueError(f"Base results file produced no records: {base_results_path}")
 
     pass_at_k_summary = {k: v / total_tasks for k, v in sum_pass_at_k.items()}
     cons_at_k = sum_cons_at_k / total_tasks
-    summary = {"pass_at_k": pass_at_k_summary, "cons_at_k": cons_at_k}
+    summary = {
+        "pass_at_k": pass_at_k_summary,
+        "cons_at_k": cons_at_k,
+        "total_tasks": stats["total_tasks"],
+        "total_generations": stats["total_generations"],
+        "true_count": stats["true_count"],
+        "false_count": stats["false_count"],
+        "cot_false_count": stats["cot_false_count"],
+        "invalid_format_count": stats["invalid_count"],
+    }
 
     with summary_path.open("wb") as f_sum:
         f_sum.write(orjson.dumps(summary))
@@ -151,6 +170,16 @@ def apply_cot_metrics(
         stats_path.parent.mkdir(parents=True, exist_ok=True)
         with stats_path.open("wb") as f_stats:
             f_stats.write(orjson.dumps(stats))
+
+    # Per-task CSV alongside the JSONL. Stem mirrors output_results_path so a
+    # `<benchmark>_cot_results.jsonl` produces `<benchmark>_cot_per_task.csv`.
+    from evalhub.benchmarks.math.base import write_per_task_csv
+
+    csv_path = output_results_path.with_name(
+        output_results_path.stem.replace("_results", "_per_task") + ".csv"
+    )
+    write_per_task_csv(csv_rows, csv_path, has_cot=True)
+    logger.info(f"Per-task CSV saved to {csv_path}")
 
     for k, value in pass_at_k_summary.items():
         logger.info(f"CoT-Pass@{k}: {value:.4f}")

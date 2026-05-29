@@ -29,16 +29,31 @@ from evalhub.utils.model_state import MODEL_STATES
 
 EvalType = Literal["base_eval", "cot_eval"]
 
-# Canonical base run directory: "<model>_state-<state>_t<T>_max<N>".
+# V2 (current) base run directory:
+# "<model>__state-<state>__t<T>__max<N>__n<NS>" — uses double underscore as the
+# field separator and encodes n_samples so distinct sweeps never collide.
+_BASE_DIR_RE_V2 = re.compile(
+    r"^(?P<model>.+?)__state-(?P<state>base|non-think|think|unknown)"
+    r"__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
+)
+
+# V1 base run directory (single-underscore separator, no n_samples).
 _BASE_DIR_RE = re.compile(
     r"^(?P<model>.+?)_state-(?P<state>base|non-think|think|unknown)"
     r"_t(?P<temp>[0-9.]+)_max(?P<max>\d+)$"
 )
 
-# Legacy fallback: directories that pre-date the "_state-" annotation.
+# V0 legacy: directories that pre-date the "_state-" annotation.
 _LEGACY_BASE_DIR_RE = re.compile(r"^(?P<model>.+?)_t(?P<temp>[0-9.]+)_max(?P<max>\d+)$")
 
-# Judgment directory:
+# V2 (current) judgment leaf directory — the leaf name under judged_by/:
+# "<judge>__state-<jstate>__t<jT>__max<jN>__n<jNS>".
+_JUDGE_DIR_RE_V2 = re.compile(
+    r"^(?P<judge>.+?)__state-(?P<judge_state>base|non-think|think|unknown)"
+    r"__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
+)
+
+# V1 judgment directory (flat under judgments/):
 # "<target>_state-<state>_judged_by_<judge>_state-<state>_t<T>_max<N>".
 _JUDGE_DIR_RE = re.compile(
     r"^(?P<target>.+?)_state-(?P<target_state>base|non-think|think|unknown)"
@@ -46,7 +61,7 @@ _JUDGE_DIR_RE = re.compile(
     r"_t(?P<temp>[0-9.]+)_max(?P<max>\d+)$"
 )
 
-# Legacy judgment dir produced by compose_judge_dir in pipeline_common.sh:
+# V0 legacy judgment dir produced by the original compose_judge_dir:
 # "<target>_evaluated_by_<judge>_<max>", with the benchmark subdir holding
 # the temperature as "<benchmark>_t<T>". Both fields are extracted in
 # _build_cot_record so the scanner picks up CoT runs from these directories.
@@ -66,6 +81,7 @@ class ParsedBaseDir:
     state: str
     temperature: float
     max_completion_tokens: int
+    n_samples: int | None = None
 
 
 @dataclass(frozen=True)
@@ -78,6 +94,8 @@ class ParsedJudgeDir:
     judge_state: str
     temperature: float
     max_completion_tokens: int
+    target_n_samples: int | None = None
+    judge_n_samples: int | None = None
 
 
 @dataclass(frozen=True)
@@ -108,6 +126,8 @@ class RunRecord:
     stats: dict[str, int] | None
     source_root: Path
     note: str | None = field(default=None)
+    n_samples: int | None = field(default=None)
+    judge_n_samples: int | None = field(default=None)
 
 
 def _read_json(path: Path) -> dict:
@@ -116,7 +136,20 @@ def _read_json(path: Path) -> dict:
 
 
 def parse_base_dirname(name: str) -> ParsedBaseDir | None:
-    """Parse a base run directory name. Returns ``None`` if it doesn't match."""
+    """Parse a base run directory name. Returns ``None`` if it doesn't match.
+
+    Tries V2 (double-underscore separator with n_samples) first, then V1
+    (single-underscore with state), then V0 (no state).
+    """
+    match_v2 = _BASE_DIR_RE_V2.match(name)
+    if match_v2 is not None:
+        return ParsedBaseDir(
+            model=match_v2.group("model"),
+            state=match_v2.group("state"),
+            temperature=float(match_v2.group("temp")),
+            max_completion_tokens=int(match_v2.group("max")),
+            n_samples=int(match_v2.group("n_samples")),
+        )
     match = _BASE_DIR_RE.match(name)
     if match is not None:
         return ParsedBaseDir(
@@ -136,8 +169,29 @@ def parse_base_dirname(name: str) -> ParsedBaseDir | None:
     return None
 
 
+def parse_judge_leaf_dirname(name: str) -> ParsedBaseDir | None:
+    """Parse the V2 judge leaf directory (judge_clean__state-...__n...).
+
+    Reuses ``ParsedBaseDir`` since the field shape is identical (model, state,
+    temp, max, n_samples). Returns None when ``name`` doesn't match V2.
+    """
+    match = _JUDGE_DIR_RE_V2.match(name)
+    if match is None:
+        return None
+    return ParsedBaseDir(
+        model=match.group("judge"),
+        state=match.group("judge_state"),
+        temperature=float(match.group("temp")),
+        max_completion_tokens=int(match.group("max")),
+        n_samples=int(match.group("n_samples")),
+    )
+
+
 def parse_judge_dirname(name: str) -> ParsedJudgeDir | None:
-    """Parse a judgment directory name. Returns ``None`` if it doesn't match."""
+    """Parse a flat (V1/V0) judgment directory name. Returns ``None`` if it
+    doesn't match. V2 judgment dirs are nested (target_dir/judged_by/judge_dir)
+    and are handled directly by :func:`_build_cot_record`, not here.
+    """
     match = _JUDGE_DIR_RE.match(name)
     if match is not None:
         return ParsedJudgeDir(
@@ -180,6 +234,24 @@ def _validate_state(state: str) -> str:
     return "unknown"
 
 
+def _stats_from_summary(summary: dict) -> dict[str, int] | None:
+    """Pull aggregate count fields out of a summary.json (V2+ writes them).
+
+    Normalises ``invalid_format_count`` (summary key) to ``invalid_count``
+    (stats.json + aggregate column) for downstream consistency.
+    """
+    keys = ("total_tasks", "total_generations", "true_count", "false_count",
+            "cot_false_count")
+    if not any(k in summary for k in keys + ("invalid_format_count", "invalid_count")):
+        return None
+    out: dict[str, int] = {k: int(summary[k]) for k in keys if k in summary}
+    if "invalid_format_count" in summary:
+        out["invalid_count"] = int(summary["invalid_format_count"])
+    elif "invalid_count" in summary:
+        out["invalid_count"] = int(summary["invalid_count"])
+    return out
+
+
 def _build_base_record(
     summary_path: Path, source_root: Path
 ) -> RunRecord | None:
@@ -208,21 +280,63 @@ def _build_base_record(
         judge_max_completion_tokens=None,
         pass_at_k=_summary_to_pass_at_k(summary),
         cons_at_k=float(summary.get("cons_at_k", 0.0) or 0.0),
-        stats=None,
+        stats=_stats_from_summary(summary),
         source_root=source_root.resolve(),
         note=summary.get("note"),
+        n_samples=parsed.n_samples,
     )
 
 
 def _build_cot_record(
     summary_path: Path, source_root: Path
 ) -> RunRecord | None:
-    """Build a :class:`RunRecord` for a ``{benchmark}_cot_summary.json`` file."""
+    """Build a :class:`RunRecord` for a ``{benchmark}_cot_summary.json`` file.
+
+    Supports two layouts:
+
+    * **V2 (nested)** — ``<target>__state-...__n.../judged_by/<judge>__state-...__n.../<benchmark>/``
+    * **V1/V0 (flat)** — ``<...>/<flat_judge_dir>/<benchmark>[_t<T>]/``
+    """
     benchmark_dir = summary_path.parent
-    run_dir = benchmark_dir.parent
-    parsed = parse_judge_dirname(run_dir.name)
+    parent_dir = benchmark_dir.parent
+
+    # --- V2 nested layout detection ---------------------------------------
+    if parent_dir.parent.name == "judged_by":
+        target_dir = parent_dir.parent.parent
+        target_parsed = parse_base_dirname(target_dir.name)
+        judge_parsed = parse_judge_leaf_dirname(parent_dir.name)
+        if target_parsed is not None and judge_parsed is not None:
+            benchmark = benchmark_dir.name
+            summary = _read_json(summary_path)
+            stats_path = benchmark_dir / f"{benchmark}_cot_stats.json"
+            stats = _read_json(stats_path) if stats_path.exists() else _stats_from_summary(summary)
+            return RunRecord(
+                run_dir=parent_dir.resolve(),
+                summary_path=summary_path.resolve(),
+                stats_path=stats_path.resolve() if stats_path.exists() else None,
+                eval_type="cot_eval",
+                model=target_parsed.model,
+                state=_validate_state(target_parsed.state),
+                temperature=target_parsed.temperature,
+                max_completion_tokens=target_parsed.max_completion_tokens,
+                benchmark=benchmark,
+                judge_model=judge_parsed.model,
+                judge_state=_validate_state(judge_parsed.state),
+                judge_temperature=judge_parsed.temperature,
+                judge_max_completion_tokens=judge_parsed.max_completion_tokens,
+                pass_at_k=_summary_to_pass_at_k(summary),
+                cons_at_k=float(summary.get("cons_at_k", 0.0) or 0.0),
+                stats=stats,
+                source_root=source_root.resolve(),
+                note=summary.get("note"),
+                n_samples=target_parsed.n_samples,
+                judge_n_samples=judge_parsed.n_samples,
+            )
+
+    # --- V1/V0 flat layout fallback ---------------------------------------
+    parsed = parse_judge_dirname(parent_dir.name)
     if parsed is None:
-        logger.debug(f"Skipping unrecognised judgment dir: {run_dir}")
+        logger.debug(f"Skipping unrecognised judgment dir: {parent_dir}")
         return None
 
     # Legacy benchmark dir embeds the judge temperature: "<benchmark>_t<T>".
@@ -236,9 +350,9 @@ def _build_cot_record(
 
     summary = _read_json(summary_path)
     stats_path = benchmark_dir / f"{benchmark}_cot_stats.json"
-    stats = _read_json(stats_path) if stats_path.exists() else None
+    stats = _read_json(stats_path) if stats_path.exists() else _stats_from_summary(summary)
     return RunRecord(
-        run_dir=run_dir.resolve(),
+        run_dir=parent_dir.resolve(),
         summary_path=summary_path.resolve(),
         stats_path=stats_path.resolve() if stats_path.exists() else None,
         eval_type="cot_eval",
@@ -309,6 +423,8 @@ def records_to_dicts(records: Iterable[RunRecord]) -> list[dict]:
                 "cons_at_k": r.cons_at_k,
                 "stats": dict(r.stats) if r.stats else None,
                 "note": r.note,
+                "n_samples": r.n_samples,
+                "judge_n_samples": r.judge_n_samples,
             }
         )
     return out

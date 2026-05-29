@@ -379,27 +379,30 @@ apply_common_defaults() {
     HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-1800}"
 }
 
-# Compose the canonical target output directory matching the legacy layout:
-#   base models:     ${OUTPUT_ROOT}/base/<model>_t<T>_max<N>/<benchmark>
-#   instruct models: ${OUTPUT_ROOT}/instruct/<model>_think-<bool>_t<T>_max<N>/<benchmark>
+# Compose the canonical target output directory. The new V2 layout encodes
+# every parameter that distinguishes a run so two different sweeps NEVER
+# overwrite each other:
+#   ${OUTPUT_ROOT}/<target_clean>__state-<state>__t<T>__max<N>__n<NS>/<benchmark>
+# Same param tuple = same path (idempotent re-run). Different tuple = different
+# path (collision-free).
 compose_target_dir() {
     local benchmark="$1"
-    local class clean
-    class="$(detect_model_class "${TARGET_MODEL}")"
+    local clean
     clean="$(target_clean_name "${TARGET_MODEL}")"
-    echo "${OUTPUT_ROOT}/${class}/${clean}_t${TARGET_TEMPERATURE}_max${TARGET_MAX_COMPLETION_TOKENS}/${benchmark}"
+    echo "${OUTPUT_ROOT}/${clean}__state-${TARGET_STATE}__t${TARGET_TEMPERATURE}__max${TARGET_MAX_COMPLETION_TOKENS}__n${TARGET_N_SAMPLES}/${benchmark}"
 }
 
-# Compose the canonical judgment output directory matching the legacy layout:
-#   ${OUTPUT_ROOT}/<target_class>/judgments/
-#       <target_clean>_evaluated_by_<judge_basename>_<JUDGE_MAX>/<benchmark>_t<JUDGE_TEMP>
+# Compose the canonical judgment output directory. Nested under the target
+# run dir so drill-down is natural (base run → which judge graded it → which
+# benchmark):
+#   <target_dir_root>/judged_by/<judge_clean>__state-<jstate>__t<jT>__max<jN>__n<jNS>/<benchmark>
+# where <target_dir_root> is the target dir WITHOUT the trailing /<benchmark>.
 compose_judge_dir() {
     local benchmark="$1"
-    local class target_clean judge_clean
-    class="$(detect_model_class "${TARGET_MODEL}")"
+    local target_clean judge_clean
     target_clean="$(target_clean_name "${TARGET_MODEL}")"
     judge_clean="$(basename "${JUDGE_MODEL}")"
-    echo "${OUTPUT_ROOT}/${class}/judgments/${target_clean}_evaluated_by_${judge_clean}_${JUDGE_MAX_COMPLETION_TOKENS}/${benchmark}_t${JUDGE_TEMPERATURE}"
+    echo "${OUTPUT_ROOT}/${target_clean}__state-${TARGET_STATE}__t${TARGET_TEMPERATURE}__max${TARGET_MAX_COMPLETION_TOKENS}__n${TARGET_N_SAMPLES}/judged_by/${judge_clean}__state-${JUDGE_STATE}__t${JUDGE_TEMPERATURE}__max${JUDGE_MAX_COMPLETION_TOKENS}__n${JUDGE_N_SAMPLES}/${benchmark}"
 }
 
 # ---------------------------------------------------------------------------
@@ -463,6 +466,11 @@ pipeline_run_judge_gen_eval() {
         --solutions "${judge_solutions}" \
         --output-dir "${judge_dir}" \
         --override-args "${judge_override}"
+    # judge eval emits "<JUDGE_TASK>_summary.json" — raw judge yes-rate, NOT
+    # the real CoT-Pass@K. Remove it so downstream summary globs don't pick up
+    # this misleading file; the real metric lives in <benchmark>_cot_summary.json
+    # produced by `evalhub cot finalize`.
+    rm -f "${judge_dir}/${JUDGE_TASK}_summary.json"
     # Return via global var instead of stdout capture — evalhub gen/eval write
     # GenerationConfig dumps and progress bars to stdout, which would
     # contaminate `$(...)` command substitution in the caller.

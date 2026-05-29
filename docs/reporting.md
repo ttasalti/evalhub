@@ -50,11 +50,15 @@ The parent directory name is parsed by regex to extract the model, state,
 temperature, and max-token settings. Two layouts are recognised:
 
 ```
-# Canonical (produced by run_end_to_end.sh, run_eval_only.sh, run_judge_only.sh)
-<model>_state-<base|non-think|think>_t<T>_max<N>/<benchmark>/<benchmark>_summary.json
-judgments/<target>_state-<state>_judged_by_<judge>_state-<state>_t<T>_max<N>/<benchmark>/<benchmark>_cot_summary.json
+# V2 (current) — collision-free, encodes n_samples; CoT runs nested under target
+<model>__state-<base|non-think|think>__t<T>__max<N>__n<NS>/<benchmark>/<benchmark>_summary.json
+<model>__state-...__n<NS>/judged_by/<judge>__state-...__n<jNS>/<benchmark>/<benchmark>_cot_summary.json
 
-# Legacy fallback (pre-`_state-` directories)
+# V1 — flat judgments dir with _state- annotation
+<model>_state-<...>_t<T>_max<N>/<benchmark>/<benchmark>_summary.json
+judgments/<target>_state-<...>_judged_by_<judge>_state-<...>_t<T>_max<N>/<benchmark>/<benchmark>_cot_summary.json
+
+# V0 (legacy) — pre-`_state-` directories
 <model>_t<T>_max<N>/<benchmark>/<benchmark>_summary.json   # state="unknown"
 ```
 
@@ -71,22 +75,60 @@ One row per `(run, K)`. Stats columns are populated only for `eval_type =
 | `state` | string | `base` / `non-think` / `think` / `unknown`. |
 | `temperature` | float | Sampling temperature. |
 | `max_tokens` | int | `max_completion_tokens` used for this run. |
+| `n_samples` | int / NaN | Target generations per task. NaN for V0/V1 dirs that don't encode it. |
 | `benchmark` | string | Benchmark short name (`aime2025`, `gsm8k`, ...). |
 | `eval_type` | string | `base_eval` or `cot_eval`. |
 | `judge_model` | string | Only set for `cot_eval` rows. |
 | `judge_state` | string | Only set for `cot_eval` rows. |
 | `judge_temperature` | float | Only set for `cot_eval` rows. |
 | `judge_max_tokens` | int | Only set for `cot_eval` rows. |
+| `judge_n_samples` | int / NaN | Judge generations per base-correct sample. NaN for V0/V1. |
 | `k` | int | The K-axis. NaN only for empty `pass_at_k` stubs. |
 | `pass_at_k` | float | Pass@K for this row. |
 | `cons_at_k` | float | Cons@K — repeated on every K of the same run. |
-| `total_tasks` | int | From `*_cot_stats.json`. |
-| `total_generations` | int | From `*_cot_stats.json`. |
+| `total_tasks` | int | From `*_cot_stats.json` or summary aggregate. |
+| `total_generations` | int | From `*_cot_stats.json` or summary aggregate. |
 | `true_count` | int | Generations the base evaluator marked correct. |
 | `false_count` | int | Generations marked incorrect. |
 | `cot_false_count` | int | Generations downgraded by the judge's CoT veto. |
 | `invalid_count` | int | Generations the parser couldn't grade. |
 | `run_dir` | string | Absolute path to the run's output directory. |
+
+### Per-task CSV (V2+)
+
+Alongside each `<benchmark>_summary.json` and `<benchmark>_cot_summary.json`,
+the evaluator now writes a `<benchmark>_per_task.csv` (and
+`<benchmark>_cot_per_task.csv` for CoT runs) with one row per question:
+
+| Column | Notes |
+|---|---|
+| `task_id` | Benchmark task id (e.g. `tubitak_math2026/12`). |
+| `true` / `false` / `cot_false` / `invalid_format` | Generation outcome counts for this task. |
+| `pass@1`, `pass@4`, ..., `pass@k_max` | Per-K pass rates for this task. |
+| `ground_truth` | Gold answer. |
+| `majority_vote` | Most-common solution string. |
+| `is_correct_majority` | Whether the majority answer was correct (post-veto for CoT). |
+
+This is the file to open in Excel for a question-by-question drill-down.
+
+### Aggregate fields in summary.json (V2+)
+
+`{benchmark}_summary.json` and `{benchmark}_cot_summary.json` now include
+benchmark-wide totals so downstream consumers don't have to re-derive them
+from the per-task results JSONL:
+
+```json
+{
+  "pass_at_k": {"1": 0.34, "2": 0.45, ...},
+  "cons_at_k": 0.56,
+  "total_tasks": 30,
+  "total_generations": 1920,
+  "true_count": 657,
+  "false_count": 1263,
+  "cot_false_count": 0,
+  "invalid_format_count": 0
+}
+```
 
 ## Plots written by `evalhub report plot`
 

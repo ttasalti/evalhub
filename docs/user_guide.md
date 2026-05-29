@@ -110,29 +110,46 @@ tail -f logs/vllm_target_<JOBID>_aime2026.log
 tail -f logs/vllm_judge_<JOBID>_aime2026.log
 ```
 
-### Sonuçları nereye düşer
+### Sonuçları nereye düşer (V2 layout — current)
+
+V2 layout 11 ayırt edici parametreyi (target/judge × {model, state, temp,
+max_tokens, n_samples} + benchmark) klasör adına gömer; aynı tuple = aynı
+path (idempotent re-run), farklı tuple = farklı path (collision yok).
 
 ```
 results_demo/
-├── base/
-│   └── Qwen3.5-0.8B-Base_t0.6_max16384/
-│       ├── aime2026/
-│       │   ├── aime2026_raw.jsonl          # her sample tek satır
-│       │   ├── aime2026_results.jsonl      # task başına correct[] + per_task_counts
-│       │   └── aime2026_summary.json       # Pass@K + Cons@K
-│       ├── aime2026_tr/  ...
-│       └── aime2026_pt/  ...
-│
-└── base/judgments/Qwen3.5-0.8B-Base_evaluated_by_Qwen3.5-0.8B_16384/
-    └── aime2026_t0.6/
-        ├── aime2026_cot_results.jsonl     # correct[] + per_task_counts (cot_false dahil)
-        ├── aime2026_cot_majority.jsonl    # judge majority votes
-        ├── aime2026_cot_stats.json        # global true/false/cot_false/invalid_count
-        └── aime2026_cot_summary.json      # CoT-Pass@K
+├── report.csv                              # tüm runlar — long-form CSV
+├── plots/                                  # heatmap + pass@k + base vs CoT
+└── Qwen3.5-0.8B-Base__state-base__t0.6__max16384__n64/
+    ├── aime2026/
+    │   ├── aime2026.jsonl                  # raw generations
+    │   ├── aime2026_raw.jsonl              # ham LLM response
+    │   ├── aime2026_results.jsonl          # task başına correct[] + per_task_counts
+    │   ├── aime2026_summary.json           # Pass@K + Cons@K + total/true/false/cot_false_count
+    │   └── aime2026_per_task.csv           # task_id, true, false, cot_false, pass@K..., ground_truth
+    └── judged_by/Qwen3.5-0.8B__state-think__t0.6__max16384__n3/
+        └── aime2026/
+            ├── cot_judge_raw.jsonl         # judge ham LLM output (diagnostic)
+            ├── cot_judge.jsonl             # yes/no extracted per generation
+            ├── cot_judge_results.jsonl     # judge eval (per-gen pass@k)
+            ├── aime2026_cot_judge_input.jsonl
+            ├── aime2026_cot_majority.jsonl # majority vote per task
+            ├── aime2026_cot_results.jsonl  # correct[] + per_task_counts (cot_false dahil)
+            ├── aime2026_cot_stats.json     # global true/false/cot_false/invalid_count
+            ├── aime2026_cot_summary.json   # CoT-Pass@K (majority-voted, real metric)
+            └── aime2026_cot_per_task.csv   # task bazlı CSV (cot_false sütunlu)
 ```
 
+**Excel'de aç → soru bazlı dökümü gör.** Her `*_per_task.csv` satırı bir
+benchmark sorusu için: kaç generation doğru, kaç yanlış, kaç cot-veto,
+pass@1...pass@k_max, ground truth, majority vote, consensus doğru mu.
+
 Job COMPLETE olduktan sonra `results_demo/report.csv` + `results_demo/plots/`
-de hazır olur.
+otomatik üretilir (her tek-benchmark koşusu da kendi REPORT aşamasını çalıştırır).
+
+**Eski layout uyumluluğu**: `evalhub report aggregate` eski
+`<class>/judgments/<target>_evaluated_by_<judge>_<max>/<benchmark>_t<T>/`
+dizinlerini de okumaya devam eder; hiçbir mevcut veri kaybolmaz.
 
 ## 4. Sonuçları görselleştirme — Dashboard
 
@@ -323,6 +340,27 @@ evalhub tasks | grep <benchmark_name>      # listede görünmeli
 
 Çalışan örnekleri: `evalhub/benchmarks/math/aime2026_tr/`, `aime2026_pt/`,
 `math500/`, `gsm8k/`.
+
+### CSV'den yerel benchmark — `tubitak_math2026` örneği
+
+`evalhub/benchmarks/math/tubitak_math2026/` Türkçe matematik olimpiyatı için
+CSV-okuyan bir benchmark — HF Hub yok, sadece `tubitak_math2026.csv` (32 soru,
+integer + LaTeX karışık cevaplar) ve loader. CSV'yi düzenledikten sonra
+`rm -rf ~/.cache/evalhub/` ile cache invalidate edilir.
+
+Pass@K:
+```bash
+evalhub gen --model hosted_vllm/Qwen/Qwen3.5-0.8B-Base --tasks tubitak_math2026 \
+    --temperature 0.6 --n-samples 8 --output-dir results/tubitak/
+evalhub eval --tasks tubitak_math2026 \
+    --solutions results/tubitak/tubitak_math2026.jsonl --output-dir results/tubitak/
+```
+
+CoT-Pass@K (Türkçe judge prompt zorunlu — `JUDGE_TASK=cot_judge_tr`):
+```bash
+scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env \
+    --model Qwen/Qwen3.5-0.8B-Base --judge Qwen/Qwen3.5-0.8B
+```
 
 ## 9. Yararlı tek seferlik komutlar
 
