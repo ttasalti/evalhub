@@ -43,6 +43,12 @@
 #                 BASE_RESULTS_DIR                # script derives both JSONLs
 #                 BASE_RESULTS_FILE + BASE_RAW_FILE
 #
+# Judge backend: JUDGE_BACKEND=vllm (default) serves JUDGE_MODEL locally on a
+#               GPU. JUDGE_BACKEND=api routes the judge to an external
+#               OpenAI-compatible endpoint — no GPU needed — and additionally
+#               requires JUDGE_API_BASE and JUDGE_API_KEY (export the key; do
+#               not commit it). See scripts/configs/judge_api_deepseek.env.
+#
 # Optional env: TARGET_STATE, TARGET_TEMPERATURE, TARGET_MAX_COMPLETION_TOKENS
 #               (used to compose JUDGE_DIR so it lines up with the base run),
 #               JUDGE_STATE, JUDGE_TASK (cot_judge | cot_judge_tr | cot_judge_pt),
@@ -56,7 +62,7 @@
 set -euo pipefail
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-    sed -n '2,50p' "$0"
+    sed -n '2,60p' "$0"
     exit 0
 fi
 
@@ -129,14 +135,11 @@ fi
 pipeline_register_cleanup
 
 pipeline_log "==[2/3]== Judge generation & evaluation ================================="
-start_vllm "${JUDGE_MODEL}" "${JUDGE_PORT}" "${JUDGE_PARALLEL_COUNT}" "${JUDGE_STATE}" \
-    "${LOG_DIR_LOCAL}/vllm_judge_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
-export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
-export HOSTED_VLLM_API_KEY="EMPTY"
+judge_backend_up "${LOG_DIR_LOCAL}/vllm_judge_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
 
 pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}" "${BENCHMARK}"
 judge_solutions="${JUDGE_SOLUTIONS_OUT}"
-stop_vllm
+judge_backend_down
 
 pipeline_log "==[3/3]== Aggregate majority vote & CoT-Pass@K =========================="
 evalhub cot finalize \
