@@ -89,13 +89,9 @@ for bench in aime2024 aime2025 aime2026; do
 done
 ```
 
-## After the run — aggregation & dashboard
+## After the run — aggregation & plots
 
-Once you have one or more populated `OUTPUT_ROOT` directories, the new
+Once you have one or more populated `OUTPUT_ROOT` directories, the
 `evalhub report` sub-app aggregates every summary file into a master CSV and
-launches a Streamlit dashboard. See [`docs/reporting.md`](../docs/reporting.md)
+renders the static plot suite. See [`docs/reporting.md`](../docs/reporting.md)
 for the full walk-through.
-
-
-
-sbatch scripts/run_end_to_end.sh scripts/configs/myrun.env
