@@ -90,9 +90,16 @@ all = [
 [project.scripts]
 evalhub = "evalhub.cli:main"
 
-[tool.setuptools]
-packages = ["evalhub"]
-package-dir = {"evalhub" = "evalhub"}
+# Discover evalhub and every subpackage (benchmarks/, report/, cot/, ...) so a
+# non-editable `pip install .` ships the whole tree, not just the top module.
+# `include` keeps tests/, examples/, scripts/ and inspect/ out of the wheel.
+[tool.setuptools.packages.find]
+include = ["evalhub*"]
+
+# Bundle the benchmark data + tool configs that live next to the code, so the
+# local datasets work from an installed wheel (not only an editable checkout).
+[tool.setuptools.package-data]
+"*" = ["*.parquet", "*.csv", "*.yaml"]
 
 [tool.ruff]
 line-length = 120
@@ -107,6 +114,8 @@ extend-exclude = [
     "evalhub/benchmarks/math/aime2026/__init__.py",
     "evalhub/benchmarks/math/aime2026_tr/__init__.py",
     "evalhub/benchmarks/math/aime2026_pt/__init__.py",
+    "evalhub/benchmarks/math/tubitak_math2026/__init__.py",
+    "evalhub/benchmarks/math/pt_exams_math/__init__.py",
 ]
 
 [tool.ruff.format]
