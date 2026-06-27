@@ -500,7 +500,11 @@ pipeline_run_judge_gen_eval() {
     local _bm="${benchmark}"
     if [[ -f "${judge_dir}/${_bm}_cot_summary.json" && "${EVALHUB_OVERWRITE:-0}" != "1" ]]; then
         echo "[pipeline] skip judge gen+eval: ${judge_dir}/${_bm}_cot_summary.json exists (EVALHUB_OVERWRITE=1 to force)"
-        JUDGE_SOLUTIONS_OUT="${judge_dir}/${JUDGE_TASK}.jsonl"
+        # Mirror the normal-path resolution: prefer the sanitized solutions file,
+        # fall back to the raw one if only that survives.
+        local _js="${judge_dir}/${JUDGE_TASK}.jsonl"
+        [[ -f "${_js}" ]] || _js="${judge_dir}/${JUDGE_TASK}_raw.jsonl"
+        JUDGE_SOLUTIONS_OUT="${_js}"
         return 0
     fi
 
