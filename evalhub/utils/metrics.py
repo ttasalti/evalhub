@@ -73,7 +73,7 @@ def aggregate_g_pass(
     if n_tasks == 0:
         return g_pass_at_k, mg_pass_at_k
     for k in ks:
-        per_tau_sums = {t: 0.0 for t in taus}
+        per_tau_sums = dict.fromkeys(taus, 0.0)
         mg_sum = 0.0
         for n, c in per_task:
             for t in taus:

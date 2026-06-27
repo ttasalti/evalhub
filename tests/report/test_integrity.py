@@ -11,8 +11,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pandas as pd
-
 from evalhub.report.aggregate import aggregate_results, check_report_integrity
 from evalhub.report.scan import scan_results
 

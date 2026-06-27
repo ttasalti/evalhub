@@ -174,7 +174,7 @@ def _ordered_model_modes(df: pd.DataFrame) -> list[tuple[str, str]]:
     u["sz"] = u["model_size_b"].fillna(0.0)
     u["st"] = u["state"].map(_state_rank)
     u = u.sort_values(["model_family", "sz", "is_base", "model", "st"])
-    return list(zip(u["model"], u["state"]))
+    return list(zip(u["model"], u["state"], strict=False))
 
 
 def mm_label(model: str, state: str) -> str:
@@ -214,13 +214,13 @@ def _cell_judge_effect(ax, sub: pd.DataFrame, spec: dict, style: dict, ks: list[
     for _, r in sub[~sub["judged"]].iterrows():
         pts = series(r, spec["base"], spec["tau"], ks)
         if pts:
-            xs, ys = zip(*pts)
+            xs, ys = zip(*pts, strict=False)
             ax.plot(xs, ys, color=NJ_COLOR, lw=2.2, marker="o", ms=4, zorder=6)
             ymax, drew = max(ymax, max(ys)), True
     for _, r in sub[sub["judged"]].sort_values("judge_model").iterrows():
         pts = series(r, spec["base"], spec["tau"], ks)
         if pts:
-            xs, ys = zip(*pts)
+            xs, ys = zip(*pts, strict=False)
             ax.plot(xs, ys, color=style.get(r["judge_model"], "gray"), lw=1.7, ls="--",
                     marker="s", ms=3, alpha=0.95, zorder=4)
             ymax, drew = max(ymax, max(ys)), True
@@ -237,7 +237,7 @@ def _cell_langs(ax, sub: pd.DataFrame, spec: dict, ks: list[int]) -> float | Non
     for _, r in sub.assign(_r=sub["benchmark"].map(_bench_rank)).sort_values("_r").iterrows():
         pts = series(r, spec["base"], spec["tau"], ks)
         if pts:
-            xs, ys = zip(*pts)
+            xs, ys = zip(*pts, strict=False)
             lang = labels.language(r["benchmark"])
             ax.plot(xs, ys, color=LANG_COLORS.get(lang, "gray"), lw=1.8, marker="o", ms=3)
             ymax, drew = max(ymax, max(ys)), True
@@ -264,7 +264,7 @@ def _cell_sizes(ax, sub: pd.DataFrame, spec: dict, ks: list[int], judge: str | N
         if not rn.empty:
             pts = series(rn.iloc[0], spec["base"], spec["tau"], ks)
             if pts:
-                xs, ys = zip(*pts)
+                xs, ys = zip(*pts, strict=False)
                 ax.plot(xs, ys, color=color, lw=1.8, marker="o", ms=3, label=labels.short_model(m))
                 ymax, drew = max(ymax, max(ys)), True
         if judge is not None:
@@ -272,7 +272,7 @@ def _cell_sizes(ax, sub: pd.DataFrame, spec: dict, ks: list[int], judge: str | N
             if not rc.empty:
                 pts = series(rc.iloc[0], spec["base"], spec["tau"], ks)
                 if pts:
-                    xs, ys = zip(*pts)
+                    xs, ys = zip(*pts, strict=False)
                     ax.plot(xs, ys, color=color, lw=1.4, ls="--", marker="s", ms=2.5, alpha=0.9)
                     ymax = max(ymax, max(ys))
     if not drew:
@@ -292,7 +292,7 @@ def _cell_modes(ax, sub: pd.DataFrame, spec: dict, ks: list[int], cot_judge: str
         if not rn.empty:
             pts = series(rn.iloc[0], spec["base"], spec["tau"], ks)
             if pts:
-                xs, ys = zip(*pts)
+                xs, ys = zip(*pts, strict=False)
                 ax.plot(xs, ys, color=MODE_COLORS[st], lw=1.9, marker="o", ms=3)
                 ymax, drew = max(ymax, max(ys)), True
         if cot_judge is not None:
@@ -300,7 +300,7 @@ def _cell_modes(ax, sub: pd.DataFrame, spec: dict, ks: list[int], cot_judge: str
             if not rc.empty:
                 pts = series(rc.iloc[0], spec["base"], spec["tau"], ks)
                 if pts:
-                    xs, ys = zip(*pts)
+                    xs, ys = zip(*pts, strict=False)
                     ax.plot(xs, ys, color=MODE_COLORS[st], lw=1.4, ls="--", marker="s", ms=2.5, alpha=0.85)
                     ymax = max(ymax, max(ys))
     if not drew:
@@ -428,7 +428,9 @@ def render_bench_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict
                 m = models[idx]
                 got = _cell_langs(ax, dn[dn["model"] == m], spec, ks)
                 if got is None:
-                    ax.set_xticks([]); ax.set_yticks([]); ax.set_facecolor("#fafafa")
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_facecolor("#fafafa")
                 else:
                     drew = True
                 ax.set_title(labels.short_model(m), fontsize=8.5)
@@ -569,7 +571,9 @@ def render_mode_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict)
                     sub = d[(d["model_size_b"] == sz) & (d["benchmark"] == b)]
                     got = paint(ax, sub)
                     if got is None:
-                        ax.set_xticks([]); ax.set_yticks([]); ax.set_facecolor("#fafafa")
+                        ax.set_xticks([])
+                        ax.set_yticks([])
+                        ax.set_facecolor("#fafafa")
                     else:
                         drew = True
                     if i == 0:
@@ -609,7 +613,9 @@ def render_per_model(df: pd.DataFrame, out: Path, ks: list[int], style: dict) ->
                 ax = axes[i][j]
                 got = _cell_judge_effect(ax, d[d["benchmark"] == b], spec, style, ks)
                 if got is None:
-                    ax.set_xticks([]); ax.set_yticks([]); ax.set_facecolor("#fafafa")
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_facecolor("#fafafa")
                 else:
                     drew = True
                 if i == 0:
@@ -753,14 +759,20 @@ def render_headline(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> 
                     a = _value(rnb.iloc[0], "pass", k, None) if not rnb.empty else None
                     c = _value(rcb.iloc[0], "pass", k, None) if not rcb.empty else None
                     if a is None:
-                        row_t.append(""); row_c.append((1, 1, 1, 1))
+                        row_t.append("")
+                        row_c.append((1, 1, 1, 1))
                     elif c is None:
-                        row_t.append(f"{a * 100:.0f}/–"); row_c.append((1, 1, 1, 1)); has = True
+                        row_t.append(f"{a * 100:.0f}/–")
+                        row_c.append((1, 1, 1, 1))
+                        has = True
                     else:
                         row_t.append(f"{a * 100:.0f}/{c * 100:.0f}")
-                        row_c.append(_div_color((a - c) * 100, 30.0)); has = True
+                        row_c.append(_div_color((a - c) * 100, 30.0))
+                        has = True
                 if has:
-                    text.append(row_t); colors.append(row_c); rlabels.append(mm_label(m, st))
+                    text.append(row_t)
+                    colors.append(row_c)
+                    rlabels.append(mm_label(m, st))
             if text:
                 written.append(_render_table(
                     rlabels, [labels.language(b) for b in benches], text, colors,
@@ -825,7 +837,9 @@ def render_comparisons(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
                                     color="white" if abs(arr[i, j]) > 0.6 * vmax else "black")
                 ax.set_title(f"Veto Δ · {spec['nj']} · k={k} · cot={jtag}", fontsize=10, fontweight="bold")
                 fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="No-Judge − cot (×100)")
-                written.append(_save(fig, out / "comparisons" / f"veto__{spec['key']}__k{k}__{labels.short_model(jm)}.png"))
+                written.append(
+                    _save(fig, out / "comparisons" / f"veto__{spec['key']}__k{k}__{labels.short_model(jm)}.png")
+                )
 
     # ---- companion long CSV: every (model, mode, lang, judge, metric, k) base/cot/Δ ----
     for k in table_ks:
@@ -971,21 +985,21 @@ def render_rl_progress(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
 
                 # No-Judge line
                 nj_pts: list[tuple[int, float]] = []
-                for xp, xl, model in progression:
+                for xp, _xl, model in progression:
                     row = sub[(sub["model"] == model) & (sub["benchmark"] == b) & (~sub["judged"])].head(1)
                     if not row.empty:
                         v = _value(row.iloc[0], "pass", k, None)
                         if v is not None:
                             nj_pts.append((xp, v * 100))
                 if nj_pts:
-                    pxs, pys = zip(*nj_pts)
+                    pxs, pys = zip(*nj_pts, strict=False)
                     ax.plot(pxs, pys, color=NJ_COLOR, lw=2.2, marker="o", ms=5, zorder=6)
                     drew = True
 
                 # CoT judge lines
                 for jm in judges:
                     jpts: list[tuple[int, float]] = []
-                    for xp, xl, model in progression:
+                    for xp, _xl, model in progression:
                         row = sub[(sub["model"] == model) & (sub["benchmark"] == b)
                                   & (sub["judge_model"] == jm)].head(1)
                         if not row.empty:
@@ -993,7 +1007,7 @@ def render_rl_progress(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
                             if v is not None:
                                 jpts.append((xp, v * 100))
                     if jpts:
-                        pxs, pys = zip(*jpts)
+                        pxs, pys = zip(*jpts, strict=False)
                         ax.plot(pxs, pys, color=style.get(jm, "gray"), lw=1.7, ls="--",
                                 marker="s", ms=4, alpha=0.9, zorder=4)
                         drew = True

@@ -22,7 +22,7 @@ class GenerationId:
         return f"{self.original_task_id}{GENERATION_ID_SEP}{self.generation_idx}"
 
     @classmethod
-    def decode(cls, generation_id: str) -> "GenerationId":
+    def decode(cls, generation_id: str) -> GenerationId:
         marker_pos = generation_id.rfind(GENERATION_ID_SEP)
         if marker_pos == -1:
             raise ValueError(f"Not a valid generation_id: {generation_id!r}")

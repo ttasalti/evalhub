@@ -1,7 +1,7 @@
+import pytest
+
 from evalhub.cot import decode, encode
 from evalhub.cot.ids import GENERATION_ID_SEP, GenerationId
-
-import pytest
 
 
 def test_round_trip_simple():

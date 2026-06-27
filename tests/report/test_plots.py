@@ -41,7 +41,7 @@ def _metric_payload(base_pass: float, judged: bool) -> dict:
 def _row(model, state, family, size, is_base, benchmark, judge=None) -> dict:
     judged = judge is not None
     base_pass = 0.15 + 0.02 * size + (0.05 if state == "think" else 0.0)
-    row = {c: pd.NA for c in META_COLUMNS}
+    row = dict.fromkeys(META_COLUMNS, pd.NA)
     row.update(
         model=model,
         model_short=model.replace("Qwen3.5-", "Q-").replace("gemma-4-", "G4-"),

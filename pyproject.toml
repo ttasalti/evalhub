@@ -97,6 +97,17 @@ package-dir = {"evalhub" = "evalhub"}
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+# Prompt-bearing files are frozen for experiment reproducibility: the exact
+# judge/generation prompt text (and the whitespace inside those strings) must
+# not be reformatted, so they are excluded from linting/formatting.
+extend-exclude = [
+    "evalhub/benchmarks/cot/prompts.py",
+    "evalhub/benchmarks/cot/judge.py",
+    "evalhub/benchmarks/math/__init__.py",
+    "evalhub/benchmarks/math/aime2026/__init__.py",
+    "evalhub/benchmarks/math/aime2026_tr/__init__.py",
+    "evalhub/benchmarks/math/aime2026_pt/__init__.py",
+]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.

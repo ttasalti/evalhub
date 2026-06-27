@@ -12,7 +12,7 @@ import pytest
 
 pytest.importorskip("matplotlib")
 
-from evalhub.report import atlas as A  # noqa: E402
+from evalhub.report import atlas as A  # noqa: E402,N812
 
 
 def _png(path: Path) -> None:

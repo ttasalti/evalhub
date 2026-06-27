@@ -210,7 +210,9 @@ def cot_finalize(
 
 @report_app.command("aggregate")
 def report_aggregate(
-    results_root: Annotated[Path, typer.Option(help="Root directory produced by evalhub eval / cot finalize")] = Path("results"),
+    results_root: Annotated[
+        Path, typer.Option(help="Root directory produced by evalhub eval / cot finalize")
+    ] = Path("results"),
     output: Annotated[Path, typer.Option(help="Destination CSV for the wide aggregated table")] = DEFAULT_CSV,
 ):
     r"""Walk ``results_root`` and write the master **wide** CSV (full rebuild).

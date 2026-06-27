@@ -168,7 +168,10 @@ def _page_title(pdf, mp, df) -> None:
 
     fig = _page(pdf)
     fig.text(0.5, 0.86, "Pass@K vs CoT-Pass@K", ha="center", fontsize=24, fontweight="bold", color=INK)
-    fig.text(0.5, 0.815, "When the answer outruns the reasoning", ha="center", fontsize=15, color=ACCENT, style="italic")
+    fig.text(
+        0.5, 0.815, "When the answer outruns the reasoning",
+        ha="center", fontsize=15, color=ACCENT, style="italic",
+    )
     fig.text(0.5, 0.775, "A highlights report on the CoT-judge veto across models, modes, languages and judges",
              ha="center", fontsize=10.5, color="#555")
 
@@ -242,13 +245,13 @@ def _page_language(pdf, mp, df) -> None:
     fig = _page(pdf)
     _header(fig, "Finding 2 — the multilingual axis", "The hardest benchmark hides the most unfaithful reasoning")
     ax = _axes(fig)
-    langs = [l for l in _LANG_ORDER if l in set(p.language)]
-    nj = [p[p.language == l].nojudge.mean() * 100 for l in langs]
-    cot = [p[p.language == l].cot.mean() * 100 for l in langs]
+    langs = [lang for lang in _LANG_ORDER if lang in set(p.language)]
+    nj = [p[p.language == lang].nojudge.mean() * 100 for lang in langs]
+    cot = [p[p.language == lang].cot.mean() * 100 for lang in langs]
     x = np.arange(len(langs))
     ax.bar(x - 0.2, nj, 0.4, label="No-Judge pass@64", color="#34495e")
     ax.bar(x + 0.2, cot, 0.4, label="cot-pass@64", color="#e67e22")
-    for i, l in enumerate(langs):
+    for i, _l in enumerate(langs):
         d = nj[i] - cot[i]
         ax.text(i, max(nj[i], cot[i]) + 1.5, f"Δ {d:.1f}", ha="center", fontsize=9, fontweight="bold", color=ACCENT)
     ax.set_xticks(x)
@@ -259,7 +262,7 @@ def _page_language(pdf, mp, df) -> None:
 
     by = (p.groupby("language").delta.mean() * 100).sort_values(ascending=False)
     top, topv = by.index[0], by.iloc[0]
-    rest = ", ".join(f"{l} {by[l]:.1f}" for l in by.index[1:])
+    rest = ", ".join(f"{lang} {by[lang]:.1f}" for lang in by.index[1:])
     _finding(fig,
         f"{top} is vetoed by {topv:.1f} pts on average — roughly 2–3× every translated AIME track ({rest}) — "
         f"while also carrying the highest raw accuracy. The hardest, most knowledge-dense set is exactly where "
@@ -281,7 +284,7 @@ def _page_mode(pdf, mp, df) -> None:
     x = np.arange(len(states))
     ax.bar(x - 0.2, nj, 0.4, label="No-Judge pass@64", color="#34495e")
     ax.bar(x + 0.2, cot, 0.4, label="cot-pass@64", color="#e67e22")
-    for i, s in enumerate(states):
+    for i, _s in enumerate(states):
         ax.text(i, max(nj[i], cot[i]) + 1.2, f"Δ {nj[i]-cot[i]:.1f}", ha="center", fontsize=9,
                 fontweight="bold", color=ACCENT)
     ax.set_xticks(x)
@@ -334,23 +337,25 @@ def _page_judge(pdf, mp, df) -> None:
     p = mp[(mp["metric"] == "pass") & (mp.k == 64)]
     fig = _page(pdf)
     _header(fig, "Finding 5 — the grader matters", "Who judges changes the verdict")
-    axL = fig.add_axes((0.10, 0.30, 0.40, 0.55)); axL.grid(True, alpha=0.25, lw=0.5)
-    axR = fig.add_axes((0.58, 0.30, 0.34, 0.55)); axR.grid(True, alpha=0.25, lw=0.5)
+    ax_l = fig.add_axes((0.10, 0.30, 0.40, 0.55))
+    ax_l.grid(True, alpha=0.25, lw=0.5)
+    ax_r = fig.add_axes((0.58, 0.30, 0.34, 0.55))
+    ax_r.grid(True, alpha=0.25, lw=0.5)
 
     by = (p.groupby("judge_short").delta.mean() * 100).sort_values(ascending=False)
-    axL.barh(range(len(by)), by.values[::-1], color="#8e44ad")
-    axL.set_yticks(range(len(by)))
-    axL.set_yticklabels(by.index[::-1], fontsize=8.5)
-    axL.set_xlabel("Mean veto Δ at K=64 (pts)")
-    axL.set_title("Strictness by judge", fontsize=10)
+    ax_l.barh(range(len(by)), by.values[::-1], color="#8e44ad")
+    ax_l.set_yticks(range(len(by)))
+    ax_l.set_yticklabels(by.index[::-1], fontsize=8.5)
+    ax_l.set_xlabel("Mean veto Δ at K=64 (pts)")
+    ax_l.set_title("Strictness by judge", fontsize=10)
 
     # disagreement: spread (max−min cot) across judges on the same cell
     piv = p.pivot_table(index=["model", "state", "benchmark"], columns="judge_short", values="cot")
     spread = ((piv.max(axis=1) - piv.min(axis=1)).dropna() * 100)
-    axR.hist(spread.values, bins=12, color="#16a085", edgecolor="white")
-    axR.set_xlabel("Judge spread on a cell (pts)")
-    axR.set_ylabel("# cells")
-    axR.set_title("Disagreement", fontsize=10)
+    ax_r.hist(spread.values, bins=12, color="#16a085", edgecolor="white")
+    ax_r.set_xlabel("Judge spread on a cell (pts)")
+    ax_r.set_ylabel("# cells")
+    ax_r.set_title("Disagreement", fontsize=10)
 
     strict, mild = by.index[0], by.index[-1]
     _finding(fig,
@@ -366,23 +371,25 @@ def _page_stringency(pdf, mp, df) -> None:
     k = 64
     fig = _page(pdf)
     _header(fig, "Finding 6 — what the veto removes", "It strips lucky single hits, not consistent skill")
-    axL = fig.add_axes((0.10, 0.30, 0.38, 0.55)); axL.grid(True, alpha=0.25, lw=0.5)
-    axR = fig.add_axes((0.58, 0.30, 0.34, 0.55)); axR.grid(True, alpha=0.25, lw=0.5)
+    ax_l = fig.add_axes((0.10, 0.30, 0.38, 0.55))
+    ax_l.grid(True, alpha=0.25, lw=0.5)
+    ax_r = fig.add_axes((0.58, 0.30, 0.34, 0.55))
+    ax_r.grid(True, alpha=0.25, lw=0.5)
 
     pv = mp[(mp.metric == "pass") & (mp.k == k)].delta.mean() * 100
     mv = mp[(mp.metric == "mgpass") & (mp.k == k)].delta.mean() * 100
-    axL.bar(["Pass@64", "mG-Pass@64"], [pv, mv], color=["#e67e22", "#27ae60"], width=0.55)
+    ax_l.bar(["Pass@64", "mG-Pass@64"], [pv, mv], color=["#e67e22", "#27ae60"], width=0.55)
     for i, v in enumerate([pv, mv]):
-        axL.text(i, v + 0.1, f"{v:.1f}", ha="center", fontsize=10, fontweight="bold")
-    axL.set_ylabel("Mean veto Δ (pts)")
-    axL.set_title("Lenient vs consistency metric", fontsize=10)
+        ax_l.text(i, v + 0.1, f"{v:.1f}", ha="center", fontsize=10, fontweight="bold")
+    ax_l.set_ylabel("Mean veto Δ (pts)")
+    ax_l.set_title("Lenient vs consistency metric", fontsize=10)
 
     taus = ["0.25", "0.5", "0.75", "1.0"]
     ramp = [mp[(mp.metric == "gpass") & (mp.tau == t) & (mp.k == k)].delta.mean() * 100 for t in taus]
-    axR.plot([float(t) for t in taus], ramp, marker="o", ms=7, lw=2.2, color="#c0392b")
-    axR.set_xlabel("G-Pass threshold τ")
-    axR.set_ylabel("Mean veto Δ at K=64 (pts)")
-    axR.set_title("Veto vs stringency", fontsize=10)
+    ax_r.plot([float(t) for t in taus], ramp, marker="o", ms=7, lw=2.2, color="#c0392b")
+    ax_r.set_xlabel("G-Pass threshold τ")
+    ax_r.set_ylabel("Mean veto Δ at K=64 (pts)")
+    ax_r.set_title("Veto vs stringency", fontsize=10)
 
     _finding(fig,
         f"The veto hits the most lenient metric hardest: Pass@64 loses {pv:.1f} pts but mG-Pass@64 — which rewards "
@@ -397,21 +404,24 @@ def _page_stringency(pdf, mp, df) -> None:
 def _page_collapse_anomaly(pdf, mp, df) -> None:
     fig = _page(pdf)
     _header(fig, "Finding 7 — extremes & a caution", "Collapses under the veto, and when reasoning backfires")
-    axL = fig.add_axes((0.18, 0.32, 0.30, 0.53)); axL.grid(True, alpha=0.2, lw=0.5)
-    axR = fig.add_axes((0.60, 0.32, 0.32, 0.53)); axR.grid(True, alpha=0.2, lw=0.5)
+    ax_l = fig.add_axes((0.18, 0.32, 0.30, 0.53))
+    ax_l.grid(True, alpha=0.2, lw=0.5)
+    ax_r = fig.add_axes((0.60, 0.32, 0.32, 0.53))
+    ax_r.grid(True, alpha=0.2, lw=0.5)
 
     # Left: top collapse cells (largest absolute veto), pass@64
     p = mp[(mp.metric == "pass") & (mp.k == 64)].copy()
     top = p.sort_values("delta", ascending=False).head(6)
     lbl = [f"{r.model_short}·{r.language}\n{r.judge_short}" for _, r in top.iterrows()]
     y = np.arange(len(top))
-    axL.barh(y - 0.2, top.nojudge.values * 100, 0.4, color="#34495e", label="pass@64")
-    axL.barh(y + 0.2, top.cot.values * 100, 0.4, color="#e67e22", label="cot-pass@64")
-    axL.set_yticks(y); axL.set_yticklabels(lbl, fontsize=6.5)
-    axL.invert_yaxis()
-    axL.set_xlabel("Accuracy (pts)")
-    axL.set_title("Biggest collapses (all TR-OL)", fontsize=9.5)
-    axL.legend(fontsize=7, frameon=False, loc="lower right")
+    ax_l.barh(y - 0.2, top.nojudge.values * 100, 0.4, color="#34495e", label="pass@64")
+    ax_l.barh(y + 0.2, top.cot.values * 100, 0.4, color="#e67e22", label="cot-pass@64")
+    ax_l.set_yticks(y)
+    ax_l.set_yticklabels(lbl, fontsize=6.5)
+    ax_l.invert_yaxis()
+    ax_l.set_xlabel("Accuracy (pts)")
+    ax_l.set_title("Biggest collapses (all TR-OL)", fontsize=9.5)
+    ax_l.legend(fontsize=7, frameon=False, loc="lower right")
 
     # Right: think vs non-think raw pass anomaly (No-Judge), Qwen on AIME
     dn = _norm_judged(df)
@@ -429,12 +439,13 @@ def _page_collapse_anomaly(pdf, mp, df) -> None:
     if pairs:
         labs = [x[0] for x in pairs]
         x = np.arange(len(pairs))
-        axR.bar(x - 0.2, [x[1] for x in pairs], 0.4, color="#2980b9", label="non-think")
-        axR.bar(x + 0.2, [x[2] for x in pairs], 0.4, color="#c0392b", label="think")
-        axR.set_xticks(x); axR.set_xticklabels(labs, fontsize=7, rotation=20)
-        axR.set_ylabel("pass@64 (pts)")
-        axR.set_title("AIME-EN: think can hurt", fontsize=9.5)
-        axR.legend(fontsize=7, frameon=False)
+        ax_r.bar(x - 0.2, [x[1] for x in pairs], 0.4, color="#2980b9", label="non-think")
+        ax_r.bar(x + 0.2, [x[2] for x in pairs], 0.4, color="#c0392b", label="think")
+        ax_r.set_xticks(x)
+        ax_r.set_xticklabels(labs, fontsize=7, rotation=20)
+        ax_r.set_ylabel("pass@64 (pts)")
+        ax_r.set_title("AIME-EN: think can hurt", fontsize=9.5)
+        ax_r.legend(fontsize=7, frameon=False)
 
     worst = top.iloc[0]
     _finding(fig,

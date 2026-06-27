@@ -12,11 +12,11 @@ import pytest
 pd = pytest.importorskip("pandas")
 pytest.importorskip("matplotlib")
 
-from evalhub.report import highlights as H  # noqa: E402
+from evalhub.report import highlights as H  # noqa: E402,N812
 from tests.report.test_plots import wide_df  # noqa: E402,F401  (fixture import)
 
 
-def test_matched_pairs_pairs_nojudge_with_cot(wide_df):
+def test_matched_pairs_pairs_nojudge_with_cot(wide_df):  # noqa: F811
     mp = H._matched_pairs(wide_df)
     assert not mp.empty
     # every row carries a No-Judge and a cot value plus their difference.
@@ -27,14 +27,14 @@ def test_matched_pairs_pairs_nojudge_with_cot(wide_df):
     assert mp["judge"].notna().all()
 
 
-def test_matched_pairs_handles_string_judged_column(wide_df):
+def test_matched_pairs_handles_string_judged_column(wide_df):  # noqa: F811
     df = wide_df.copy()
     df["judged"] = df["judged"].map({True: "True", False: "False"})
     mp = H._matched_pairs(df)
     assert not mp.empty
 
 
-def test_build_highlights_writes_multipage_pdf(wide_df, tmp_path):
+def test_build_highlights_writes_multipage_pdf(wide_df, tmp_path):  # noqa: F811
     out = tmp_path / "nested" / "highlights.pdf"
     result = H.build_highlights(wide_df, out)
     assert result == out
