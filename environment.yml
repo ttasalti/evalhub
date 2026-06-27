@@ -1,0 +1,19 @@
+# Conda environment for EvalHub — core evaluation + reporting.
+#
+# Usage:
+#   conda env create -f environment.yml
+#   conda activate evalhub
+#
+# Installs the EvalHub package with its core (`base`), reporting (`report`) and
+# developer (`dev`) extras. The model-serving stack (vLLM / SGLang) is *not*
+# pinned here on purpose: it is GPU / CUDA-version sensitive and is installed
+# separately — see the "Installation" section of the README. For the SGLang
+# serving extra run:  pip install -e ".[sglang]"
+name: evalhub
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - -e .[base,dev,report]

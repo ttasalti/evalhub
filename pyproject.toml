@@ -12,6 +12,9 @@ license = {file = "LICENSE"}
 authors = [
     {name = "Shengyu Ye", email = "ysy007@mail.ustc.edu.cn"}
 ]
+maintainers = [
+    {name = "Tarık Tuna Taşaltı", email = "tekup99@gmail.com"}
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -72,13 +75,11 @@ sglang = [
     "sglang-router",
 ]
 
-# Reporting & dashboard (aggregation, plotting, Streamlit UI)
+# Reporting (aggregation, plotting, highlights/atlas PDFs)
 report = [
     "pandas",
     "matplotlib",
     "seaborn",
-    "streamlit",
-    "plotly",
 ]
 
 # Complete set (all + dev)

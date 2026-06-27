@@ -61,11 +61,24 @@ uv venv --python 3.12
 source .venv/bin/activate
 
 # Install the package
-uv pip install -e ".[all]" # other options: [dev], [base], [sglang]
+uv pip install -e ".[all]" # other options: [dev], [base], [report], [sglang]
 
 # Recommend cleaning up cache after pulling the latest changes
 rm -rf ~/.cache/evalhub/
 ```
+
+Prefer conda? An `environment.yml` is provided (core evaluation + reporting):
+
+```bash
+conda env create -f environment.yml
+conda activate evalhub
+```
+
+> [!Note]
+> Python 3.12 is the tested/recommended version. The model-serving stack
+> (vLLM / SGLang) is GPU/CUDA-version sensitive and is installed separately
+> from the core package — see [Quick Start](#-quick-start) below, or install the
+> SGLang extra with `pip install -e ".[sglang]"`.
 
 ## 🚀 Quick Start
 
