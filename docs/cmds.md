@@ -113,6 +113,30 @@ BASE_RESULTS_DIR="$HOME/metrics/Qwen2.5-7B-Instruct/aime2025" \
 scripts/run_end_to_end.sh scripts/cot_pipeline.env
 ```
 
+Or run directly with the model, judge, benchmark, temperature, and sampling
+given on the command line — no env editing. `submit.sh` writes the flags into a
+throwaway overrides file that the orchestrator sources after the base env
+(precedence: **CLI args > env file > defaults**):
+
+```bash
+# One model × several benchmarks, explicit sampling.
+scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \
+    --model Qwen/Qwen3.5-0.8B-Base \
+    --judge Qwen/Qwen3.5-0.8B \
+    --benchmarks "aime2026 aime2026_tr aime2026_pt" \
+    --temperature 0.6 \
+    --n-samples 64 \
+    --max-completion-tokens 20480 \
+    --output-root results
+```
+
+Common flags: `--model` (`TARGET_MODEL`), `--judge` (`JUDGE_MODEL`),
+`--benchmark` / `--benchmarks` (single / looped), `--target-state`
+(`base|non-think|think`), `--temperature`, `--judge-temperature`, `--n-samples`,
+`--judge-n-samples`, `--max-completion-tokens`, `--output-root`, and
+`--set KEY=VAL` for any other knob. The same flags work with `orchestrate.sh`
+for multi-model / multi-temperature DAG sweeps.
+
 ### Report aggregation
 
 ```bash
