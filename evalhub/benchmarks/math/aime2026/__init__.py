@@ -18,7 +18,7 @@ class AIME2026Dataset(MathDataset):
 
     def load_tasks(self):
         r"""Load tasks from AIME2026 dataset."""
-        dataset = load_dataset(AIME2026_HUB, split="train") 
+        dataset = load_dataset(AIME2026_HUB, split="train")
         for _, item in enumerate(dataset):
             task = Task(
                 task_id=f"AIME2026/{item['problem_idx']}",
