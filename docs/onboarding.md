@@ -1,11 +1,11 @@
-# Onboarding — From Zero to Dashboard
+# Onboarding — From Zero to Report
 
 Target audience: a developer who has just cloned the repository and wants a
 working end-to-end demo before reading anything else.
 
 The plan: install EvalHub, run base evaluation on a small open model + a
-single benchmark, then aggregate the results and open the dashboard. The
-whole walk-through targets a single GPU and finishes in ~5–10 minutes once
+single benchmark, then aggregate the results into the master CSV and plots.
+The whole walk-through targets a single GPU and finishes in ~5–10 minutes once
 the model is cached locally.
 
 ## 1. Install
@@ -94,17 +94,19 @@ BASE_RESULTS_DIR="$PWD/results/Qwen2.5-0.5B-Instruct_state-non-think_t0.6_max102
 
 The judge stage writes its outputs under `./results/judgments/...`.
 
-## 5. Aggregate & open the dashboard
+## 5. Aggregate into the master CSV and plots
 
 ```bash
 evalhub report aggregate --results-root ./results --output ./report.csv
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format png
-evalhub report dashboard --csv ./report.csv --results-root ./results --port 8501
+evalhub report highlights --csv ./report.csv --output ./report_highlights.pdf
 ```
 
-Open `http://localhost:8501` in a browser. The **Overview** tab lists every
-run found. The **Pass@K** tab plots the curves; the **Drill-down** tab lets
-you inspect individual JSONL records.
+`report.csv` is one long-form row per `(model, mode, benchmark, judge)`;
+`report_plots/` holds the Pass@K vs CoT-Pass@K figures; `report_highlights.pdf`
+is the condensed paper-style summary. See [`reporting.md`](reporting.md) for the
+full schema and [`report_plots_guide.md`](report_plots_guide.md) for how to read
+every figure.
 
 ## 6. Submitting to nscluster (Slurm)
 
@@ -145,12 +147,12 @@ done
 | `address already in use` | Another process is on `TARGET_PORT`. Set `TARGET_PORT=30010` (or any free port) in the env file. |
 | `Missing required env vars: TARGET_MODEL BENCHMARK` | The env file wasn't loaded. Pass it as `$1` or export `EVALHUB_PIPELINE_ENV=path/to/env`. |
 | `evalhub report aggregate` returns 0 rows | None of the directories under `--results-root` matched the canonical regex. Confirm directory names use `<model>_state-<state>_t<T>_max<N>` or the legacy fallback `<model>_t<T>_max<N>`. |
-| `streamlit: command not found` | Install the report extra: `uv pip install -e ".[report]"`. |
+| `ModuleNotFoundError: matplotlib` (on `report plot`) | Install the report extra: `uv pip install -e ".[report]"`. |
 | `JUDGE_INPUT` is empty → empty CoT summary | The base run produced no `correct=True` generations. Increase `TARGET_N_SAMPLES` or pick an easier benchmark. |
 
 ## What to read next
 
-* [`docs/reporting.md`](reporting.md) — full CSV schema + dashboard tour.
+* [`docs/reporting.md`](reporting.md) — full CSV schema.
 * [`scripts/README.md`](../scripts/README.md) — per-script env contract.
 * [`docs/cmds.md`](cmds.md) — every `evalhub` CLI command, grouped by task.
 * [`docs/tutorial.md`](tutorial.md) — adding a custom benchmark.

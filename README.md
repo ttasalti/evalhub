@@ -148,10 +148,9 @@ All three are env-driven (`scripts/cot_pipeline.env.example` documents every kno
 and Slurm-wrappable. See [`docs/onboarding.md`](docs/onboarding.md) for a
 five-minute walk-through on a small model.
 
-For a hands-on Turkish-language guide to running, debugging, and extending
-the pipeline on your own, see [`docs/user_guide.md`](docs/user_guide.md).
-[`docs/scripts.md`](docs/scripts.md) and [`docs/evalhub.md`](docs/evalhub.md)
-give catalog-style references for every shell script and Python module.
+For a hands-on guide to running, debugging, and extending the pipeline on your
+own, see [`docs/user_guide.md`](docs/user_guide.md). For the shell scripts and
+their env contracts, see [`scripts/README.md`](scripts/README.md).
 
 For a single run with CLI-chosen model + benchmark (no env file editing):
 

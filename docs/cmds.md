@@ -113,7 +113,7 @@ BASE_RESULTS_DIR="$HOME/metrics/Qwen2.5-7B-Instruct/aime2025" \
 scripts/run_end_to_end.sh scripts/cot_pipeline.env
 ```
 
-### Report aggregation & dashboard
+### Report aggregation
 
 ```bash
 # 1. Sweep every {benchmark}_summary.json / *_cot_summary.json into one CSV.
@@ -122,9 +122,10 @@ evalhub report aggregate --results-root ./results --output ./report.csv
 # 2. Render publication-ready static plots.
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
 
-# 3. Launch the interactive Streamlit dashboard.
-evalhub report dashboard --csv ./report.csv --results-root ./results --port 8501
+# 3. Render the highlights PDF and the plot atlas.
+evalhub report highlights --csv ./report.csv --output ./report_highlights.pdf
+evalhub report atlas --plot-dir ./report_plots --output ./report_plots_atlas.pdf
 ```
 
-See [reporting.md](reporting.md) for the CSV schema and dashboard tour, or
+See [reporting.md](reporting.md) for the CSV schema, or
 [onboarding.md](onboarding.md) for a five-minute end-to-end demo.

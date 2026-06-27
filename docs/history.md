@@ -18,18 +18,21 @@
 05/20/2026 update: Major refactor adding a result aggregation surface and
 splitting the orchestrator script.
 
-- New `evalhub report` sub-app with `aggregate`, `plot`, and `dashboard`
-  commands. Every `*_summary.json` / `*_cot_summary.json` under an
+- New `evalhub report` sub-app with `aggregate`, `plot`, `highlights`, and
+  `atlas` commands. Every `*_summary.json` / `*_cot_summary.json` under an
   `OUTPUT_ROOT` is parsed into a long-form pandas DataFrame and written to a
   master CSV; `plot` renders Pass@K curves, base-vs-CoT bars, a Pass@1
-  heatmap, and CoT veto-rate bars; `dashboard` launches a Streamlit + Plotly
-  UI for interactive filtering and drill-down. Lives in `evalhub/report/`.
+  heatmap, and CoT veto-rate bars; `highlights` and `atlas` render
+  publication-ready PDFs. Lives in `evalhub/report/`.
 - Bash orchestrator split into `scripts/run_eval_only.sh`,
   `scripts/run_judge_only.sh`, and `scripts/run_end_to_end.sh`, all sharing
-  helpers from `scripts/lib/pipeline_common.sh`. The legacy
-  `scripts/run_cot_pass_at_k.sh` is now a thin deprecation shim that execs
-  `run_end_to_end.sh`.
-- New optional-deps group `report = [pandas, matplotlib, seaborn, streamlit,
-  plotly]`; `pandas` was added to the existing `base` group.
-- New docs `docs/reporting.md` (CSV schema + dashboard tour) and
-  `docs/onboarding.md` (five-minute demo for new developers).
+  helpers from `scripts/lib/pipeline_common.sh`.
+- New optional-deps group `report = [pandas, matplotlib, seaborn]`; `pandas`
+  was added to the existing `base` group.
+- New docs `docs/reporting.md` (CSV schema) and `docs/onboarding.md`
+  (five-minute demo for new developers).
+
+06/2026 update: One-folder-per-model (V5) results layout (sampling suffix on the
+benchmark leaf); G-Pass@k / mG-Pass@k metrics; new benchmarks (`aime2026` EN/TR/PT,
+`tubitak_math2026`, `pt_exams_math`); `highlights` / `atlas` report PDFs. The
+interactive dashboard was dropped in favour of the static report surface.
