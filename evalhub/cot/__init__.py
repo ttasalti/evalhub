@@ -8,6 +8,10 @@ pass plus a judge ``gen`` + ``eval`` pass:
   * ``metrics``   — apply the CoT veto and recompute Pass@K / Cons@K.
 
 The ``finalize`` helper composes all three when the judge has already run.
+
+This package is the post-judge *analysis* only. The judge **benchmark** itself —
+the ``CoTJudgeDataset`` prompt templates that the generation pass runs to produce
+the verdicts — lives separately under :mod:`evalhub.benchmarks.cot`.
 """
 
 from evalhub.cot.aggregate import aggregate_judge_votes
