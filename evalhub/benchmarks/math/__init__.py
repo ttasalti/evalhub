@@ -7,6 +7,7 @@ from .autologi import AutoLogiDataset
 from .gsm8k import GSM8KDataset
 from .hendrycks_math import HendrycksMathDataset
 from .math500 import Math500Dataset
+from .pt_exams_math import PTExamsMathDataset
 from .tubitak_math2026 import TubitakMath2026Dataset
 from .zebralogic import ZebraLogicDataset
 
@@ -19,6 +20,7 @@ __all__ = [
     "GSM8KDataset",
     "HendrycksMathDataset",
     "Math500Dataset",
+    "PTExamsMathDataset",
     "TubitakMath2026Dataset",
     "ZebraLogicDataset",
     "AutoLogiDataset",

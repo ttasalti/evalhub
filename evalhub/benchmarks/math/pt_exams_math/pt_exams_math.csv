@@ -1,0 +1,683 @@
+question,ground_truth,choices,answer,is_completion,phase,question_group,question_number,subject,year,Unnamed: 10,Unnamed: 11,Unnamed: 12,Unnamed: 13,Unnamed: 14,Unnamed: 15,Unnamed: 16,Unnamed: 17,Unnamed: 18,Unnamed: 19,Unnamed: 20,Unnamed: 21,Unnamed: 22,Unnamed: 23,Unnamed: 24,test2
+"
+Seja $g$ a função definida em $\mathbb{R}$ por $g(x) = \frac{e^x + 5}{2 + \cos x}$
+Considere a sucessão de termo geral $u_n = \frac{n + 1}{n^2}$
+Indique o valor de $\lim_{n \to +\infty} g(u_n)$",2,"[""4"", ""3"", ""2"", ""1""]",2,False,1.ª FASE,I,2.0,Mathematics A,2006,,,,,,,,,,,,,,,,
+"Documento table1:
+{'header': ['$x_i$', '0', '1', '2'], 'data': [['$P(X = x_i)$', 'a', 'a', '0,4']]}
+
+A tabela de distribuição de probabilidades de uma variável aleatória $X$ é
+($a$ designa um número real).
+Qual é o valor médio desta variável aleatória?","1,1","[""1,1"", ""1,2"", ""1,3"", ""1,4""]",0,True,2.ª FASE,I,5.0,Mathematics A,2006,,,,,,,,,,,,,,,,
+"
+Quatro raparigas e quatro rapazes entram num autocarro, no qual existem seis lugares sentados, ainda não ocupados.
+De quantas maneiras diferentes podem ficar ocupados esses seis lugares, supondo que ficam dois rapazes em pé?",4320,"[""3560"", ""3840"", ""4180"", ""4320""]",3,True,2.ª FASE,I,6.0,Mathematics A,2006,,,,,,,,,,,,,,,,
+"
+As cinco letras da palavra TIMOR foram pintadas, cada uma em sua bola.
+As cinco bolas, indistinguíveis ao tacto, foram introduzidas num saco.
+Extraem-se, aleatoriamente, as bolas do saco, sem reposição, e colocam-se em fila, da esquerda para a direita.
+Qual é a probabilidade de que, no final do processo, fique formada a palavra TIMOR, sabendo-se que, ao fim da terceira extracção, estava formada a sucessão de letras TIM?",$\frac{1}{2}$,"[""0"", ""$\\frac{1}{3}$"", ""$\\frac{1}{2}$"", ""1""]",2,True,1.ª FASE,I,6.0,Mathematics A,2007,,,,,,,,,,,,,,,,
+"
+Seja $f: [0, 2\pi] \rightarrow \mathbb{R}$ a função definida por $f(x) = 3 - 2 cos x$.
+Indique o valor de $x$ para o qual $f(x)$ é máximo.",$\pi$,"[""0"", ""$\\frac{\\pi}{2}$"", ""$\\pi$"", ""$\\frac{3\\pi}{2}$""]",2,True,2.ª FASE,I,2.0,Mathematics A,2007,,,,,,,,,,,,,,,,
+"
+Dois cientistas, que vão participar num congresso no estrangeiro, mandam reservar hotel na mesma cidade, cada um sem conhecimento da marcação feita pelo outro.
+Sabendo que nessa cidade existem sete hotéis, todos com igual probabilidade de serem escolhidos, qual é a probabilidade de os dois cientistas ficarem no mesmo hotel?",$\frac{1}{7}$,"[""$\\frac{1}{7}$"", ""$\\frac{2}{7}$"", ""$\\frac{5}{7}$"", ""$\\frac{6}{7}$""]",0,True,2.ª FASE,I,5.0,Mathematics A,2007,,,,,,,,,,,,,,,,
+"
+Lançaram-se dois dados, ambos com as faces numeradas de um a seis. Sabe-se que a soma dos números saídos foi quatro.
+Qual é a probabilidade de ter saído o mesmo número, em ambos os dados?",$\frac{1}{3}$,"[""$\\frac{1}{5}$"", ""$\\frac{1}{4}$"", ""$\\frac{1}{3}$"", ""$\\frac{1}{2}$""]",2,True,2.ª FASE,I,6.0,Mathematics A,2007,,,,,,,,,,,,,,,,
+"
+O João e a Maria convidaram três amigos para irem, com eles, ao cinema. Compraram cinco bilhetes com numeração seguida, numa determinada fila, e distribuíram-nos ao acaso.
+Qual é a probabilidade de o João e a Maria ficarem sentados um ao lado do outro?",$\frac{2}{5}$,"[""$\\frac{1}{5}$"", ""$\\frac{2}{5}$"", ""$\\frac{3}{5}$"", ""$\\frac{4}{5}$""]",1,True,1.ª Fase,I,1.0,Mathematics A,2008,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço de resultados associado a uma certa experiência aleatória, e sejam $A$ e $B$ dois acontecimentos ($A\subset\Omega$ e $B\subset\Omega$). Sabe-se que:
+$P(A\cup B) = 80\%$
+$P(B) = 60\%$
+$P(A \cap B) = 10\%$
+Qual é o valor de $P(A)$?",30%,"[""10%"", ""20%"", ""30%"", ""40%""]",2,True,1.ª Fase,I,2.0,Mathematics A,2008,,,,,,,,,,,,,,,,
+"
+Ao disputar um torneio de tiro ao alvo, o João tem de atirar sobre o alvo quatro vezes. Sabe-se que, em cada tiro, a probabilidade de o João acertar no alvo é $0,8$.
+Qual é a probabilidade de o João acertar sempre no alvo, nas quatro vezes em que tem de atirar?","$0,4096$","[""$0,0016$"", ""$0,0064$"", ""$0,0819$"", ""$0,4096$""]",3,True,2.ª Fase,I,1.0,Mathematics A,2008,,,,,,,,,,,,,,,,
+"
+Uma caixa A contém duas bolas verdes e uma bola amarela. Outra caixa B contém uma bola verde e três bolas amarelas. As bolas colocadas nas caixas A e B são indistinguíveis ao tacto.
+Lança-se um dado cúbico perfeito, com as faces numeradas de 1 a 6. Se sair o número 5, tira-se uma bola da caixa A; caso contrário, tira-se uma bola da caixa B.
+Qual é a probabilidade de a bola retirada ser verde, sabendo que saiu o número 5 no lançamento do dado?",$\frac{2}{3}$,"[""$\\frac{1}{4}$"", ""$\\frac{1}{3}$"", ""$\\frac{3}{7}$"", ""$\\frac{2}{3}$""]",3,True,2.ª Fase,I,2.0,Mathematics A,2008,,,,,,,,,,,,,,,,
+"
+Uma linha do Triângulo de Pascal tem quinze elementos.
+Quantos elementos dessa linha são inferiores a 100?",6,"[""3"", ""4"", ""6"", ""8""]",2,True,2.ª Fase,I,3.0,Mathematics A,2008,,,,,,,,,,,,,,,,
+"
+Sabe-se que o ponto $P(1, 3)$ pertence ao gráfico da função $f(x) = 2^{ax} - 1$, com $a \in \mathbb{R}$.
+Qual é o valor de $a$?",2,"[""2"", ""1"", ""0"", ""-2""]",0,True,2.ª Fase,I,4.0,Mathematics A,2008,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço de resultados associado a uma certa experiência aleatória. Sejam A e B dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+• $P(A) = 0,3$
+• $P(B) = 0,4$
+• $P(A \cup B) = 0,5$
+(P designa probabilidade.)
+Qual é a probabilidade de se realizar A, sabendo que B se realiza?",$\frac{1}{2}$,"[""$\\frac{1}{6}$"", ""$\\frac{1}{4}$"", ""$\\frac{1}{3}$"", ""$\\frac{1}{2}$""]",3,True,1.ª Fase,I,2.0,Mathematics A,2009,,,,,,,,,,,,,,,,
+"Documento tabela_1:
+{'headers': ['$x_i$', '4', '5', '6'], 'rows': [['$P(X = x_i)$', '$\\frac{k}{8}$', '$\\frac{1}{4}$', '$\\frac{k}{4}$']]}
+
+Considere uma variável aleatória $X$, cuja distribuição de probabilidades é dada pela tabela seguinte.
+Qual é o valor de $k$?",2,"[""1"", ""2"", ""3"", ""4""]",1,True,1.ª Fase,I,3.0,Mathematics A,2009,,,,,,,,,,,,,,,,
+"Documento funcao_f:
+$f(x) = \begin{cases} log_2(k+x) &\text{se } x\geq 0 \\ \frac{sen(2x)}{x} &\text{se } x < 0 \end{cases}$
+
+Para um certo número real positivo $k$, é contínua a função $f$, de domínio $\mathbb{R}$, definida por: [Ver documento]
+Qual é o valor de $k$?",4,"[""1"", ""2"", ""3"", ""4""]",3,True,1.ª Fase,I,5.0,Mathematics A,2009,,,,,,,,,,,,,,,,
+"
+A Maria gravou nove CD, sete com música rock e dois com música popular, mas esqueceu-se de identificar cada um deles.
+Qual é a probabilidade de, ao escolher dois CD ao acaso, um ser de música rock e o outro ser de música popular?",$\frac{7}{18}$,"[""$\\frac{7}{36}$"", ""$\\frac{1}{4}$"", ""$\\frac{2}{9}$"", ""$\\frac{7}{18}$""]",3,True,2.ª Fase,I,1.0,Mathematics A,2009,,,,,,,,,,,,,,,,
+"
+Admita que um estudante tem de realizar dois testes no mesmo dia. A probabilidade de ter classificação positiva no primeiro teste é 0,7, a de ter classificação positiva no segundo teste é 0,8, e a de ter classificação negativa em ambos os testes é 0,1.
+Qual é a probabilidade de o estudante ter negativa no segundo teste, sabendo que teve negativa no primeiro teste?",$\frac{1}{3}$,"[""$\\frac{1}{8}$"", ""$\\frac{1}{7}$"", ""$\\frac{1}{3}$"", ""$\\frac{1}{2}$""]",2,True,2.ª Fase,I,2.0,Mathematics A,2009,,,,,,,,,,,,,,,,
+"
+Uma certa linha do Triângulo de Pascal é constituída por todos os elementos da forma $^{14}C_p$.
+Escolhido, ao acaso, um elemento dessa linha, qual é a probabilidade de ele ser o número 14?",$\frac{2}{15}$,"[""$\\frac{1}{15}$"", ""$\\frac{1}{14}$"", ""$\\frac{2}{15}$"", ""$\\frac{4}{15}$""]",2,True,2.ª Fase,I,3.0,Mathematics A,2009,,,,,,,,,,,,,,,,
+"
+Seja $k$ um número real, e $z_1 = (k – i) (3 – 2i)$ um número complexo.
+Qual é o valor de $k$, para que $z_1$ seja um número imaginário puro?",$\frac{2}{3}$,"[""$-\\frac{3}{2}$"", ""$-\\frac{2}{3}$"", ""$\\frac{2}{3}$"", ""$\\frac{3}{2}$""]",2,True,2.ª Fase,I,7.0,Mathematics A,2009,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço de resultados associado a uma certa experiência aleatória, e sejam A e B dois acontecimentos ($A \subset \Omega \text{ e } B \subset \Omega$).
+Sabe-se que:
+* $P(A) = 30\%$;
+* $P(A \cup B) = 70\%$;
+* A e B são incompatíveis.
+Qual é o valor de P(B)?",40%,"[""21%"", ""40%"", ""60%"", ""61%""]",1,True,1ª,I,1.0,Mathematics A,2010,,,,,,,,,,,,,,,,
+"
+Seja $g$ a função, de domínio $]-2, +\infty[$, definida por $g(x) = \ln(x + 2)$.
+Considere, num referencial o.n. $*xOy*$, um triângulo $[OAB]$ tal que:
+* $O$ é a origem do referencial;
+* $A$ é um ponto de ordenada 5;
+* $B$ é o ponto de intersecção do gráfico da função $g$ com o eixo das abcissas.
+Qual é a área do triângulo $[OAB]$?",$\frac{5}{2}$,"[""$\\frac{5}{2}$"", ""$\\frac{1}{2}$"", ""$\\frac{5 \\ln 2}{2}$"", ""$\\frac{\\ln 2}{2}$""]",0,True,1ª,I,6.0,Mathematics A,2010,,,,,,,,,,,,,,,,
+"
+Uma caixa contém bolas indistinguíveis ao tacto e de duas cores diferentes: azul e roxo.
+Sabe-se que:
+• o número de bolas azuis é 8
+• extraindo-se, ao acaso, uma bola da caixa, a probabilidade de ela ser azul é igual a $\frac{1}{2}$
+Quantas bolas roxas há na caixa?",8,"[""16"", ""12"", ""8"", ""4""]",2,True,2.ª Fase,I,1.0,Mathematics A,2010,,,,,,,,,,,,,,,,
+"
+Na sequência seguinte, reproduzem-se os três primeiros elementos e os três últimos elementos de uma linha do Triângulo de Pascal.
+1 15 105 ... 105 15 1
+São escolhidos, ao acaso, dois elementos dessa linha.
+Qual é a probabilidade de a soma desses dois elementos ser igual a 105?",0,"[""1"", ""$\\frac{1}{60}$"", ""$\\frac{1}{120}$"", ""0""]",3,True,2.ª Fase,I,3.0,Mathematics A,2010,,,,,,,,,,,,,,,,
+"
+O código de um auto-rádio é constituído por uma sequência de quatro algarismos. Por exemplo, 0137
+Quantos desses códigos têm dois e só dois algarismos iguais a 7?",486,"[""486"", ""810"", ""432"", ""600""]",0,True,1ª Fase,I,2.0,Mathematics A,2011,,,,,,,,,,,,,,,,
+"
+Qual é o valor de $\lim_{x \to 0} (\frac{1}{x^2} sen^2(\frac{x}{2}))$?",$\frac{1}{4}$,"[""4"", ""0"", ""$\\frac{1}{4}$"", ""$\\frac{1}{2}$""]",2,True,1ª Fase,I,5.0,Mathematics A,2011,,,,,,,,,,,,,,,,
+"Documento tabela1:
+{'$x_i$': ['0', '1', '2', '3', '4', '5'], '$P(X = x_i$)': ['$2a$', '$a$', '$b$', '$b$', '$b$', '$\\frac{1}{10}$']}
+
+A tabela de distribuição de probabilidades de uma variável aleatória X é a seguinte.
+Sabe-se que:
+• $a$ e $b$ são números reais
+• $P(X \le 1) = 3P(X = 5)$
+Qual é o valor de $b$?",$\frac{1}{5}$,"[""$\\frac{1}{10}$"", ""$\\frac{4}{15}$"", ""$\\frac{7}{30}$"", ""$\\frac{1}{5}$""]",3,True,2.ª Fase,I,2.0,Mathematics A,2011,,,,,,,,,,,,,,,,
+"
+Num determinado clube desportivo praticam-se apenas dois desportos, futebol e andebol. Dos jovens inscritos nesse clube, 28 jogam apenas futebol, 12 jogam apenas andebol e 12 jogam futebol e andebol. Escolhe-se, ao acaso, um dos jovens inscritos.
+Qual é a probabilidade de o jovem escolhido jogar andebol sabendo que joga futebol?",$\frac{3}{10}$,"[""$\\frac{1}{2}$"", ""$\\frac{3}{10}$"", ""$\\frac{7}{10}$"", ""$\\frac{3}{7}$""]",1,True,Época Especial,I,1.0,Mathematics A,2011,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço de resultados associado a uma certa experiência aleatória.
+Sejam A e B dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$) incompatíveis.
+Sabe-se que $P(\overline{A} \cap \overline{B}) = 0,3$ e que $P(A) = 0,5$
+Qual é o valor de $P(B)$?","0,2","[""0,2"", ""0"", ""0,5"", ""0,4""]",0,True,Época Especial,I,3.0,Mathematics A,2011,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço de resultados associado a uma certa experiência aleatória, e sejam A e B dois acontecimentos (A$\subset\Omega$ e B$\subset\Omega$). Sabe-se que:
+• A e B são acontecimentos independentes;
+• $P(\overline{A}) = \frac{7}{10}$
+•$P(A\cup B)=\frac{3}{4}$
+Qual é o valor de $P(B)$?",$\frac{9}{14}$,"[""$\\frac{5}{14}$"", ""$\\frac{9}{14}$"", ""$\\frac{9}{20}$"", ""$\\frac{11}{20}$""]",1,True,1.ª Fase,I,1.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+Para assistirem a um espetáculo, o João, a Margarida e cinco amigos sentam-se, ao acaso, numa fila com sete lugares. Qual é a probabilidade de o João e a Margarida não ficarem sentados um ao lado do outro?",$\frac{5}{7}$,"[""$\\frac{2 \\times 5!}{7!}$"", ""$\\frac{5!}{7!}$"", ""$\\frac{2}{7}$"", ""$\\frac{5}{7}$""]",3,True,1.ª Fase,I,2.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+O código de acesso a uma conta de e-mail é constituído por quatro letras e três algarismos. Sabe-se que um código tem quatro «a», dois «5» e um «2», como, por exemplo, o código 2aa5a5a
+Quantos códigos diferentes existem nestas condições?",105,"[""105"", ""210"", ""5040"", ""39""]",0,True,2.ª Fase,I,1.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"Documento table_1:
+{'headers': ['$x_i$', '0', '1', '2'], 'rows': [['$P(X = x_i)$', '$b^3$', 'a', '2a']]}
+
+A tabela de distribuição de probabilidades de uma variável aleatória $X$ é a seguinte.
+Sabe-se que:
+• $a$ e $b$ são números reais;
+• o valor médio da variável aleatória $X$ é $\frac{35}{24}$
+Qual é o valor de $b$?",$\frac{1}{2}$,"[""$\\frac{1}{4}$"", ""$\\frac{1}{3}$"", ""$\\frac{1}{2}$"", ""$\\frac{1}{5}$""]",2,True,2.ª Fase,I,2.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+Numa certa linha do triângulo de Pascal, o penúltimo elemento é 111
+Escolhe-se, ao acaso, um elemento dessa linha.
+Qual é a probabilidade de esse elemento ser maior do que $10^5$?",$\frac{53}{56}$,"[""$\\frac{3}{56}$"", ""$\\frac{53}{56}$"", ""$\\frac{2}{37}$"", ""$\\frac{35}{37}$""]",1,True,2.ª Fase,I,3.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+Seja $k$ um número real, e sejam $z₁ = 2 + i$ e $z₂ =3-ki$ dois números complexos.
+Qual é o valor de $k$ para o qual $z_1\times \overline{z_2}$ é um imaginário puro?",6,"[""$\\frac{3}{2}$"", ""-$\\frac{3}{2}$"", ""1"", ""6""]",3,True,2.ª Fase,I,7.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+Uma sequência de algarismos cuja leitura da direita para a esquerda ou da esquerda para a direita dá o mesmo número designa-se por capicua. Por exemplo, 103301 é capicua.
+Quantos números com seis algarismos são capicuas?",900,"[""729"", ""900"", ""810 000"", ""900 000""]",1,True,Época Especial,I,1.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"Documento table_1:
+{'headers': ['$x_i$', '-1', '0', '1'], 'rows': [['$P(X = x_i)$', '1 - 3$a$', '2$a$', '$a$']]}
+
+A tabela de distribuição de probabilidades de uma variável aleatória $X$ é a seguinte.
+Sabe-se que $P(X=0 \vee X=1) = 0,81$
+Qual é o valor médio de $X$?","0,08","[""0,46"", ""0,27"", ""0,08"", ""0""]",2,True,Época Especial,I,2.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+Considere um dado cúbico, com as faces numeradas de 1 a 6, e um saco que contém cinco bolas, indistinguíveis ao tato, cada uma delas numerada com um número diferente: 0, 1, 2, 3 e 4.
+Lança-se o dado uma vez e retira-se, ao acaso, uma bola do saco, registando-se os números que saíram.
+Qual é a probabilidade de o produto desses números ser igual a zero?",$\frac{1}{5}$,"[""0"", ""$\\frac{1}{15}$"", ""$\\frac{1}{30}$"", ""$\\frac{1}{5}$""]",3,True,Época Especial,I,3.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+Sejam $k$ e $p$ dois números reais tais que os números complexos $z = 1 + i$ e $w = (k - 1) + 2pi$ sejam inversos um do outro.
+Qual é o valor de $k + p$?",$\frac{7}{4}$,"[""$-\\frac{1}{4}$"", ""$\\frac{1}{2}$"", ""$\\frac{5}{4}$"", ""$\\frac{7}{4}$""]",3,True,Época Especial,I,7.0,Mathematics A,2012,,,,,,,,,,,,,,,,
+"
+A tabela de distribuição de probabilidades de uma variável aleatória X é a seguinte.
+Sabe-se que:
+• $a$ e $b$ são números reais;
+• $P(X > 1) = P(X < 2)$
+Qual é o valor médio da variável aleatória $X$?",$\frac{19}{12}$,"[""$\\frac{3}{2}$"", ""$\\frac{7}{5}$"", ""$\\frac{17}{9}$"", ""$\\frac{19}{12}$""]",3,True,1.ª Fase,I,2.0,Mathematics A,2013,,,,,,,,,,,,,,,,
+"
+Considere uma variável aleatória $X$ com distribuição normal de valor médio 11 e desvio padrão $\sigma$
+Sabe-se que $\sigma$ é um número natural e que $P(X > 23) \approx 0,02275$
+Qual é o valor de $\sigma$?",6,"[""12"", ""11"", ""6"", ""4""]",2,True,1.ª Fase,I,3.0,Mathematics A,2013,,,,,,,,,,,,,,,,
+"
+Seja $f$ a função, de domínio $\mathbb{R} \setminus \{0\}$, definida por $f(x) = \frac{\operatorname{sen}(-x)}{x}$
+Considere a sucessão de números reais $(x_n)$ tal que $x_n = \frac{1}{n}$
+Qual é o valor de $\lim f(x_n)$?",-1,"[""-1"", ""0"", ""1"", ""+$\\infty$""]",0,True,1.ª Fase,I,4.0,Mathematics A,2013,,,,,,,,,,,,,,,,
+"
+Considere a linha do triângulo de Pascal em que o produto do segundo elemento pelo penúltimo elemento
+é 484.
+Qual é a probabilidade de escolher, ao acaso, um elemento dessa linha que seja superior a 1000?",$\frac{17}{23}$,"[""$\\frac{15}{23}$"", ""$\\frac{6}{11}$"", ""$\\frac{17}{23}$"", ""$\\frac{8}{11}$""]",2,True,2.ª Fase,I,2.0,Mathematics A,2013,,,,,,,,,,,,,,,,
+"
+Sejam $a$ e $b$ dois números reais tais que $1<a<b$ e $log_a b = 3$
+Qual é, para esses valores de $a$ e de $b$, o valor de $log_a(a^5\times \sqrt[3]{b})+alog_ab$?",$6 + b$,"[""$6 + b$"", ""$8 + b$"", ""$6 + a^b$"", ""$8 + a^b$""]",0,True,2.ª Fase,I,3.0,Mathematics A,2013,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço de resultados associado a uma certa experiência aleatória, e sejam $A$ e $B$ dois
+acontecimentos ($A \subset \Omega$ e $B \subset \Omega$)
+Sabe-se que:
+• $P(A) = 0,3$
+• $P(\overline{A} \cap B) = 0,55$
+• $A$ e $B$ são acontecimentos incompatíveis.
+Qual é o valor de $P(\overline{A} \cap \overline{B})$?","0,15","[""0,85"", ""0,25"", ""0,15"", ""0""]",2,True,Época Especial,I,1.0,Mathematics A,2013,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$, conjunto finito, o espaço de resultados associado a uma certa experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+• $P(A) = 0,4$
+• $P(A \cap B) = 0,2$
+• $P(B|\overline{A}) = 0,8$
+Qual é o valor de $P(B)$?","0,68","[""0,28"", ""0,52"", ""0,68"", ""0,80""]",2,True,1.ª Fase,I,1.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Seja ƒ a função, de domínio $\mathbb{R}^+$, definida por $f(x) = e^{\frac{1}{x}} - 3$.
+Considere a sucessão de números reais $(x_n)$ tal que $x_n = \frac{1}{\sqrt{n}}$
+Qual é o valor de $lim \frac{2}{f(x_n)}$ ?",$0$,"[""$-∞$"", ""$-e$"", ""$0$"", ""$+∞$""]",2,True,1.ª Fase,I,3.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$, conjunto finito, o espaço de resultados associado a uma experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+• $A$ e $B$ são acontecimentos independentes;
+• $P(A) = 0,4$
+• $P(\overline{A} \cap \overline{B}) = 0,48$
+Qual é o valor de $P(B)$?","0,2","[""0,08"", ""0,12"", ""0,2"", ""0,6""]",2,True,2.ª Fase,I,1.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Um dos termos do desenvolvimento de $\left( \frac{2}{x} + x \right)^{10}$, com $x \neq 0$, não depende da variável $x$.
+Qual é esse termo?",8064,"[""10240"", ""8064"", ""1024"", ""252""]",1,True,2.ª Fase,I,3.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Considere, para um certo número real $k$, a função $f$, contínua em $\left[\frac{\pi}{4}, \frac{\pi}{2}\right]$, definida por
+$f(x) = \begin{cases}\frac{\cos x}{x - \frac{\pi}{2}} &\text{ se } \frac{\pi}{4} \leq x < \frac{\pi}{2} \\ k - 3 &\text{ se } x = \frac{\pi}{2} \end{cases}$
+Qual é o valor de $k$?",2,"[""0"", ""1"", ""2"", ""4""]",2,True,2.ª Fase,I,5.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Considere todos os números ímpares com cinco algarismos.
+Quantos desses números têm quatro algarismos pares e são superiores a 20 000 ?",$4 \times 5^4$,"[""$5^4$"", ""$5^5$"", ""$3 \\times 5^4$"", ""$4 \\times 5^4$""]",3,True,Época Especial,I,1.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Considere a linha do triângulo de Pascal em que a soma dos dois primeiros elementos com os dois últimos elementos é igual a 20
+Escolhendo, ao acaso, um elemento dessa linha, qual é a probabilidade de ele ser par?",$\frac{3}{5}$,"[""$\\frac{1}{5}$"", ""$\\frac{2}{5}$"", ""$\\frac{3}{5}$"", ""$\\frac{4}{5}$""]",2,True,Época Especial,I,2.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Seja $f$ uma função de domínio $\mathbb{R}^+$
+A reta de equação $y=2x-5$ é assíntota do gráfico da função $f$
+Qual é o valor de $\lim_{x \to +\infty} \frac{6x-1}{f(x)}$ ?",3,"[""0"", ""2"", ""3"", ""$+\\infty$""]",2,True,Época Especial,I,6.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Dois rapazes e quatro raparigas vão sentar-se num banco corrido com seis lugares.
+De quantas maneiras o podem fazer, de modo que fique um rapaz em cada extremidade do banco?",48,"[""12"", ""24"", ""48"", ""60""]",2,True,1.ª Fase,I,1.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$, conjunto finito, o espaço de resultados associado a uma certa experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+• $P(A) = 0,4$
+• $P(\overline{B})=0,7$
+• $P(A \cup B) = 0,5$
+Qual é o valor de $P(\overline{A} \cup \overline{B})$?","0,8","[""0,6"", ""0,7"", ""0,8"", ""0,9""]",2,True,1.ª Fase,I,2.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Considere a função $f$, de domínio $\mathbb{R}^+$, definida por $f(x)=\frac{1 + \ln x}{x}$.
+Considere a sucessão de termo geral $u_n = n^2$
+Qual é o valor de $\lim f(u_n)$?",0,"[""0"", ""1"", ""$e$"", ""$+\\infty$""]",0,True,1.ª Fase,I,4.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Considere em $\mathbb{C}$, conjunto dos números complexos, a condição
+$|z+4-4i|=3 \land \frac{\pi}{2} \leq arg(z) \leq \frac{3\pi}{4}$
+No plano complexo, esta condição define uma linha.
+Qual é o comprimento dessa linha?",$3\pi$,"[""$\\pi$"", ""$2\\pi$"", ""$3\\pi$"", ""$4\\pi$""]",2,True,1.ª Fase,I,6.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Seja $a$ um número real.
+Considere a sucessão $(u_n)$ definida por
+$\begin{cases} u_1 = a \\ u_{n+1} = -3u_n +2, \forall n \in \mathbb{N} \end{cases}$
+Qual é o terceiro termo desta sucessão?",$9a-4$,"[""$6a +4$"", ""$9a-4$"", ""$6a-4$"", ""$9a +4$""]",1,True,1.ª Fase,I,8.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"Documento table_1:
+{'headers': ['$x_i$', '1', '2', '3'], 'rows': [['$P(X = x_i)$', '$a$', '$2a$', '0,4']]}
+
+A tabela de distribuição de probabilidades de uma certa variável aleatória $X$ é
+
+Qual é o valor médio desta variável aleatória?","2,2","[""2,1"", ""2,2"", ""2,3"", ""2,4""]",1,True,2.ª Fase,I,1.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Um saco contém nove bolas indistinguíveis ao tato, numeradas de 1 a 9. As bolas numeradas de 1 a 5 são pretas e as restantes são brancas.
+Retira-se, ao acaso, uma bola do saco e observa-se a sua cor e o seu número.
+Considere os seguintes acontecimentos, associados a esta experiência aleatória:
+A: «a bola retirada é preta»
+B: «o número da bola retirada é um número par»
+Qual é o valor da probabilidade condicionada $P(A|B)$?",$\frac{1}{2}$,"[""$\\frac{2}{5}$"", ""$\\frac{1}{2}$"", ""$\\frac{3}{5}$"", ""$\\frac{3}{4}$""]",1,True,2.ª Fase,I,2.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Para certos valores de a e de b ($a>1$ e $b>1$), tem-se $log_b a = \frac{1}{3}$ 
+Qual é, para esses valores de $a$ e de $b$, o valor de $log_a (a^2 b)$?",$5$,"[""$\\frac{2}{3}$"", ""$\\frac{5}{3}$"", ""$2$"", ""$5$""]",3,True,2.ª Fase,I,3.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Para um certo número real $k$, é contínua em $\mathbb{R}$ a função $f$ definida por
+$f(x) = \begin{cases} 2 + e^{x+k}, & \text{se } x \leq 0 \\ \frac{2x + \ln(x+1)}{x}, & \text{se } x > 0 \end{cases}$
+Qual é o valor de $k$ ?",$0$,"[""$0$"", ""$1$"", ""$\\ln 2$"", ""$\\ln 3$""]",0,True,2.ª Fase,I,4.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Considere, num referencial o.n. $xOy$, a circunferência definida pela equação
+$x^2 + (y - 1)^2 = 2$
+Esta circunferência intersecta o eixo $Ox$ em dois pontos. Destes pontos, seja $A$ o que tem abcissa positiva.
+Seja $r$ a reta tangente à circunferência no ponto $A$
+Qual é a equação reduzida da reta $r$?",$y = x - 1$,"[""$y = x + 1$"", ""$y = x - 1$"", ""$y = 2x + 2$"", ""$y = 2x - 2$""]",1,True,2.ª Fase,I,7.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$, conjunto finito, o espaço de resultados associado a uma certa experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+$\bullet$ $P(A \cup B) = 0,7$
+$\bullet$ $P(B) = 0,4$
+$\bullet$ $P(A \cap B) = 0,2$
+Qual é o valor de $P(B|A)$?","0,4","[""0,25"", ""0,3"", ""0,35"", ""0,4""]",3,True,Época Especial,I,1.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Nove jovens, três rapazes e seis raparigas, vão dispor-se, lado a lado, para uma fotografia.
+De quantas maneiras o podem fazer, de modo que os rapazes fiquem juntos?",30 240,"[""40 140"", ""30 240"", ""20 340"", ""10 440""]",1,True,Época Especial,I,2.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Seja $a$ um número real.
+Seja a função $f$, de domínio $\mathbb{R}^+$, definida por $f(x) = e^{a \ln x}$
+Considere, num referencial o.n. $xOy$, o ponto $P(2,8)$
+Sabe-se que o ponto $P$ pertence ao gráfico de $f$.
+Qual é o valor de $a$?",3,"[""1"", ""2"", ""3"", ""4""]",2,True,Época Especial,I,3.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Seja $f$ uma função de domínio $\mathbb{R}$.
+Sabe-se que $f'(2) = 6$ ($f'$ designa a derivada de $f$).
+Qual é o valor de $\lim_{x \to 2} \frac{f(x)-f(2)}{x^2-2x}$?",3,"[""3"", ""4"", ""5"", ""6""]",0,True,Época Especial,I,5.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Os segmentos de reta $[AB]$ e $[BC]$ são lados consecutivos de um hexágono regular de perímetro 12.
+Qual é o valor do produto escalar $\vec{BA} . \vec{BC}$?",-2,"[""-3"", ""-2"", ""2"", ""3""]",1,True,Época Especial,I,7.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+De uma progressão geométrica $(a_n)$, sabe-se que o terceiro termo é igual a $\frac{1}{4}$ e que o sexto termo é
+igual a 2.
+Qual é o valor do vigésimo termo?",32768,"[""8192"", ""16384"", ""32768"", ""65536""]",2,True,Época Especial,I,8.0,Mathematics A,2015,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$, conjunto finito, o espaço de resultados associado a uma certa experiência aleatória.
+Sejam A e B dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+$\bullet$ $P(A) = \frac{2}{5}$
+$\bullet$ $P(B) = \frac{3}{10}$
+$\bullet$ $P(A|B) = \frac{1}{6}$
+Qual é o valor de $P(A\cup B)$?",$\frac{13}{20}$,"[""$\\frac{4}{5}$"", ""$\\frac{7}{10}$"", ""$\\frac{13}{20}$"", ""$\\frac{19}{30}$""]",2,True,1.ª Fase,I,1.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Seja $X$ uma variável aleatória com distribuição normal de valor médio 10
+Sabe-se que $P(7<X<10)= 0,3$
+Qual é o valor de $P(X >13)$?","0,2","[""0,1"", ""0,2"", ""0,3"", ""0,4""]",1,True,1.ª Fase,I,2.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Seja $a$ um número real diferente de 0
+Qual é o valor de $lim_{x \rightarrow a} \frac{ae^{x-a} - a}{x^2 - a^2}$?",$\frac{1}{2}$,"[""$\\frac{1}{4}$"", ""$\\frac{1}{2}$"", ""1"", ""2""]",1,True,1.ª Fase,I,3.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Seja $f$ uma função de domínio $\mathbb{R}^-$
+Sabe-se que:
+$\bullet$ $lim_{x \rightarrow +\infty} \frac{f(x) + e^x - x}{x} = 1$
+$\bullet$ o gráfico de $f$ tem uma assíntota oblíqua.
+Qual é o declive dessa assíntota?",2,"[""-2"", ""-1"", ""1"", ""2""]",3,True,1.ª Fase,I,4.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Considere as sucessões ($u_n$) e ($v_n$) de termos gerais
+$u_n = \frac{kn+3}{2n}$ ($k$ é um número real) e $v_n = \ln(1 + \frac{1}{n})^n$
+Sabe-se que $lim(u_n) = lim(v_n)$
+Qual é o valor de $k$?",2,"[""1"", ""2"", ""$e$"", ""$2e$""]",1,True,1.ª Fase,I,8.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$, conjunto finito, o espaço de resultados associado a uma certa experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega \space e B \subset \Omega$).
+Sabe-se que:
+$\bullet P(A) = 0,2$
+$\bullet P(B) = 0,3$
+$\bullet P(\overline{A} \cap \overline{B})=0,6$
+Qual é o valor de $P(A|B)$?",$\frac{1}{3}$,"[""$\\frac{1}{3}$"", ""$\\frac{1}{2}$"", ""$\\frac{2}{3}$"", ""$\\frac{5}{6}$""]",0,True,2.ª Fase,I,1.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+O Carlos joga basquetebol na equipa da sua escola.
+Admita que, em cada lance livre, a probabilidade de o Carlos encestar é 0,4
+Num treino, o Carlos vai executar uma série de cinco lances livres.
+Qual é a probabilidade de o Carlos encestar exatamente quatro vezes?","0,0768","[""0,01536"", ""0,05184"", ""0,0768"", ""0,2592""]",2,True,2.ª Fase,I,2.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Para certos valores de a e de b ($a>1$ e $b>1$), tem-se $log_a(ab^3) = 5$
+Qual é, para esses valores de $a$ e de $b$, o valor de $\log_b a$?",$\frac{3}{4}$,"[""$\\frac{5}{3}$"", ""$\\frac{3}{4}$"", ""$\\frac{3}{5}$"", ""$\\frac{1}{3}$""]",1,True,2.ª Fase,I,3.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Em $\mathbb{C}$, conjunto dos números complexos, seja $z = 3 + 4i$
+Sabe-se que $z$ é uma das raízes de índice 6 de um certo número complexo $w$
+Considere, no plano complexo, o polígono cujos vértices são as imagens geométricas das raízes de índice 6 desse número complexo $w$
+Qual é o perímetro do polígono?",30,"[""42"", ""36"", ""30"", ""24""]",2,True,2.ª Fase,I,6.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+De uma progressão geométrica ($u_n$), monótona crescente, sabe-se que $u_4 = 32$ e que $u_8 = 8192$
+Qual é o quinto termo da sucessão ($u_n$)?",128,"[""64"", ""128"", ""256"", ""512""]",1,True,2.ª Fase,I,8.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Uma pessoa lança um dado cúbico, com as faces numeradas de 1 a 6, e regista o número da face que ficou voltada para cima.
+Uma outra pessoa lança um dado com a forma de um tetraedro regular, com as faces numeradas de 1 a 4, e regista o número da face que ficou voltada para baixo.
+Admita que ambos os dados são equilibrados.
+Qual é a probabilidade de, pelo menos, uma dessas pessoas registar o número 4?",$\frac{3}{8}$,"[""$\\frac{3}{8}$"", ""$\\frac{5}{8}$"", ""$\\frac{5}{12}$"", ""$\\frac{7}{12}$""]",0,True,Época Especial,I,2.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Seja $X$ uma variável aleatória com distribuição normal de valor médio 2 e desvio padrão 0,5
+Qual é o valor, arredondado às centésimas, de $P(X > 2,5)$?","0,16","[""0,68"", ""0,34"", ""0,32"", ""0,16""]",3,True,Época Especial,I,3.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Para um certo número real $k$, é contínua em $\mathbb{R}$ a função $f$ definida por
+$f(x) = \begin{cases} \frac{sen(3x + 3)}{4x + 4} & \text{se } x \neq -1 \\ k+2 & \text{se } x = -1 \end{cases}$
+Qual é o valor de $k$?",$-\frac{5}{4}$,"[""$-\\frac{5}{3}$"", ""$-\\frac{5}{4}$"", ""$\\frac{5}{4}$"", ""$\\frac{5}{3}$""]",1,True,Época Especial,I,6.0,Mathematics A,2016,,,,,,,,,,,,,,,,
+"
+Considere todos os números naturais de quatro algarismos que se podem formar com os algarismos de 1 a 9.
+Destes números, quantos são múltiplos de 5?",729,"[""729"", ""1458"", ""3645"", ""6561""]",0,True,1.ª Fase,I,1.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Uma turma é constituída por rapazes e por raparigas, num total de 20 alunos.
+Sabe-se que:
+• $\frac{1}{4}$ dos rapazes tem olhos verdes;
+• escolhido, ao acaso, um aluno da turma, a probabilidade de ele ser rapaz e de ter olhos verdes é $\frac{1}{10}$.
+Quantos rapazes tem a turma?",8,"[""4"", ""8"", ""12"", ""16""]",1,True,1.ª Fase,I,2.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Considere em $\mathbb{C}$, conjunto dos números complexos, a condição $\frac{5\pi}{4} \leq arg(z) \leq \frac{7\pi}{4} \land Im(z) \geq -1$.
+No plano complexo, esta condição define uma região.
+Qual é a área dessa região?",1,"[""$\\frac{\\sqrt{2}}{2}$"", ""$\\frac{1}{2}$"", ""$\\sqrt{2}$"", ""1""]",3,True,1.ª Fase,I,7.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Considere todos os números naturais de cinco algarismos diferentes que se podem formar com os algarismos 1,2,3,4 e 5
+Destes números, quantos têm os algarismos pares um a seguir ao outro?",48,"[""24"", ""48"", ""72"", ""96""]",1,True,2.ª Fase,I,1.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"Documento document_1:
+{'$x_i$': ['1', '2', '3', '4'], '$P(X = x_i)$': ['$\\frac{1}{3}$', '$\\frac{1}{4}$', '$\\frac{1}{6}$', '$\\frac{1}{4}$']}
+
+A tabela de distribuição de probabilidades de uma variável aleatória X é a seguinte.
+Qual é o valor da probabilidade condicionada $P(X>1| X \le 3)$?",$\frac{5}{9}$,"[""$\\frac{3}{4}$"", ""$\\frac{1}{4}$"", ""$\\frac{8}{9}$"", ""$\\frac{5}{9}$""]",3,True,2.ª Fase,I,2.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+De uma função $f$, de domínio $\mathbb{R}$, com derivada finita em todos os pontos do seu domínio, sabe-se que $lim_{x\rightarrow 2} \frac{x^2 - 2x}{f(x)-f(2)} = 4$
+Qual é o valor de $f'(2)$?",$\frac{1}{2}$,"[""$-\\frac{1}{2}$"", ""$-\\frac{1}{4}$"", ""$\\frac{1}{2}$"", ""$\\frac{1}{4}$""]",2,True,2.ª Fase,I,3.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Considere, num referencial o.n. $xOy$, a região definida pela condição
+$(x + 1)^2 + (y + 1)^2\le1  \land x + y + 2\ge0$
+Qual é o perímetro dessa região?",$\pi + 2$,"[""$\\pi+1$"", ""$\\frac{\\pi}{2}+1$"", ""$\\pi + 2$"", ""$\\frac{\\pi}{2}+2$""]",2,True,2.ª Fase,I,7.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Com os algarismos 0, 1, 2, 3 e 4, quantos números naturais maiores do que 20 000 e com os cinco
+algarismos todos diferentes é possível formar?",72,"[""24"", ""48"", ""72"", ""96""]",2,True,Época Especial,I,1.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Seja $X$ uma variável aleatória com distribuição normal de valor médio 10
+Sabe-se que $P(10<X<15)= 0,4$
+Qual é o valor de $P(X<5 \vee X > 15)$ ?","0,2","[""0,1"", ""0,2"", ""0,4"", ""0,6""]",1,True,Época Especial,I,2.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Seja $a$ um número real superior a 1
+Qual é o valor de $4+\log_a (5^{\ln a})$?",$\ln (5e^4)$,"[""$\\ln (10e)$"", ""$\\ln (5e^4)$"", ""$\\ln (5e^2)$"", ""$\\ln (20e)$""]",1,True,Época Especial,I,3.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Sejam $f$ e $g$ duas funções de domínio $\mathbb{R}$, tais que a função $f-g$ admite inversa.
+Sabe-se que $f(3)=4$ e que $(f-g)^{-1} (2) = 3$
+Qual é o valor de $g(3)$?",2,"[""1"", ""2"", ""3"", ""4""]",1,True,Época Especial,I,5.0,Mathematics A,2017,,,,,,,,,,,,,,,,
+"
+Uma escola dedica-se ao ensino de Espanhol e de Inglês, entre outras línguas.
+Doze alunos dessa escola, quatro de Espanhol e oito de Inglês, dispõem-se lado a lado em linha reta para tirar uma fotografia.
+De quantas maneiras se podem dispor os doze alunos, de modo que os alunos da mesma disciplina fiquem juntos?",1 935 360,"[""40 320"", ""80 640"", ""967 680"", ""1 935 360""]",3,True,1ª,1,3.1,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Para um certo número real $x$, pertencente ao intervalo $]0,\frac{\pi}{12}[$, o número complexo $z = (\cos x + i \text{sen} x)^{10}$ verifica a condição $Im (z) = \frac{1}{3} Re(z)$.
+Qual é o valor de $x$ arredondado às centésimas?","0,03","[""0,02"", ""0,03"", ""0,12"", ""0,13""]",1,True,1ª,2,5.0,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Qual é o valor de $arcsen(1) + arccos(-\frac{1}{2})$?",$\frac{7π}{6}$,"[""$\\frac{7π}{6}$"", ""$\\frac{π}{6}$"", ""$\\frac{3 π}{4}$"", ""$\\frac{π}{4}$""]",0,True,1ª,2,8.2,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Num saco, encontram-se quatro bolas indistinguíveis ao tato, numeradas de 0 a 3
+Retiram-se, ao acaso, sucessivamente e sem reposição, duas bolas do saco.
+Seja $X$ a variável aleatória «produto dos números saídos».
+Para um certo valor de $k$, tem-se que $P(X = k) = \frac{1}{2}$
+Qual é o valor de $k$?",0,"[""6"", ""2"", ""3"", ""0""]",3,True,1ª,2,10.1,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Seja $k$ um número real.
+Considere a sucessão convergente $(u_n)$ definida por $u_n = \left( \frac{n+k}{n} \right)^n$
+Sabe-se que o limite de $(u_n)$ é solução da equação $\ln\left( \frac{x}{e} \right)= 3$
+Qual é o valor de $k$?",4,"[""$\\frac{1}{4}$"", ""3"", ""$\\frac{1}{3}$"", ""4""]",3,True,1ª,2,10.2,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Seja $X$ uma variável aleatória com distribuição normal de valor médio $\mu$ e desvio padrão $\sigma$.
+Qual é o valor, arredondado às milésimas, de $P(X > \mu - 2\sigma)$?","0,977","[""0,926"", ""0,982"", ""0,977"", ""0,943""]",2,True,2.ª,1,1.1,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Dispõe-se de catorze caracteres (a saber: os algarismos 1, 2, 3, 4, 5, 6, 7, 8, 9 e as vogais a, e, i, o, u) para formar códigos de quatro caracteres.
+Quantos códigos iniciados por uma vogal seguida de três algarismos diferentes se podem formar?",2520,"[""420"", ""504"", ""1840"", ""2520""]",3,True,2.ª,1,3.1,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+A primeira derivada de uma função $f$, de domínio $]0, \frac{\pi}{2}[$, é dada por $f'(x) = 3x - \text{tg} x$.
+Sabe-se que o gráfico de $f$ tem um único ponto de inflexão.
+Qual é a abcissa desse ponto, arredondada às centésimas?","0,96","[""0,84"", ""0,88"", ""0,92"", ""0,96""]",3,True,2.ª,1,6.0,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Num dado problema de Programação Linear, pretende-se determinar o valor máximo que a função objetivo, definida por $L = 3x + 5y$, pode alcançar.
+Sabe-se que a região admissível é definida pelo seguinte sistema.
+$\begin{cases} x \geq 0 \\ y \geq 0 \\ x + y \leq 10 \\ x \leq 5 \end{cases}$
+Qual é esse valor máximo?",50,"[""56"", ""50"", ""40"", ""36""]",1,True,2.ª,2,9.1,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Considere, num referencial o.n. $xOy$, uma elipse centrada na origem do referencial e de focos $F_1$ e $F_2$ pertencentes ao eixo $Ox$.
+Sabe-se que:
+* $\overline{F_1F_2} = 12$
+* sendo $P$ um ponto qualquer da elipse, tem-se $\overline{PF_1} + \overline{PF_2} = 20$
+Qual é a equação reduzida desta elipse?",$\frac{x^2}{100} + \frac{y^2}{64} = 1$,"[""$\\frac{x^2}{64} + \\frac{y^2}{100} = 1$"", ""$\\frac{x^2}{100} + \\frac{y^2}{64} = 1$"", ""$\\frac{x^2}{100} + \\frac{y^2}{36} = 1$"", ""$\\frac{x^2}{36} + \\frac{y^2}{100} = 1$""]",1,True,2.ª,2,9.2,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Considere, num referencial o.n. $xOy$, a circunferência centrada na origem do referencial e que passa no ponto $A(2,1)$.
+Seja $r$ a reta tangente à circunferência no ponto $A$.
+Qual é a ordenada na origem da reta $r$?",5,"[""4"", ""5"", ""6"", ""7""]",1,True,2.ª,2,11.0,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Qual é o valor do limite da sucessão de termo geral $\left( \frac{n + 5}{n + 1} \right)^{\frac{n}{2}}$?",$e^2$,"[""$+\\infty$"", ""1"", ""$e^4$"", ""$e^2$""]",3,True,2.ª,2,12.2,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Seja $f$ a função, de domínio $\mathbb{R}$, definida por
+$f(x) = \begin{cases} 3+\frac{e^x}{1 - x} & \text{se } x < 1 \\ \frac{\ln(x^2) + 2}{x} & \text{se } x \geq 1 \end{cases}$
+Seja $h$ a função, de domínio $\mathbb{R}$, definida por $h(x) = x + 1$.
+Qual é o valor de $(f \circ h^{-1})(2)$?
+(o símbolo $\circ$ designa a composição de funções)",2,"[""0"", ""1"", ""2"", ""3""]",2,True,2.ª,2,14.3,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço amostral (espaço de resultados) associado a uma certa experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+$\bullet$ $A$ e $B$ são acontecimentos independentes e equiprováveis;
+$\bullet$ $P(A \cup B) = 0,64$
+Qual é o valor de $P(A)$?","0,4","[""0,42"", ""0,40"", ""0,38"", ""0,36""]",1,True,Época Especial,1,1.1,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Um ponto $P$ desloca-se numa reta numérica, no intervalo de tempo $I = [0,4]$ (medido em segundos), de tal forma que a respetiva abcissa é dada por
+$x(t) = sen(\pi t) + cos (\pi t)$, com $t \in I$
+Qual é a amplitude deste oscilador harmónico?",$\sqrt{2}$,"[""1"", ""$\\sqrt{2}$"", ""$\\sqrt{3}$"", ""2""]",1,True,Época Especial,1,1.2,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Com cinco pessoas, quantos conjuntos com, pelo menos, três pessoas é possível formar?",16,"[""60"", ""81"", ""10"", ""16""]",3,True,Época Especial,1,3.0,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Para um certo número real $a$, diferente de zero, são paralelas as retas $r$ e $s$, definidas, num referencial o.n. $xOy$, pelas condições $r : ax + 2y + 1 = 0$ e $s : (x, y) = (1,1) + k(a,2a), k \in \mathbb{R}$.
+Qual é o valor de $a$?",-4,"[""-4"", ""2"", ""-2"", ""4""]",0,True,Época Especial,1,9.0,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Qual é o valor do limite da sucessão $(\frac{n+2}{n+1})^{2n}$?",$e^2$,"[""1"", ""$e$"", ""$e^2$"", ""$+\\infty$""]",2,True,Época Especial,2,12.2,Mathematics A,2018,,,,,,,,,,,,,,,,
+"
+Seja $X$ uma variável aleatória com distribuição normal de valor médio 5 e desvio padrão $\frac{1}{2}$. Qual é o valor, arredondado às milésimas, de $P(X > 6)$?","0,023","[""0,046"", ""0,042"", ""0,023"", ""0,021""]",2,True,1ª,1,2.1,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Qual é o limite da sucessão de termo geral $(\frac{n-2}{n})^{3n}$?",$\frac{1}{e^6}$,"[""$\\frac{1}{e^3}$"", ""$e^3$"", ""$\\frac{1}{e^6}$"", ""$e^6$""]",2,True,1ª,1,2.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Uma caixa contém bolas de várias cores, indistinguíveis ao tato, umas com um logotipo desenhado e outras não. Das bolas existentes na caixa, dez são amarelas. Dessas dez bolas, três têm o logotipo desenhado.
+Dispõem-se, ao acaso, as dez bolas amarelas, lado a lado, em linha reta. Qual é a probabilidade de as três bolas com o logotipo desenhado ficarem juntas?",$\frac{1}{15}$,"[""$\\frac{1}{16}$"", ""$\\frac{1}{15}$"", ""$\\frac{1}{14}$"", ""$\\frac{1}{13}$""]",1,True,1ª,1,3.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Qual é a solução da equação $2cos x+1=0$ no intervalo $[-\pi,0]$?",$\frac{-2\pi}{3}$,"[""$\\frac{-5\\pi}{6}$"", ""$\\frac{-2\\pi}{3}$"", ""$\\frac{-\\pi}{3}$"", ""$\\frac{-\\pi}{6}$""]",1,True,1ª,2,11.0,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Um dado cúbico equilibrado tem uma face numerada com o número -1 e cinco faces numeradas com o número 1. Lança-se este dado duas vezes. Seja $X$ a variável aleatória «soma dos números saídos nos dois lançamentos». Qual é o valor de $k$ para o qual $P(X = k) = \frac{5}{18}$ ?",0,"[""0"", ""2"", ""-2"", ""-1""]",0,True,1ª,2,12.1,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Um ponto $P$ desloca-se numa reta numérica, no intervalo de tempo $I = [0,10]$ (medido em segundos), de tal forma que a respetiva abcissa é dada por $x(t) = 3 \cos(\pi t + \frac{2\pi}{3})$ com $t \in I$. Qual é o período, em segundos, deste oscilador harmónico?",2,"[""2"", ""3"", ""$2\\pi$"", ""$3\\pi$""]",0,True,1ª,2,12.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Seja $g$ a função, de domínio $\mathbb{R} \setminus \{0\}$, definida por $g(x) = \frac{e^{-x}}{x}$
+Seja $h$ a função, de domínio $\mathbb{R}^+$, definida por $h(x) = g(x) + 2x - \frac{1}{\sqrt{x}}$. Sabe-se que o gráfico da função $h$ tem uma assíntota oblíqua. Qual é o declive dessa assíntota?",2,"[""1"", ""2"", ""$e$"", ""$e^2$""]",1,True,1ª,2,14.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Uma escola secundária tem apenas turmas de 10.°, 11.º e 12.º anos.
+Uma turma dessa escola tem 26 alunos, dos quais 15 são raparigas. O delegado de turma é um rapaz. Pretende-se formar uma comissão com três alunos desta turma, para organizar uma festa de fim de ano. Quantas comissões diferentes, que incluam rapazes e raparigas, se podem formar, sabendo-se que o delegado de turma tem de fazer parte da comissão?",255,"[""195"", ""215"", ""235"", ""255""]",3,True,2.ª Fase,1,2.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Uma caixa contém duas bolas brancas e três bolas pretas. Retiram-se, ao acaso e em simultâneo, duas bolas da caixa. Seja $X$ a variável aleatória «número de bolas brancas retiradas». Qual é o valor médio da variável aleatória $X$?","0,8","[""0,9"", ""0,8"", ""0,7"", ""0,6""]",1,True,2.ª Fase,1,3.1,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+De um triângulo, sabe-se que os comprimentos dos seus lados são 4, 5 e 6. Seja $\alpha$ a amplitude do maior ângulo interno desse triângulo. Qual é o valor de $\text{sen} \alpha$, arredondado às milésimas?","0,992","[""0,989"", ""0,992"", ""0,995"", ""0,998""]",1,True,2.ª Fase,1,3.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Para um certo número real $k$, é contínua em $\mathbb{R}$ a função $f$, definida por
+$f(x) = \begin{cases} \log_3 k & \text{se } x = 1 \\ \frac{x^2 - 1}{x - 1} & \text{se } x \neq 1 \end{cases}$
+Qual é o valor de $k$?",9,"[""5"", ""6"", ""8"", ""9""]",3,True,2.ª Fase,1,5.0,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Qual é o valor de $sen(3 \arccos(\frac{1}{2}))$?",0,"[""$\\frac{\\sqrt{3}}{2}$"", ""$\\frac{\\sqrt{2}}{2}$"", ""0"", ""1""]",2,True,2.ª Fase,2,9.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Qual é, para qualquer número real positivo $a$, o limite da sucessão $\left(\frac{n + \ln a}{n}\right)^{n+2}$ ?",$a$,"[""$a^2$"", ""$2a$"", ""$a$"", ""$\\sqrt{a}$""]",2,True,2.ª Fase,2,11.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Lança-se cinco vezes um dado tetraédrico equilibrado, com as faces numeradas de 1 a 4, e regista-se o número da face voltada para baixo.
+Qual é o valor, arredondado às centésimas, da probabilidade de, nos cinco lançamentos, sair face 4 exatamente três vezes?","0,09","[""0,01"", ""0,03"", ""0,07"", ""0,09""]",3,True,Época Especial,1,2.1,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+De um triângulo, sabe-se que os comprimentos dos seus lados são 4, 5 e 8.
+Seja $\alpha$ a amplitude, em graus, do maior ângulo interno desse triângulo.
+Qual é o valor de $\alpha$, arredondado às unidades?",125°,"[""75°"", ""100°"", ""120°"", ""125°""]",3,True,Época Especial,1,2.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Um saco contém nove cartões, indistinguíveis ao tato, numerados de 1 a 9.
+Retiram-se, simultaneamente e ao acaso, quatro cartões do saco.
+Qual é a probabilidade de o menor dos números saídos ser 3 e o maior ser 8?",$\frac{1}{21}$,"[""$\\frac{1}{18}$"", ""$\\frac{1}{21}$"", ""$\\frac{1}{6}$"", ""$\\frac{1}{7}$""]",1,True,Época Especial,1,3.1,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Para um certo número real $k$, é contínua em $\mathbb{R}$ a função $f$, definida por
+$f(x) = \begin{cases} \frac{x-1}{x^2 + x - 2} & \text{se } x > 1 \\ k & \text{se } x \leq 1 \end{cases}$
+Qual é o valor de $k$?",$\frac{1}{3}$,"[""2"", ""3"", ""$\\frac{1}{3}$"", ""$\\frac{1}{2}$""]",2,True,Época Especial,1,8.0,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Considere, num referencial o.n. $xOy$, a elipse que passa nos pontos de coordenadas (2,0) e (0,-1) e que é simétrica em relação aos eixos coordenados.
+Qual é a distância focal desta elipse?",$2\sqrt{3}$,"[""$2\\sqrt{2}$"", ""$2\\sqrt{3}$"", ""$2\\sqrt{5}$"", ""$2\\sqrt{6}$""]",1,True,Época Especial,2,9.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço de resultados associado a uma certa experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos equiprováveis e independentes.
+Sabe-se que $P(\overline{A} \cup \overline{B}) = \frac{8}{9}$.
+Qual é o valor de $P(A)$?",$\frac{1}{3}$,"[""$\\frac{1}{4}$"", ""$\\frac{3}{4}$"", ""$\\frac{1}{3}$"", ""$\\frac{2}{3}$""]",2,True,Época Especial,2,12.1,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Considere a função $f$, de domínio $\mathbb{R}^+$, definida por $f(x) = \ln x$.
+Seja $(u_n)$ a sucessão de termo geral $u_n = \left(\frac{n + 2}{n}\right)^{\frac{n}{4}}$.
+Qual é o valor de $\lim f(u_n)$?",$\frac{1}{2}$,"[""4"", ""2"", ""$\\frac{1}{2}$"", ""$\\frac{1}{4}$""]",2,True,Época Especial,2,12.2,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Seja $g$ a função, de domínio $\mathbb{R}$, definida por
+$g(x) = \begin{cases} x \ln (1-x) & \text{se } x \leq 0 \\ \frac{1 - 3x}{1 - e^{-x}} & \text{se } x > 0 \end{cases}$
+Qual é o declive da reta tangente ao gráfico de $g$ no ponto de abcissa -1?","$0,5 + \ln 2$","[""$0,5 + \\ln 2$"", ""$-0,5 + \\ln 2$"", ""$0,5 - \\ln 2$"", ""$-0,5 - \\ln 2$""]",0,True,Época Especial,2,13.1,Mathematics A,2019,,,,,,,,,,,,,,,,
+"
+Quatro pessoas vão escolher, cada uma e em segredo, um dos seguintes números: 1, 2, 3, 4 e 5. Qual é a probabilidade de exatamente duas delas escolherem o número 5?","0,1536","[""0,1530"", ""0,1532"", ""0,1534"", ""0,1536""]",3,True,1ª Fase,1,2.0,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Um saco contém bolas azuis e bolas brancas, indistinguíveis ao tato. Cada bola tem uma única cor e só existem bolas azuis e bolas brancas no saco.
+Considere que se alterou a constituição inicial do saco e que, neste, estão agora oito bolas azuis e sete bolas brancas.
+Pretende-se colocar todas estas bolas em dez caixas numeradas de 1 a 10, de tal forma que:
+• cada caixa com número par tenha, pelo menos, uma bola azul;
+• cada caixa com número ímpar tenha, pelo menos, uma bola branca;
+• cada caixa tenha, no máximo, duas bolas.
+Nestas condições, de quantas maneiras diferentes podem ficar colocadas as bolas nas dez caixas?",2520,"[""1176"", ""2520"", ""28 016"", ""30 550""]",1,True,1ª Fase,1,3.2,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Considere um cubo $[MNPQRSTU]$. Escolhem-se, ao acaso, três vértices distintos desse cubo. Qual é a probabilidade de o plano por eles definido conter uma das faces do cubo?",$\frac{3}{7}$,"[""$\\frac{1}{7}$"", ""$\\frac{3}{7}$"", ""$\\frac{1}{8}$"", ""$\\frac{3}{8}$""]",1,True,2.ª Fase,1,2.0,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Considere todos os números naturais superiores a 9999 e inferiores a 22 000. Destes números, quantos se podem escrever com os algarismos 0, 1, 2 e 3?",384,"[""192"", ""236"", ""384"", ""512""]",2,True,2.ª Fase,1,4.0,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Dados dois números reais positivos, sabe-se que a soma dos seus logaritmos na base 8 é igual a $\frac{1}{3}$. A que é igual o produto desses dois números?",2,"[""2"", ""3"", ""8"", ""9""]",0,True,2.ª Fase,1,5.0,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Seja $k$ um número real. Sabe-se que $k + i$ é uma das raízes quadradas do número complexo $3-4i$. Qual é o valor de $k$?",-2,"[""2"", ""1"", ""-1"", ""-2""]",3,True,2.ª Fase,1,8.2,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Sejam $f$ e $g$ as funções, de domínio $\mathbb{R}$, definidas, respetivamente, por $f(x)= x^2$ e $g(x) = cos x$.
+Qual é o declive da reta tangente ao gráfico da função $f \circ g$ no ponto de abcissa $\frac{\pi}{4}$?",-1,"[""-2"", ""-1"", ""1"", ""2""]",1,True,2.ª Fase,1,10.1,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Qual é o valor de $\lim_{x \to 1} \frac{f(x) - f(1)}{1 - x^2}$?",-1,"[""-2"", ""-1"", ""0"", ""2""]",1,True,2.ª Fase,1,12.2,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Considere um dado cúbico equilibrado, com as faces numeradas de 1 a 6.
+Lança-se esse dado quatro vezes e escrevem-se, da esquerda para a direita, os algarismos saídos, obtendo-se, assim, um número com quatro algarismos.
+Qual é a probabilidade de esse número ser par, menor do que 5000 e capicua (sequência de algarismos cuja leitura da direita para a esquerda ou da esquerda para a direita dá o mesmo número)?",$\frac{1}{108}$,"[""$\\frac{1}{36}$"", ""$\\frac{5}{36}$"", ""$\\frac{1}{108}$"", ""$\\frac{5}{108}$""]",2,True,Época Especial,1,3.0,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Um hotel, que promove atividades ao ar livre, é procurado por turistas de várias nacionalidades.
+Três hóspedes suecos e quatro hóspedes dinamarqueses pretendem visitar os arredores do hotel. Para tal, o hotel disponibiliza quatro motos de dois lugares cada uma (uma preta, uma amarela, uma branca e uma verde).
+Sabe-se que apenas os hóspedes dinamarqueses podem conduzir.
+De quantas maneiras distintas se podem distribuir, deste modo, os sete hóspedes pelas quatro motos?",576,"[""21"", ""35"", ""268"", ""576""]",3,True,Época Especial,1,4.2,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Para um certo número real $k$, seja $g$ a função, de domínio $\mathbb{R}$, definida por
+$g(x) = \begin{cases} \frac{x^2 - x}{k - kx} & \text{se } x < 1 \\ x^2 - 10 + 8\ln x & \text{se } x \geq 1 \end{cases}$
+Sabe-se que $g$ é contínua no ponto 1.
+Qual é o valor de $k$?",$\frac{1}{9}$,"[""$\\frac{1}{6}$"", ""$\\frac{1}{7}$"", ""$\\frac{1}{8}$"", ""$\\frac{1}{9}$""]",3,True,Época Especial,1,10.1,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Considere a função $h$, de domínio $\mathbb{R}$, definida por $h(x) = \frac{5}{4 + 3\cos(2x)}$.
+Qual é a taxa média de variação da função $h$ entre $\frac{\pi}{6}$ e $\frac{7\pi}{6}$?",0,"[""1"", ""$\\frac{1}{2}$"", ""0"", ""$-\\frac{1}{2}$""]",2,True,Época Especial,1,11.1,Mathematics A,2020,,,,,,,,,,,,,,,,
+"
+Numa escola frequentada por estudantes portugueses e estrangeiros, 60% dos alunos são raparigas e 15% são rapazes estrangeiros.
+Escolheu-se, ao acaso, um aluno dessa escola e verificou-se que era um rapaz.
+Qual é a probabilidade de ele ser português?","62,50%","[""45%"", ""50%"", ""57,5%"", ""62,5%""]",3,True,1.ª Fase,1,3.0,Mathematics A,2021,,,,,,,,,,,,,,,,
+"
+Seja $(V_n)$ uma progressão geométrica.
+Sabe-se que $v_5 = 4$ e que $v_8 = 108$
+Qual é o valor de $v_6$?",12,"[""12"", ""24"", ""48"", ""60""]",0,True,1.ª Fase,1,6.0,Mathematics A,2021,,,,,,,,,,,,,,,,
+"
+Em $\mathbb{C}$, conjunto dos números complexos, considere $z₁ = 2e^{i\frac{\pi}{4}}$ e $z₂ = 2e^{i\frac{3 \pi}{28}}$
+Seja $w$ o número complexo tal que $w = \frac{z₁}{z₂}$
+Sabe-se que, no plano complexo, o afixo do número complexo $w$ é um dos vértices de um polígono regular com centro na origem do referencial e com outro vértice sobre o semieixo real positivo.
+Qual é o número mínimo de vértices desse polígono?",14,"[""7"", ""14"", ""21"", ""28""]",1,True,1.ª Fase,1,8.0,Mathematics A,2021,,,,,,,,,,,,,,,,
+"
+Numa dada localidade, existe um clube onde se pratica badminton e ténis.
+Com doze raquetes distintas, sendo seis de badminton e seis de ténis, formam-se, ao acaso, dois conjuntos de seis raquetes cada um.
+Qual é o valor, arredondado às centésimas, da probabilidade de cada um dos dois conjuntos ficar com três raquetes de badminton e três raquetes de ténis?","0,43","[""0,22"", ""0,43"", ""0,50"", ""0,87""]",1,True,2.ª Fase,1,3.1,Mathematics A,2021,,,,,,,,,,,,,,,,
+"
+Num laboratório cuja temperatura ambiente é constante, aqueceu-se uma substância até atingir uma certa temperatura, superior à temperatura ambiente, e, a seguir, deixou-se arrefecer essa substância durante uma hora.
+Admita que a temperatura dessa substância, em graus Celsius, $t$ minutos após o início do arrefecimento, é dada por
+$T(t) = 20 + 100e^{-kt}, 0 \leq t \leq 60$
+em que $k$ é uma constante real positiva.
+Durante o arrefecimento, houve um instante $t_1$ em que a temperatura da substância foi 30 °C.
+Qual é o valor de $k$?",$\frac{\ln10}{t_1}$,"[""$\\ln(\\frac{10}{t_1})$"", ""$t_1 - \\ln 10$"", ""$\\frac{\\ln10}{t_1}$"", ""$t_1 + \\ln 10$""]",2,True,2.ª Fase,1,11.1,Mathematics A,2021,,,,,,,,,,,,,,,,
+"
+Para conhecer a variação do número de bactérias de uma determinada estirpe, colocou-se num tubo de ensaio fechado, com alguns nutrientes, um certo número de bactérias dessa estirpe.
+Admita que, nessas condições, o número, $N$, em milhares, de bactérias vivas existentes no tubo, $t$ horas após a sua colocação nesse tubo, é dado por
+$N(t) = N_0 e^{1,08t - 0,3t^2}$
+em que $N_0$ representa a dimensão, em milhares, da população inicial.
+Com o decorrer do tempo, para que tende o número de bactérias vivas existentes no tubo?",0,"[""$+\\infty$"", ""0,78$N_0$"", ""$N_0$"", ""0""]",3,True,Época Especial,1,12.1,Mathematics A,2021,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$, conjunto finito, o espaço amostral associado a uma dada experiência aleatória.
+Sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+• $P(\overline{B}) = 0,6$;
+• $P(A \cup B) = 0,6$;
+• $A \cap B = \varnothing$.
+Qual é o valor de $P(\overline{A})$?","0,8","[""0,2"", ""0,4"", ""0,6"", ""0,8""]",3,True,1.ª Fase,1,3.0,Mathematics A,2022,,,,,,,,,,,,,,,,
+"
+A soma de todos os elementos de uma dada linha do triângulo de Pascal é igual a 16 384.
+Qual é o valor do quarto elemento da linha seguinte?",455,"[""286"", ""455"", ""715"", ""1365""]",1,True,2.ª Fase,1,2.0,Mathematics A,2022,,,,,,,,,,,,,,,,
+"
+Um tanque, que inicialmente tinha um certo volume de água salgada, dispõe de duas torneiras, uma de enchimento e outra de vazamento. As duas torneiras são abertas, em simultâneo, sendo vertida água do mar para o tanque até este estar cheio.
+Admita que a massa de sal, $m$, em quilogramas, no tanque, $t$ minutos após a abertura das torneiras, até o tanque estar cheio, é dada por
+$m(t) = \frac{30(1 + 0,006t)^3 - 29}{(1 + 0,006t)^2}$, com $t \in [0, 250]$.
+Qual é, com aproximação às unidades, a percentagem de aumento da massa de sal no tanque, no primeiro minuto após a abertura das torneiras?",52%,"[""152%"", ""52%"", ""250%"", ""25%""]",1,True,2.ª Fase,1,11.1,Mathematics A,2022,,,,,,,,,,,,,,,,
+"
+Considere todos os números naturais de cinco algarismos diferentes que se podem formar com os algarismos de 0 a 5.
+Destes números, quantos têm o algarismo das unidades igual a 5?",96,"[""625"", ""256"", ""128"", ""96""]",3,True,Época Especial,1,3.0,Mathematics A,2022,,,,,,,,,,,,,,,,
+"
+Seja $k$ um número natural.
+Qual é o limite da sucessão $(u_n)$ definida por $u_n = \left( \frac{n+k}{n} \right)^n$?",$e^{k}$,"[""1"", ""$+\\infty$"", ""$e^{k}$"", ""$e^{-k}$""]",2,True,Época Especial,1,6.0,Mathematics A,2022,,,,,,,,,,,,,,,,
+"
+Qual é o limite da sucessão de termo geral $(1 + \frac{1}{n})^{2n}$?",$e^2$,"[""1"", ""$2e$"", ""$e^2$"", ""$+\\infty$""]",2,True,1ª Fase,1,1.0,Mathematics A,2023,,,,,,,,,,,,,,,,
+"
+Um grupo de jovens inscreveu-se num campo de férias que oferece as modalidades de surf e de skate.
+Dez dos jovens do grupo vão deslocar-se em fila, pela praia, para uma aula de surf.
+A Ana, o Diogo e o Francisco são três desses jovens.
+De quantas formas diferentes se podem dispor os jovens na fila, ficando a Ana, o Diogo e o Francisco juntos?",241 920,"[""483 840"", ""241 920"", ""60 480"", ""30 240""]",1,True,1ª Fase,1,5.1,Mathematics A,2023,,,,,,,,,,,,,,,,
+"
+Considere todos os números naturais de seis algarismos que é possível formar com os algarismos de 1 a 9.
+Destes números, quantos têm exatamente dois cincos?",61 440,"[""98 415"", ""61 440"", ""36 015"", ""25 200""]",1,True,2.ª Fase,1,3.0,Mathematics A,2023,,,,,,,,,,,,,,,,
+"
+Qual é o valor de $\lim_{x \to 0} \frac{\text{sen}(2x)}{x}$?",2,"[""0"", ""$\\frac{1}{2}$"", ""1"", ""2""]",3,True,2.ª Fase,1,7.0,Mathematics A,2023,,,,,,,,,,,,,,,,
+"
+Seja $\Omega$ o espaço amostral associado a uma certa experiência aleatória, e sejam $A$ e $B$ dois acontecimentos ($A \subset \Omega$ e $B \subset \Omega$).
+Sabe-se que:
+$\cdot P(A \cup B) = 0,8$;
+$\cdot P(A \cap \overline{B}) = 0,5$.
+Qual é o valor de $P(B)$?","0,3","[""0,2"", ""0,3"", ""0,5"", ""0,6""]",1,True,Época Especial,1,3.0,Mathematics A,2023,,,,,,,,,,,,,,,,
+"
+Para certos valores de $a$ e de $b$ ($a > 1$ e $b > 1$), tem-se $log_a \left(\frac{b}{a}\right) = 2$.
+Qual é o valor de $log_a(\sqrt{a^3} \times b^2)$?",$\frac{15}{2}$,"[""$\\frac{13}{2}$"", ""$\\frac{15}{2}$"", ""$\\frac{19}{2}$"", ""$\\frac{21}{2}$""]",1,True,Época Especial,1,8.0,Mathematics A,2023,,,,,,,,,,,,,,,,
+"
+Identifique o valor de $\lim_{x \to 2^{+}} \frac{1}{4-x^2}$",$-\infty$,"[""0"", ""1"", ""$+\\infty$"", ""$-\\infty$""]",3,False,1.ª FASE,I,1.0,Mathematics A,2007,,,,,,,,,,,,,,,,
+"
+De uma função $h$, de domínio $\mathbb{R}$, sabe-se que:
+•  hé uma função par;
+• $\lim_{x\to+\infty} (h(x) - 2x) = 0$
+Qual é o valor de $\lim_{x\to-\infty} h(x)$?",$+\infty$,"[""$+\\infty$"", ""$-2$"", ""$0$"", ""$-\\infty$""]",0,True,2.ª Fase,I,4.0,Mathematics A,2010,,,,,,,,,,,,,,,,
+"
+Considere a função $g$, de domínio $\mathbb{R}$, definida por
+$g(x) = \begin{cases} e^x & \text{se } x \leq 0 \\ \ln x & \text{se } x > 0 \end{cases}$
+Considere a sucessão de termo geral $u_n = \frac{1}{n}$
+Qual é o valor de $\lim_{n\to+\infty} g(u_n)$?",$-\infty$,"[""$+\\infty$"", ""$1$"", ""$0$"", ""$-\\infty$""]",3,True,2.ª Fase,I,5.0,Mathematics A,2010,,,,,,,,,,,,,,,,
+"
+Seja $g$ uma função, de domínio $]-\infty, e[$, definida por $g(x) = \ln(e - x)$.
+Considere a sucessão estritamente crescente de termo geral $x_n = \left(1 + \frac{1}{n}\right)^n$
+Qual é o valor de $\lim g(x_n)$?",$-\infty$,"[""$+\\infty$"", ""$e$"", ""$1$"", ""$-\\infty$""]",3,True,2.ª Fase,I,4.0,Mathematics A,2014,,,,,,,,,,,,,,,,
+"
+Seja $f$ a função, de domínio $\mathbb{R}\setminus\{0\}$, definida por $f(x) = \frac{x-1}{e^{x}-1}$
+Considere a sucessão de números reais $(x_n)$ tal que $x_n = - \frac{1}{n}$
+Qual é o valor de $\lim f (x_n)$?",$+\infty$,"[""$-\\infty$"", ""0"", ""1"", ""$+\\infty$""]",3,True,Época Especial,I,3.0,Mathematics A,2014,,,,,,,,,,,,,,,,
