@@ -99,14 +99,12 @@ The judge stage writes its outputs under `./results/judgments/...`.
 ```bash
 evalhub report aggregate --results-root ./results --output ./report.csv
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format png
-evalhub report highlights --csv ./report.csv --output ./report_highlights.pdf
 ```
 
 `report.csv` is one long-form row per `(model, mode, benchmark, judge)`;
-`report_plots/` holds the Pass@K vs CoT-Pass@K figures; `report_highlights.pdf`
-is the condensed paper-style summary. See [`reporting.md`](reporting.md) for the
-full schema and [`report_plots_guide.md`](report_plots_guide.md) for how to read
-every figure.
+`report_plots/` holds the Pass@K vs CoT-Pass@K figures. See
+[`reporting.md`](reporting.md) for the full schema and
+[`report_plots_guide.md`](report_plots_guide.md) for how to read every figure.
 
 ## 6. Submitting to nscluster (Slurm)
 

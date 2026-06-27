@@ -16,13 +16,9 @@ from evalhub.cot.pipeline import finalize_cot_pipeline
 from evalhub.gen import generate
 from evalhub.inference.schemas import GenerationConfig
 from evalhub.report._cli import (
-    DEFAULT_ATLAS_PDF,
     DEFAULT_CSV,
-    DEFAULT_HIGHLIGHTS_PDF,
     DEFAULT_PLOT_DIR,
     cmd_aggregate,
-    cmd_atlas,
-    cmd_highlights,
     cmd_plot,
     cmd_upsert,
 )
@@ -259,36 +255,6 @@ def report_plot(
     written = cmd_plot(csv, output_dir)
     total = sum(len(paths) for paths in written.values())
     console.print(f"[green]Rendered {total} file(s) under {output_dir}[/green]")
-
-
-@report_app.command("highlights")
-def report_highlights(
-    csv: Annotated[Path, typer.Option(help="Wide master CSV produced by `report aggregate`")] = DEFAULT_CSV,
-    output: Annotated[Path, typer.Option(help="Destination PDF for the highlights report")] = DEFAULT_HIGHLIGHTS_PDF,
-):
-    r"""Render the short, paper-style **highlights PDF** of the CoT-judge veto.
-
-    One finding per page (veto vs K, language, mode, scale, judge, metric
-    stringency, extremes) with captions whose numbers are computed live from the
-    CSV. Written to ``results/report_highlights.pdf`` by default.
-    """
-    out = cmd_highlights(csv, output)
-    console.print(f"[green]Rendered highlights PDF -> {out}[/green]")
-
-
-@report_app.command("atlas")
-def report_atlas(
-    plot_dir: Annotated[Path, typer.Option(help="Plot suite dir produced by `report plot`")] = DEFAULT_PLOT_DIR,
-    output: Annotated[Path, typer.Option(help="Destination PDF for the curated plot atlas")] = DEFAULT_ATLAS_PDF,
-):
-    r"""Render the curated **plot-atlas PDF** — a visual index of the plot suite.
-
-    Cover page (suite map + reading conventions), then one section per plot family
-    with a deep caption, one or two representative plots embedded, and a complete
-    index of that family's files. Written to ``results/report_plots_atlas.pdf``.
-    """
-    out = cmd_atlas(plot_dir, output)
-    console.print(f"[green]Rendered plot atlas PDF -> {out}[/green]")
 
 
 def main():

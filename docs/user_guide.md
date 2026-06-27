@@ -91,8 +91,6 @@ different tuple → different leaf (no collision).
 ```bash
 evalhub report aggregate --results-root ./results --output ./report.csv
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
-evalhub report highlights --csv ./report.csv --output ./report_highlights.pdf
-evalhub report atlas --plot-dir ./report_plots --output ./report_plots_atlas.pdf
 ```
 
 `report.csv` is one long-form row per `(model, mode, benchmark, judge)`. See
@@ -208,5 +206,5 @@ scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env
 | `scripts/configs/*.env` | per-run knobs; `*.env.example` document them |
 | `scripts/templates/*.jinja` | per-family chat templates |
 | `evalhub/cot/` | CoT-Pass@K post-processing (extract → aggregate → metrics → finalize) |
-| `evalhub/report/` | `evalhub report` aggregation, plots, highlights, atlas |
+| `evalhub/report/` | `evalhub report` aggregation + plots |
 | `examples/scripts/` | reusable result-management tools (audit, migrate, tables) |

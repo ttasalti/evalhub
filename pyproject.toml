@@ -75,7 +75,7 @@ sglang = [
     "sglang-router",
 ]
 
-# Reporting (aggregation, plotting, highlights/atlas PDFs)
+# Reporting (aggregation + plotting)
 report = [
     "pandas",
     "matplotlib",

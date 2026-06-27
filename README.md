@@ -30,7 +30,7 @@ All-in-one benchmarking platform for evaluating Large Language Models (LLMs) wit
 > - extra **math benchmarks** (`aime2026`, multilingual `aime2026_tr` / `aime2026_pt`,
 >   `tubitak_math2026`, `pt_exams_math`);
 > - an `evalhub report` sub-app that **aggregates** every run into a master CSV and renders
->   publication-ready **plots / highlights / atlas**.
+>   publication-ready **plots**.
 
 > [!Warning]
 > This project is under active development and the API is not stable yet.
@@ -178,8 +178,8 @@ file stays static while runs vary.
 ## 📊 Reporting
 
 The `evalhub report` sub-app aggregates every summary file under an
-`OUTPUT_ROOT` into a single long-form CSV and renders publication-ready plots,
-a highlights PDF, and a combined atlas:
+`OUTPUT_ROOT` into a single long-form CSV and renders the publication-ready
+plot suite:
 
 ```bash
 # 1. Aggregate every {benchmark}_summary.json / *_cot_summary.json into one CSV
@@ -187,10 +187,6 @@ evalhub report aggregate --results-root ./results --output ./report.csv
 
 # 2. Render PNG + PDF plots (Pass@K curves, base-vs-CoT bars, heatmaps, veto rate)
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
-
-# 3. Condensed highlights PDF + a single-file atlas of every plot
-evalhub report highlights --csv ./report.csv --output ./report_highlights.pdf
-evalhub report atlas --plot-dir ./report_plots --output ./report_plots_atlas.pdf
 ```
 
 Install the optional dependency group first: `uv pip install -e ".[report]"`.

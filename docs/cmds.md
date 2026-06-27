@@ -145,10 +145,6 @@ evalhub report aggregate --results-root ./results --output ./report.csv
 
 # 2. Render publication-ready static plots.
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
-
-# 3. Render the highlights PDF and the plot atlas.
-evalhub report highlights --csv ./report.csv --output ./report_highlights.pdf
-evalhub report atlas --plot-dir ./report_plots --output ./report_plots_atlas.pdf
 ```
 
 See [reporting.md](reporting.md) for the CSV schema, or

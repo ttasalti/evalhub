@@ -94,7 +94,7 @@ if [[ -n "${BENCHMARKS:-}" && -z "${BENCHMARK:-}" ]]; then
     # All benchmarks finished — produce master CSV + plots once.
     apply_legacy_env_aliases
     pipeline_init_paths
-    pipeline_log "==[REPORT]== Aggregating results + rendering plots/highlights/atlas ===="
+    pipeline_log "==[REPORT]== Aggregating results + rendering plots ===="
     pipeline_run_report
     exit 0
 fi
@@ -172,6 +172,6 @@ fi
 # Skipped when invoked from the BENCHMARKS plural loop (parent runs its own).
 # --------------------------------------------------------------------------
 if [[ -z "${EVALHUB_SKIP_REPORT:-}" ]]; then
-    pipeline_log "==[4/4]== Aggregating results + rendering plots/highlights/atlas ======"
+    pipeline_log "==[4/4]== Aggregating results + rendering plots ======"
     pipeline_run_report
 fi

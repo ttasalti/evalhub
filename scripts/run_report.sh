@@ -41,18 +41,5 @@ pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/configs/qwen_0.8b_
 apply_legacy_env_aliases
 pipeline_init_paths
 
-pipeline_log "==[REPORT]== Aggregating results + rendering plots/highlights/atlas under ${OUTPUT_ROOT}"
-mkdir -p "${OUTPUT_ROOT}/report_plots"
-evalhub report aggregate \
-    --results-root "${OUTPUT_ROOT}" \
-    --output "${OUTPUT_ROOT}/report.csv"
-evalhub report plot \
-    --csv "${OUTPUT_ROOT}/report.csv" \
-    --output-dir "${OUTPUT_ROOT}/report_plots"
-evalhub report highlights \
-    --csv "${OUTPUT_ROOT}/report.csv" \
-    --output "${OUTPUT_ROOT}/report_highlights.pdf"
-evalhub report atlas \
-    --plot-dir "${OUTPUT_ROOT}/report_plots" \
-    --output "${OUTPUT_ROOT}/report_plots_atlas.pdf"
-pipeline_log "[DONE] Report CSV + plots + highlights + atlas written under ${OUTPUT_ROOT}"
+pipeline_log "==[REPORT]== Aggregating results + rendering plots under ${OUTPUT_ROOT}"
+pipeline_run_report

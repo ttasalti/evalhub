@@ -14,8 +14,6 @@ from evalhub.utils.logger import logger
 # The master CSV lives inside the results tree by convention.
 DEFAULT_CSV = Path("results/report.csv")
 DEFAULT_PLOT_DIR = Path("results/report_plots")
-DEFAULT_HIGHLIGHTS_PDF = Path("results/report_highlights.pdf")
-DEFAULT_ATLAS_PDF = Path("results/report_plots_atlas.pdf")
 
 
 def cmd_aggregate(results_root: Path, output: Path) -> Path:
@@ -49,39 +47,3 @@ def cmd_plot(csv: Path, output_dir: Path) -> dict[str, list[Path]]:
     n = sum(len(v) for v in written.values())
     logger.info(f"Wrote {n} file(s) under {output_dir}")
     return written
-
-
-def cmd_highlights(csv: Path, output: Path) -> Path:
-    """Implementation of ``evalhub report highlights`` — render the highlights PDF."""
-    try:
-        import pandas as pd
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "evalhub report highlights requires pandas + matplotlib. "
-            "Install with `pip install evalhub[report]`."
-        ) from e
-    from evalhub.report.highlights import build_highlights
-
-    if not csv.exists():
-        raise FileNotFoundError(f"CSV not found: {csv} (run `evalhub report aggregate` first)")
-    df = pd.read_csv(csv)
-    out = build_highlights(df, output)
-    logger.info(f"Wrote highlights PDF -> {out}")
-    return out
-
-
-def cmd_atlas(plot_dir: Path, output: Path) -> Path:
-    """Implementation of ``evalhub report atlas`` — curated visual index of the plot suite."""
-    try:
-        import matplotlib  # noqa: F401
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "evalhub report atlas requires matplotlib. Install with `pip install evalhub[report]`."
-        ) from e
-    from evalhub.report.atlas import build_atlas
-
-    if not plot_dir.exists():
-        raise FileNotFoundError(f"Plot dir not found: {plot_dir} (run `evalhub report plot` first)")
-    out = build_atlas(plot_dir, output)
-    logger.info(f"Wrote plot atlas PDF -> {out}")
-    return out

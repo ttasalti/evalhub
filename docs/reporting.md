@@ -26,28 +26,14 @@ evalhub report upsert --summary ./results/.../aime2026_summary.json
 
 # Render the Pass@K vs CoT-Pass@K plot suite from the CSV (default out: results/report_plots/)
 evalhub report plot
-
-# Render the short, paper-style highlights PDF (default out: results/report_highlights.pdf)
-evalhub report highlights
-
-# Render the curated visual plot-atlas PDF (default out: results/report_plots_atlas.pdf)
-evalhub report atlas
 ```
 
 The pipeline scripts (`scripts/run_report.sh`, `scripts/run_end_to_end.sh`) run
-`aggregate → plot → highlights → atlas` as the report stage, writing everything
-under `OUTPUT_ROOT` (i.e. `results/`).
+`aggregate → plot` as the report stage, writing everything under `OUTPUT_ROOT`
+(i.e. `results/`).
 
-Three companion artefacts make the output usable without re-deriving anything:
+A companion guide makes the output usable without re-deriving anything:
 
-* **`results/report_highlights.pdf`** (`report highlights`) — a ~9-page,
-  one-finding-per-page report on the **CoT-judge veto** (No-Judge − cot) across K,
-  language, mode, scale, judge and metric stringency. Every caption number is
-  computed live from the CSV. See [`evalhub/report/highlights.py`](../evalhub/report/highlights.py).
-* **`results/report_plots_atlas.pdf`** (`report atlas`) — a curated *visual* index
-  of the plot suite: a cover (suite map + reading conventions), then one section
-  per family with a deep caption, one or two representative plots embedded, and a
-  complete file index. See [`evalhub/report/atlas.py`](../evalhub/report/atlas.py).
 * **[`docs/report_plots_guide.md`](report_plots_guide.md)** — the prose
   interpretation manual for every `results/report_plots/<family>` folder and PNG:
   what each shows, how to read the axes (note y = 0→cell-max ⇒ compare gaps

@@ -1,14 +1,8 @@
 # Reading the plot suite — what each folder/PNG means and how to interpret it
 
 This is the interpretation manual for everything under `results/report_plots/`
-(produced by `evalhub report plot`). It is **separate from the highlights PDF**:
-the highlights tell you *what we found*; this guide teaches you *how to read every
-figure yourself* and what conclusions are (and are **not**) supported.
-
-> **Prefer to flip through the plots themselves?** `evalhub report atlas` builds
-> `results/report_plots_atlas.pdf` — a curated visual index that embeds
-> representative plots from each family with these same explanations, plus a
-> complete file index. This document is the full prose reference behind it.
+(produced by `evalhub report plot`): it teaches you *how to read every figure
+yourself* and what conclusions are (and are **not**) supported.
 
 The one question the whole suite exists to answer:
 
@@ -181,7 +175,7 @@ plus a **dashed** cot line per mode (the representative/most-covered judge).
 - Compare the three solid lines: does instruct-tuning help (blue/red above grey)?
   Does reasoning help (red above blue)? — **this can invert**: for Qwen on AIME-EN,
   `think` (red) sits *below* `non-think` (blue) at high k (reasoning *hurts* raw
-  accuracy there; see the anomaly in the highlights).
+  accuracy there).
 - Compare each solid line to its own dashed line (the veto for that mode). A key
   pattern: **think's solid–dashed gap is the smallest** → reasoning mode produces the
   most faithful CoT even when its raw accuracy isn't the highest.
@@ -249,7 +243,7 @@ comparable across cells here (unlike the curve families).
 **`pass_vs_cot_k{k}.csv`** is long-format: one row per
 `(model, mode, language, judge, metric)` with `nojudge`, `cot`, `delta`. Load it in
 pandas/Excel to compute any ranking yourself, e.g. group by language or judge — it's
-the audit trail for the highlights PDF numbers.
+the audit trail behind the veto numbers.
 
 ---
 
