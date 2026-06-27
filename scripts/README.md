@@ -58,6 +58,17 @@ scripts/run_end_to_end.sh --help
 | `run_judge_only.sh` | `JUDGE_MODEL`, `BENCHMARK`, `TARGET_MODEL`, and **either** `BASE_RESULTS_DIR` **or** `BASE_RESULTS_FILE`+`BASE_RAW_FILE` | every `JUDGE_*` sampling knob, `OUTPUT_ROOT`, `JUDGE_PORT`, `HEALTH_TIMEOUT` |
 | `run_end_to_end.sh` | `TARGET_MODEL`, `JUDGE_MODEL`, `BENCHMARK` | every `TARGET_*` / `JUDGE_*` knob, ports, paths |
 
+### Judge backend (`run_judge_only.sh`)
+
+By default the judge model is served locally on a GPU (`JUDGE_BACKEND=vllm`).
+Set `JUDGE_BACKEND=api` to route the judge to an external OpenAI-compatible
+endpoint instead — no GPU is launched. In that mode also set `JUDGE_API_BASE`
+and `JUDGE_API_KEY` (export the key or put it in the gitignored
+`scripts/secrets.env`; never commit it). Only the transport changes — the judge
+prompt, verdicts and metrics are identical. See
+[`configs/judge_api_deepseek.env`](configs/judge_api_deepseek.env) for a ready
+single-generation DeepSeek setup.
+
 ## HPC / nscluster (Slurm) usage
 
 The scripts are intentionally **environment-agnostic** — they do not embed
