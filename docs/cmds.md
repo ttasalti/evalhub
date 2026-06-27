@@ -148,4 +148,4 @@ evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
 ```
 
 See [reporting.md](reporting.md) for the CSV schema, or
-[onboarding.md](onboarding.md) for a five-minute end-to-end demo.
+[user_guide.md](user_guide.md) for a five-minute quick start and full guide.

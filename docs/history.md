@@ -9,7 +9,7 @@
 - As a result, there is a significant difference in speed between the two approaches.
 - By default, the original evaluation method is used, but you can modify it [here](../evalhub/benchmarks/code/livecodebench/__init__.py).
 
-04/29/2025 update: Evaluation results of r1 recipe reproduction can be found in [docs/baseline.md](docs/baseline.md).
+04/29/2025 update: Evaluation results of r1 recipe reproduction can be found in [baseline.md](baseline.md).
 
 06/06/2025 update: We have added an experimental feature referencing verl's implementation: integration of multi-turn and tool calls.
 
@@ -36,3 +36,8 @@ benchmark leaf); G-Pass@k / mG-Pass@k metrics; new benchmarks (`aime2026` EN/TR/
 `tubitak_math2026`, `pt_exams_math`). The report surface was trimmed to the master
 CSV plus the static plot suite (the Streamlit dashboard and the highlights/atlas
 PDFs were removed).
+
+06/27/2026 update: Documentation consolidated — the quick start now lives in the
+`docs/user_guide.md` "Quick start" section (the standalone `docs/onboarding.md` was
+folded into it), and the plot-reading manual moved into `docs/reporting.md` (the
+standalone `docs/report_plots_guide.md` was removed).

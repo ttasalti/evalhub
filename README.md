@@ -145,8 +145,8 @@ common bash library:
 | `scripts/run_end_to_end.sh` | Full target → judge → CoT finalize → report. The canonical single-job orchestrator. |
 
 All three are env-driven (`scripts/cot_pipeline.env.example` documents every knob)
-and Slurm-wrappable. See [`docs/onboarding.md`](docs/onboarding.md) for a
-five-minute walk-through on a small model.
+and Slurm-wrappable. See the [`docs/user_guide.md`](docs/user_guide.md) quick start
+for a five-minute walk-through on a small model.
 
 For a hands-on guide to running, debugging, and extending the pipeline on your
 own, see [`docs/user_guide.md`](docs/user_guide.md). For the shell scripts and

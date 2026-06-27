@@ -1,9 +1,39 @@
 # User guide — running the CoT-Pass@K pipeline end to end
 
 A practical, copy-paste guide to running, sweeping, debugging, and extending the
-pipeline on your own. For a five-minute first demo, start with
-[`onboarding.md`](onboarding.md); for the CSV schema, see
-[`reporting.md`](reporting.md).
+pipeline on your own. New here? Start with the **Quick start** below; for the CSV
+schema and the plot-reading manual, see [`reporting.md`](reporting.md).
+
+## 0. Quick start (5 minutes)
+
+From a fresh clone to a report on a single GPU, with a small open model and one
+benchmark (~5–10 min once the model is cached):
+
+```bash
+# 1. Install (core + base eval + reporting; add ,sglang to serve via SGLang)
+uv venv --python 3.12 && source .venv/bin/activate
+uv pip install -e ".[base,report]"
+huggingface-cli login           # only if your model/dataset is gated
+evalhub --help                  # sanity check
+
+# 2. A tiny base run: copy the demo env and shrink it
+cp scripts/cot_pipeline.env.example scripts/demo.env
+#   set in scripts/demo.env:
+#     TARGET_MODEL="Qwen/Qwen2.5-0.5B-Instruct"   # ~6 GB GPU
+#     BENCHMARK="gsm8k"
+#     TARGET_N_SAMPLES=2
+#     TARGET_MAX_COMPLETION_TOKENS=1024
+scripts/run_eval_only.sh scripts/demo.env
+
+# 3. Aggregate into the master CSV + plots
+evalhub report aggregate --results-root ./results --output ./report.csv
+evalhub report plot --csv ./report.csv --output-dir ./report_plots
+```
+
+`run_eval_only.sh` starts a vLLM server, resolves the chat template, runs
+`evalhub gen` + `evalhub eval`, and tears the server down on exit. To also run the
+judge stage, set `JUDGE_MODEL`/`JUDGE_TASK` and use `run_judge_only.sh` (§4) or the
+full `run_end_to_end.sh` (§2). If a step fails, see **Debugging tips** (§8).
 
 ## 1. One-time setup
 
@@ -94,8 +124,7 @@ evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
 ```
 
 `report.csv` is one long-form row per `(model, mode, benchmark, judge)`. See
-[`reporting.md`](reporting.md) for the schema and
-[`report_plots_guide.md`](report_plots_guide.md) for how to read each figure.
+[`reporting.md`](reporting.md) for the schema and how to read each figure.
 
 ## 5. Multi-model / multi-benchmark / multi-temperature sweeps
 
@@ -192,6 +221,13 @@ scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env
   `HOSTED_VLLM_API_KEY` (the orchestrators do this for you once vLLM is up).
 - **Empty CoT summary:** the base run produced no `correct=True` generations —
   increase `TARGET_N_SAMPLES` or pick an easier benchmark.
+- **`address already in use`:** another process holds `TARGET_PORT` — set
+  `TARGET_PORT=30010` (or any free port) in the env file.
+- **`report aggregate` returns 0 rows:** no directory under `--results-root`
+  matched a recognised layout — confirm the dir names use the V5 layout (or a
+  legacy fallback).
+- **`ModuleNotFoundError: matplotlib` (on `report plot`):** install the report
+  extra: `pip install -e ".[report]"`.
 
 ## 9. What each piece does (bird's-eye view)
 
