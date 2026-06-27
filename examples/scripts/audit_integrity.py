@@ -250,7 +250,7 @@ def audit_cell(cell: Path, expect_votes: int = EXPECT_VOTES) -> tuple[dict[str, 
             off = {v: n for v, n in dist.items() if v != expect_votes}
             if off:
                 res["votes"] = False
-                notes.append(f"votes!={expect_votes}: dağılım={dist}")
+                notes.append(f"votes!={expect_votes}: dist={dist}")
 
     # 6. text — judged generations must be the OWN-state base generations.
     # Only checkable where cot_judge_input.jsonl survives (-1 => skipped).

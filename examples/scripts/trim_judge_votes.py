@@ -167,14 +167,14 @@ def main() -> int:
         # guard 1: every generation must have >= KEEP votes to keep KEEP
         min_votes = min(cnt.values())
         if min_votes < KEEP:
-            print(f"[SKIP] {label}\n   votes/id dağılımı={dist} -> bir id'de <{KEEP} oy ({min_votes}); ATLANDI")
+            print(f"[SKIP] {label}\n   votes/id dist={dist} -> an id has <{KEEP} votes ({min_votes}); SKIPPED")
             skipped += 1
             continue
 
         # guard 2: judged generation ids must == base-correct ids (alignment).
         # Catches cross-wired / misaligned judge runs so we never finalize them.
         if not base.exists():
-            print(f"[SKIP] {label}\n   base results yok: {base}; ATLANDI")
+            print(f"[SKIP] {label}\n   no base results: {base}; SKIPPED")
             skipped += 1
             continue
         sol_ids = set(cnt.keys())
@@ -183,7 +183,7 @@ def main() -> int:
             extra = len(sol_ids - bc_ids)
             missing = len(bc_ids - sol_ids)
             print(f"[SKIP] {label}\n   votes/id={dist} | judge_ids={len(sol_ids)} base_correct_ids={len(bc_ids)} "
-                  f"(judge-only={extra}, base-only={missing}) -> HİZASIZ (cross-wire?), ATLANDI")
+                  f"(judge-only={extra}, base-only={missing}) -> MISALIGNED (cross-wire?), SKIPPED")
             skipped += 1
             continue
 
@@ -198,16 +198,16 @@ def main() -> int:
             os.unlink(tmp.name)
             common = set(full_maj) & set(k3_maj)
             agree = sum(1 for t in common if full_maj[t] == k3_maj[t])
-            agree_note = f"majority uyum (tam vs ilk-3): {agree}/{len(common)}"
+            agree_note = f"majority agreement (full vs first-3): {agree}/{len(common)}"
         except Exception as e:  # pragma: no cover
-            agree_note = f"(uyum hesaplanamadı: {e})"
+            agree_note = f"(agreement not computable: {e})"
 
         before = _summary_pass(summ)
         print(f"[{'TRIM' if args.execute else 'DRY'}] {label}")
-        print(f"   votes/id dağılımı={dist}  ids={len(cnt)}  {agree_note}")
+        print(f"   votes/id dist={dist}  ids={len(cnt)}  {agree_note}")
 
         if not args.execute:
-            print(f"   önce: {before}")
+            print(f"   before: {before}")
             continue
 
         backup(d)
@@ -222,10 +222,10 @@ def main() -> int:
         # sanity: every id now exactly 3
         post = per_id_counts(sol)
         ok = all(v == KEEP for v in post.values())
-        print(f"   önce: {before}\n   sonra:{after}  | her id=3 mi: {ok}")
+        print(f"   before: {before}\n   after: {after}  | every id == 3: {ok}")
         fixed += 1
 
-    print(f"\n{'Uygulandı' if args.execute else 'Dry-run'}: {fixed} hücre trim, {skipped} atlandı.")
+    print(f"\n{'Applied' if args.execute else 'Dry-run'}: {fixed} cell(s) trimmed, {skipped} skipped.")
     return 0
 
 
