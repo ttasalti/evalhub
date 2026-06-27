@@ -31,6 +31,7 @@ results_with_original_templates/
 results-en-without-shot-old-prompt/
 results-tr-without-shot-old-prompt/
 results-en-gemma-with-think-prompt/
+results_api_judge/
 data2/
 data3/
 data4/
@@ -208,6 +209,7 @@ scripts/gemma4_pipeline.env
 # ...but DO track the documented quick-start example configs:
 !scripts/configs/base.env
 !scripts/configs/qwen_0.8b_demo.env
+!scripts/configs/judge_api_deepseek.env
 
 # --- Results & generated report artifacts (never commit real eval data) ---
 results_demo/
