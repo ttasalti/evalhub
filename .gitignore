@@ -201,5 +201,35 @@ cython_debug/
 
 images/
 scripts/gemma4_pipeline.env
+
+# --- Environment / secret config files (keep real ones out; ship *.example) ---
 *.env
+# ...but DO track the documented quick-start example configs:
+!scripts/configs/base.env
+!scripts/configs/qwen_0.8b_demo.env
+
+# --- Results & generated report artifacts (never commit real eval data) ---
 results_demo/
+/report.csv
+results_backup_*.tar.gz
+*.tar.gz
+results_layout_manifest_*.tsv
+*.manifest.json
+summary_plots/
+
+# --- HPC / Slurm job logs ---
+slurm-*.out
+*.out
+
+# --- Local tool / editor / personal overrides & backups ---
+.evalhub_overrides/
+.vllm_overlay_env/
+.migration_backup/
+
+# --- Pipeline runtime state ---
+scripts/.job_watch_ledger.tsv
+scripts/.sequential_pairs.tsv
+
+# --- Repo-prep local working notes (not for publication) ---
+REPO_PREP_PLAN.md
+.prompt_baseline.sha256
