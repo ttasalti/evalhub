@@ -231,6 +231,17 @@ slurm-*.out
 scripts/.job_watch_ledger.tsv
 scripts/.sequential_pairs.tsv
 
+# --- Personal experiment one-offs (kept locally, not published; reusable tools
+#     live under examples/scripts/) ---
+scripts/watch_*.sh
+scripts/eval_dapo_en_2b_checkpoints.sh
+scripts/submit_pt_exams_sweep.sh
+scripts/verify_and_trim_step_judges.sh
+scripts/bench_workers.sh
+scripts/fix_gemma_judge_state.py
+scripts/backfill_gpass.py
+scripts/strip_gpass_answer.py
+
 # --- Repo-prep local working notes (not for publication) ---
 REPO_PREP_PLAN.md
 .prompt_baseline.sha256
