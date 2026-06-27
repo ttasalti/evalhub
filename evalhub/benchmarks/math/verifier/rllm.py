@@ -314,6 +314,10 @@ def _normalize(expr: str) -> str:
         expr = expr[1:-1]
 
     expr = re.sub(",\\\\! *", "", expr)
+    # Turkish decimal comma: "0,5" → "0.5". Thousand separators were already
+    # stripped by _strip_properly_formatted_commas, so any remaining digit-comma-digit
+    # is a decimal mark.
+    expr = re.sub(r"(?<=\d),(?=\d)", ".", expr)
     if _is_float(expr) and _is_int(float(expr)):
         expr = str(int(round(float(expr))))
     if "\\" in expr:

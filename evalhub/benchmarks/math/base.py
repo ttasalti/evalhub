@@ -9,7 +9,7 @@ import orjson
 from evalhub.benchmarks.base import Dataset
 from evalhub.benchmarks.math.verifier import extract_answer, grade_answer
 from evalhub.utils.logger import logger
-from evalhub.utils.metrics import compute_pass_at_k, get_majority_vote
+from evalhub.utils.metrics import aggregate_g_pass, compute_pass_at_k, get_majority_vote
 from evalhub.utils.pbar import get_progress_bar
 
 DEFAULT_KS = [2**i for i in range(11)]
@@ -66,6 +66,8 @@ class MathDataset(Dataset):
         )
 
         results, correct, total = [], 0, len(id2solutions)
+        # Per-task (n_generations, n_correct) pairs feeding G-Pass@k / mG-Pass@k.
+        gpass_per_task: list[tuple[int, int]] = []
         progress = get_progress_bar()
         with progress:
             eval_task = progress.add_task("[bold blue]Evaluating", total=total)
@@ -91,6 +93,7 @@ class MathDataset(Dataset):
                 # CoT records produced by `evalhub cot metrics`.
                 true_count = sum(1 for x in is_correct if x is True)
                 false_count = sum(1 for x in is_correct if x is False)
+                gpass_per_task.append((len(solutions), true_count))
                 per_task_counts = {
                     "true": true_count,
                     "false": false_count,
@@ -119,6 +122,11 @@ class MathDataset(Dataset):
         }
         cons_at_k = correct / total
         n_generations = len(results[0]["solutions"])
+
+        # G-Pass@k (tau in {0.25,0.5,0.75,1.0}) + mG-Pass@k, averaged over tasks.
+        # Same K set as pass_at_k (K <= n_generations); kept as fractions [0,1].
+        ks = [k for k in DEFAULT_KS if k <= n_generations]
+        g_pass_at_k, mg_pass_at_k = aggregate_g_pass(gpass_per_task, ks)
 
         # Aggregate per-task counts so summary.json carries totals (true/false/
         # cot_false/invalid_format) instead of forcing downstream tooling to
@@ -149,6 +157,8 @@ class MathDataset(Dataset):
         summary_path = output_dir / f"{self.name}_summary.json"
         summary = {
             "pass_at_k": pass_at_k,
+            "g_pass_at_k": g_pass_at_k,
+            "mg_pass_at_k": mg_pass_at_k,
             "cons_at_k": cons_at_k,
             "total_tasks": total,
             "total_generations": total * n_generations,

@@ -126,9 +126,18 @@ class Dataset(ABC):
         logger.info(f"Saved cached results for {self.name} to {self.cache_dir}")
 
     async def init_files(self):
-        r"""Initialize the files for the dataset."""
-        self.raw_file = await aiofiles.open(self.config.output_dir / f"{self.name}_raw.jsonl", "ab")
-        self.sanitized_file = await aiofiles.open(self.config.output_dir / f"{self.name}.jsonl", "ab")
+        r"""Initialize the files for the dataset.
+
+        Open in truncate (``wb``) mode for a fresh run, append (``ab``) only when
+        resuming. Always appending corrupted re-runs: re-generating into an
+        existing output dir silently duplicated every record (e.g. judge gen run
+        twice -> 2x rows per generation), which then skews downstream majority
+        vote / metrics. ``--resume`` still appends, since the generator skips the
+        already-completed tasks it loaded from the existing file.
+        """
+        mode = "ab" if getattr(self.config, "resume", False) else "wb"
+        self.raw_file = await aiofiles.open(self.config.output_dir / f"{self.name}_raw.jsonl", mode)
+        self.sanitized_file = await aiofiles.open(self.config.output_dir / f"{self.name}.jsonl", mode)
 
     async def close_files(self):
         r"""Close the files for the dataset."""

@@ -11,7 +11,7 @@ import orjson
 
 from evalhub.cot.ids import encode as encode_generation_id
 from evalhub.utils.logger import logger
-from evalhub.utils.metrics import compute_pass_at_k
+from evalhub.utils.metrics import aggregate_g_pass, compute_pass_at_k
 
 DEFAULT_KS: list[int] = [2**i for i in range(11)]
 COT_FALSE_LABEL = "cot_false"
@@ -83,6 +83,10 @@ def apply_cot_metrics(
     # ~tasks*~1KB even for n=64 generations.
     csv_rows: list[dict[str, Any]] = []
 
+    # Per-task (n, c) pairs for G-Pass@k / mG-Pass@k.
+    # c = true_count: answer-correct AND judge-approved (post-veto), same population as pass_at_k.
+    gpass_cot: list[tuple[int, int]] = []
+
     with base_results_path.open("rb") as f_in, output_results_path.open("wb") as f_out:
         for line in f_in:
             line = line.strip()
@@ -110,6 +114,8 @@ def apply_cot_metrics(
             stats["false_count"] += false_count
             stats["cot_false_count"] += cot_false_count
             stats["invalid_count"] += invalid_count
+
+            gpass_cot.append((n_generations, true_count))
 
             new_pass_at_k: dict[str, float] = {}
             for k in _ks_from_record(record, n_generations):
@@ -151,8 +157,15 @@ def apply_cot_metrics(
 
     pass_at_k_summary = {k: v / total_tasks for k, v in sum_pass_at_k.items()}
     cons_at_k = sum_cons_at_k / total_tasks
+
+    # G-Pass@k / mG-Pass@k, same K set as pass_at_k. c = true_count (post-veto, cot_false excluded).
+    ks = sorted({int(k) for k in pass_at_k_summary})
+    g_pass_cot, mg_pass_cot = aggregate_g_pass(gpass_cot, ks)
+
     summary = {
         "pass_at_k": pass_at_k_summary,
+        "g_pass_at_k": g_pass_cot,
+        "mg_pass_at_k": mg_pass_cot,
         "cons_at_k": cons_at_k,
         "total_tasks": stats["total_tasks"],
         "total_generations": stats["total_generations"],
