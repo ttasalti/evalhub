@@ -1,188 +1,187 @@
-# Reporting & Dashboard
+# Reporting
 
-This document covers the `evalhub report` sub-app, which turns the per-run
-summary files written by `evalhub eval` and `evalhub cot finalize` into a
-queryable master CSV, publication-ready static plots, and an interactive
-Streamlit + Plotly dashboard.
+`evalhub report` turns the per-run summary files written by `evalhub eval` and
+`evalhub cot finalize` into a single **wide master CSV** — one row per evaluated
+`(model, mode, benchmark, judge)`, with every metric at every K and τ in that
+row — and then renders a **Pass@K vs CoT-Pass@K** visualisation suite from it.
+The CSV is the contract; the plots read only the CSV.
+
+The CSV lives **inside the results tree** by convention: `results/report.csv`
+(with plots under `results/report_plots/`). Both are the command defaults.
 
 ## Install
 
-The aggregation pipeline ships under an opt-in extra so the core install
-stays lean:
-
 ```bash
-uv pip install -e ".[report]"
+uv pip install -e ".[report]"     # pulls in pandas
 ```
 
-This pulls in `pandas`, `matplotlib`, `seaborn`, `streamlit`, and `plotly`.
-
-## The three commands
+## The five commands
 
 ```bash
-evalhub report aggregate \
-    --results-root ./results \
-    --output ./report.csv
+# Full rebuild: scan a results tree -> write the whole CSV (default: results/report.csv)
+evalhub report aggregate --results-root ./results
 
-evalhub report plot \
-    --csv ./report.csv \
-    --output-dir ./report_plots \
-    --format both                       # png | pdf | both
+# Incremental: add/replace ONE row for a single summary (idempotent)
+evalhub report upsert --summary ./results/.../aime2026_summary.json
 
-evalhub report dashboard \
-    --csv ./report.csv \
-    --results-root ./results \
-    --port 8501
+# Render the Pass@K vs CoT-Pass@K plot suite from the CSV (default out: results/report_plots/)
+evalhub report plot
+
+# Render the short, paper-style highlights PDF (default out: results/report_highlights.pdf)
+evalhub report highlights
+
+# Render the curated visual plot-atlas PDF (default out: results/report_plots_atlas.pdf)
+evalhub report atlas
 ```
 
-The dashboard launches Streamlit in the foreground; visit
-`http://localhost:8501` to use it. Passing `--results-root` enables the
-"Drill-down" tab, which loads the raw JSONL records for a selected run.
+The pipeline scripts (`scripts/run_report.sh`, `scripts/run_end_to_end.sh`) run
+`aggregate → plot → highlights → atlas` as the report stage, writing everything
+under `OUTPUT_ROOT` (i.e. `results/`).
+
+Three companion artefacts make the output usable without re-deriving anything:
+
+* **`results/report_highlights.pdf`** (`report highlights`) — a ~9-page,
+  one-finding-per-page report on the **CoT-judge veto** (No-Judge − cot) across K,
+  language, mode, scale, judge and metric stringency. Every caption number is
+  computed live from the CSV. See [`evalhub/report/highlights.py`](../evalhub/report/highlights.py).
+* **`results/report_plots_atlas.pdf`** (`report atlas`) — a curated *visual* index
+  of the plot suite: a cover (suite map + reading conventions), then one section
+  per family with a deep caption, one or two representative plots embedded, and a
+  complete file index. See [`evalhub/report/atlas.py`](../evalhub/report/atlas.py).
+* **[`docs/report_plots_guide.md`](report_plots_guide.md)** — the prose
+  interpretation manual for every `results/report_plots/<family>` folder and PNG:
+  what each shows, how to read the axes (note y = 0→cell-max ⇒ compare gaps
+  *within* a cell, not heights across cells), and a "which folder answers which
+  question" recipe.
+
+`upsert` is keyed by `(model, state, benchmark, judge_model, judge_state)`:
+re-running it for the same key **replaces** that row, a new key **appends**, and
+an unseen K **grows** the schema (older rows get blanks for the new columns).
+Drop it into a pipeline right after each evaluation to grow the CSV one result at
+a time; `aggregate` is the from-scratch equivalent.
+
+## The No-Judge vs cot convention
+
+The **`judge_model` column is the discriminator** — there are no separate `cot_*`
+columns:
+
+| `judge_model` | `judged` | What the metric columns mean |
+|---|---|---|
+| empty | `False` | **No-Judge**: `pass@k`, `g-pass@k`, `mg-pass@k` (base eval) |
+| set   | `True`  | **cot**: `cot-pass@k`, `cot-g-pass@k`, `cot-mg-pass@k` (judged) |
+
+A judge only vetoes (relabels answer-correct-but-CoT-wrong generations), so a cot
+value is always ≤ its No-Judge counterpart; the gap is the veto effect.
 
 ## What the scanner sees
 
-`evalhub report aggregate` walks `--results-root` with `rglob("*_summary.json")`
-and classifies each summary file by its filename suffix:
+`aggregate` / `upsert` parse `*_summary.json` (No-Judge) and `*_cot_summary.json`
+(judged) and read model/state/benchmark/judge from the surrounding directory
+names. The recognised layouts (V3 hoisted-state, V2 nested, V1/V0 flat) are
+unchanged from before; unrecognised directories are skipped with a debug log.
+A single file can be parsed directly via
+`evalhub.report.scan.record_from_summary(path, source_root)`.
 
-* `<benchmark>_summary.json`     → base evaluation
-* `<benchmark>_cot_summary.json` → CoT-vetted evaluation
+## CSV schema (wide)
 
-The parent directory name is parsed by regex to extract the model, state,
-temperature, and max-token settings. Two layouts are recognised:
+One row per `(model, state, benchmark, judge_model, judge_state)`.
 
-```
-# V2 (current) — collision-free, encodes n_samples; CoT runs nested under target
-<model>__state-<base|non-think|think>__t<T>__max<N>__n<NS>/<benchmark>/<benchmark>_summary.json
-<model>__state-...__n<NS>/judged_by/<judge>__state-...__n<jNS>/<benchmark>/<benchmark>_cot_summary.json
-
-# V1 — flat judgments dir with _state- annotation
-<model>_state-<...>_t<T>_max<N>/<benchmark>/<benchmark>_summary.json
-judgments/<target>_state-<...>_judged_by_<judge>_state-<...>_t<T>_max<N>/<benchmark>/<benchmark>_cot_summary.json
-
-# V0 (legacy) — pre-`_state-` directories
-<model>_t<T>_max<N>/<benchmark>/<benchmark>_summary.json   # state="unknown"
-```
-
-Anything that doesn't match either pattern is skipped with a debug log line.
-
-## CSV schema (long format)
-
-One row per `(run, K)`. Stats columns are populated only for `eval_type =
-"cot_eval"` rows (they come from the sibling `*_cot_stats.json`).
-
-| Column | Type | Notes |
-|---|---|---|
-| `model` | string | Target model basename (e.g. `Qwen3-7B-Instruct`). |
-| `state` | string | `base` / `non-think` / `think` / `unknown`. |
-| `temperature` | float | Sampling temperature. |
-| `max_tokens` | int | `max_completion_tokens` used for this run. |
-| `n_samples` | int / NaN | Target generations per task. NaN for V0/V1 dirs that don't encode it. |
-| `benchmark` | string | Benchmark short name (`aime2025`, `gsm8k`, ...). |
-| `eval_type` | string | `base_eval` or `cot_eval`. |
-| `judge_model` | string | Only set for `cot_eval` rows. |
-| `judge_state` | string | Only set for `cot_eval` rows. |
-| `judge_temperature` | float | Only set for `cot_eval` rows. |
-| `judge_max_tokens` | int | Only set for `cot_eval` rows. |
-| `judge_n_samples` | int / NaN | Judge generations per base-correct sample. NaN for V0/V1. |
-| `k` | int | The K-axis. NaN only for empty `pass_at_k` stubs. |
-| `pass_at_k` | float | Pass@K for this row. |
-| `cons_at_k` | float | Cons@K — repeated on every K of the same run. |
-| `total_tasks` | int | From `*_cot_stats.json` or summary aggregate. |
-| `total_generations` | int | From `*_cot_stats.json` or summary aggregate. |
-| `true_count` | int | Generations the base evaluator marked correct. |
-| `false_count` | int | Generations marked incorrect. |
-| `cot_false_count` | int | Generations downgraded by the judge's CoT veto. |
-| `invalid_count` | int | Generations the parser couldn't grade. |
-| `run_dir` | string | Absolute path to the run's output directory. |
-
-### Per-task CSV (V2+)
-
-Alongside each `<benchmark>_summary.json` and `<benchmark>_cot_summary.json`,
-the evaluator now writes a `<benchmark>_per_task.csv` (and
-`<benchmark>_cot_per_task.csv` for CoT runs) with one row per question:
+**Identity / metadata**
 
 | Column | Notes |
 |---|---|
-| `task_id` | Benchmark task id (e.g. `tubitak_math2026/12`). |
-| `true` / `false` / `cot_false` / `invalid_format` | Generation outcome counts for this task. |
-| `pass@1`, `pass@4`, ..., `pass@k_max` | Per-K pass rates for this task. |
-| `ground_truth` | Gold answer. |
-| `majority_vote` | Most-common solution string. |
-| `is_correct_majority` | Whether the majority answer was correct (post-veto for CoT). |
+| `model` / `model_short` | Full name + short label (`Qwen3.5-9B-Base` → `Q-9B·Base`). |
+| `model_family` / `model_size_b` / `is_base` | `Qwen`/`gemma`/…, params in B, pretrained flag. |
+| `state` / `mode` | `base`/`non-think`/`think` + human label. |
+| `benchmark` / `language` | Benchmark + `EN`/`PT`/`TR`/`TR-OL`. |
+| `judged` | `False` = No-Judge row, `True` = a judge graded it. |
+| `series` | `No-Judge` or `cot:<short_judge>·<jstate>` — one-column grouping key. |
+| `judge_model` / `judge_state` | Empty on No-Judge rows. |
+| `n_samples`, `temperature`, `max_tokens`, `judge_*` | Sampling knobs. |
+| `cons_at_k` | Cons@K. |
+| `total_tasks`, `total_generations`, `true_count`, `false_count`, `cot_false_count`, `invalid_count` | Run totals (cot rows carry the veto counts). |
+| `run_dir`, `summary_path` | Provenance. |
 
-This is the file to open in Excel for a question-by-question drill-down.
+**Metric columns** (judge empty → pass family; judge set → cot family), grouped
+per K (`pass`, then the four τ, then `mg`):
 
-### Aggregate fields in summary.json (V2+)
+| Pattern | Example | Meaning |
+|---|---|---|
+| `pass@{k}` | `pass@64` | Pass@k |
+| `gpass@{k}_t{τ}` | `gpass@64_t0.5` | G-Pass@k at threshold τ (≥⌈k·τ⌉ of k correct) |
+| `mgpass@{k}` | `mgpass@64` | mG-Pass@k (integrated G-Pass over τ∈(0.5, 1]) |
 
-`{benchmark}_summary.json` and `{benchmark}_cot_summary.json` now include
-benchmark-wide totals so downstream consumers don't have to re-derive them
-from the per-task results JSONL:
+τ ∈ {0.25, 0.5, 0.75, 1.0}. The K axis is the union of all K seen in the data
+(canonical fallback `[1,2,4,8,16,32,64,128]` for an empty CSV). Cells for a K a
+run didn't produce are left blank.
 
-```json
-{
-  "pass_at_k": {"1": 0.34, "2": 0.45, ...},
-  "cons_at_k": 0.56,
-  "total_tasks": 30,
-  "total_generations": 1920,
-  "true_count": 657,
-  "false_count": 1263,
-  "cot_false_count": 0,
-  "invalid_format_count": 0
-}
-```
+### Companion per-task CSV (V2+)
 
-## Plots written by `evalhub report plot`
+Alongside each summary, the evaluator also writes `<benchmark>_per_task.csv`
+(and `<benchmark>_cot_per_task.csv`) with one row per question — counts
+(`true`/`false`/`cot_false`/`invalid_format`), per-K pass rates, ground truth,
+majority vote, and `is_correct_majority`. Open this in Excel for a per-question
+drill-down.
 
-| Name | What it shows |
+## The plot suite (`report plot`)
+
+`evalhub report plot` reads the wide CSV and renders a comparison-first suite into
+`results/report_plots/<family>/`. Two papers frame it: **2504.13837** (Pass@K
+curves over K, base vs RL → here **No-Judge vs Judge**) and **2506.14245** (the
+**CoT-Pass@K** metric — answer *and* reasoning correct → our judged rows). The
+single through-line of every figure is **how much the CoT veto moves the metric**,
+per model, per benchmark, per language — never averaged away.
+
+Two conventions hold everywhere:
+
+* **Y axis runs 0 → the cell's own max** (not a fixed 0–100 %), so small
+  No-Judge↔cot gaps stay legible; the 0 baseline keeps absolute rates readable.
+* **X axis is K on a log₂ scale.** The judge is always `think` (non-think judge
+  labels are migration mislabels and never appear).
+
+Each of the six metric *lenses* — `pass`, `gpass_t{0.25,0.5,0.75,1.0}`, `mgpass`
+— gets its **own PNG** (so each G-Pass τ is separate), generally split per mode
+(`base` / `non-think` / `think`).
+
+| Folder | What one file shows |
 |---|---|
-| `pass_at_k__<model>__<benchmark>.{png,pdf}` | Pass@K vs K on a log-2 axis, one line per `eval_type` (base vs CoT). One file per (model, benchmark) pair. |
-| `base_vs_cot_pass_at_1.{png,pdf}` | Horizontal grouped bars: Pass@1 per benchmark, hue=model, comparing base vs CoT-vetted evaluation. |
-| `pass_at_1_heatmap.{png,pdf}` | Pass@1 heatmap with rows=model, cols=benchmark, values annotated. |
-| `cot_veto_rate.{png,pdf}` | CoT veto rate (`cot_false / total_generations`) per (model, benchmark). |
+| `judge_effect/{metric}__{state}.png` | **Core.** Grid rows=model × cols=benchmark; each cell = No-Judge solid (`pass@k`) + every judge dashed (`cot-pass@k`). |
+| `bench_compare/{metric}__{state}__{nojudge,cot}.png` | Language transfer: 4 language curves per cell (`__cot` adds a column per judge). |
+| `size_compare/{metric}__{state}__{nojudge,cot__judge}.png` | Size scaling: one curve per model, coloured by params; cot variant overlays the judge dashed. |
+| `veto_curve/{metric}__{state}.png` | Δ(k) = No-Judge − cot per judge — how the veto grows with K even when pass@k saturates. |
+| `mode_compare/{metric}__{family}.png` | Pretrained vs Instruct-Non-Think vs Instruct-Think overlay (rows=size × cols=benchmark). |
+| `per_model/{model}__{state}.png` | One model's fingerprint: rows=metric (6) × cols=benchmark. |
+| `tables/{benchmark}__k{1,64}__nojudge.png` | All `(model·mode)` × 6 metrics ×100, sequential colour. |
+| `tables/{benchmark}__k{1,64}__cotdelta__{judge}.png` | Veto Δ = (No-Judge − cot) ×100, diverging colour. |
+| `tables/headline__{judge}__k{1,64}.png` | `pass / cot-pass` per benchmark cell, coloured by Δ. |
+| `comparisons/veto__{metric}__k{1,64}__{judge}.png` | **Multilingual veto heatmap** — rows=`(model·mode)` × cols=language, value = No-Judge − cot. |
+| `comparisons/pass_vs_cot_k{1,64}.csv` | Long companion: every `(model, mode, language, judge, metric)` with `nojudge` / `cot` / `delta`. |
 
-Filenames are sanitised so the output directory is safe to commit.
-
-## Dashboard tabs
-
-| Tab | What it shows |
-|---|---|
-| **Overview**   | KPI cards (#runs, #models, #benchmarks, #CoT runs) and a sortable, filterable table of the long-form CSV. |
-| **Pass@K**     | Plotly line plot, faceted by benchmark, with model/state/eval-type encoded by colour / dash / symbol. |
-| **Heatmap**    | Plotly imshow of Pass@K for a selectable K. |
-| **CoT veto**   | Horizontal bar of `cot_false / total_generations` per (model, benchmark). |
-| **Drill-down** | Pick a run, pick one of its JSONL files, load up to N records, view in a paginated table. Requires `--results-root`. |
-
-The sidebar exposes multi-select filters for `eval_type`, `model`, `state`,
-and `benchmark`. All tabs respect the active filter.
-
-## End-to-end demo
-
-Assuming you already ran the pipeline against a couple of models/benchmarks:
-
-```bash
-# (one-time) install report deps
-uv pip install -e ".[report]"
-
-# (one-time) sanity-check that the scanner sees your results
-evalhub report aggregate --results-root ./results --output ./report.csv
-
-# render the static plot set
-evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
-
-# launch the dashboard
-evalhub report dashboard --csv ./report.csv --results-root ./results
-```
+The whole suite is driven by `evalhub.report.plots.render_all(df, out_dir)`; each
+family is isolated, so a failure in one logs and is skipped rather than aborting
+the rest.
 
 ## Programmatic use
 
-Every CLI command has a public Python entry point so the same logic can drive
-notebooks or CI jobs:
-
 ```python
 from pathlib import Path
-from evalhub.report import aggregate_results, build_dataframe, scan_results
+import pandas as pd
+from evalhub.report import (
+    aggregate_results, build_wide_dataframe, scan_results,
+    upsert_summary, record_from_summary,
+)
 from evalhub.report.plots import render_all
 
-records = scan_results(Path("./results"))
-df = build_dataframe(records)               # long-form pandas DataFrame
-render_all(df, Path("./report_plots"), formats=("png",))
+# full rebuild (writes results/report.csv)
+df = aggregate_results(Path("./results"), Path("./results/report.csv"))
+
+# or in-memory
+df = build_wide_dataframe(scan_results(Path("./results")))
+
+# incremental, one summary at a time
+upsert_summary(Path("./results/.../aime2026_summary.json"),
+               Path("./results/report.csv"), Path("./results"))
+
+# render the plot suite from the CSV
+render_all(pd.read_csv("./results/report.csv"), Path("./results/report_plots"))
 ```

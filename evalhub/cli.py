@@ -15,7 +15,17 @@ from evalhub.cot.metrics import apply_cot_metrics
 from evalhub.cot.pipeline import finalize_cot_pipeline
 from evalhub.gen import generate
 from evalhub.inference.schemas import GenerationConfig
-from evalhub.report._cli import cmd_aggregate, cmd_dashboard, cmd_plot
+from evalhub.report._cli import (
+    DEFAULT_ATLAS_PDF,
+    DEFAULT_CSV,
+    DEFAULT_HIGHLIGHTS_PDF,
+    DEFAULT_PLOT_DIR,
+    cmd_aggregate,
+    cmd_atlas,
+    cmd_highlights,
+    cmd_plot,
+    cmd_upsert,
+)
 from evalhub.utils.typer import options
 from evalhub.view import view_results
 
@@ -39,7 +49,7 @@ app.add_typer(cot_app, name="cot")
 
 report_app = typer.Typer(
     name="report",
-    help="Aggregate evaluation summaries, render plots, and launch the dashboard.",
+    help="Aggregate evaluation summaries into the master wide CSV (full rebuild or incremental upsert).",
     add_completion=False,
     rich_markup_mode="rich",
 )
@@ -200,45 +210,83 @@ def cot_finalize(
 
 @report_app.command("aggregate")
 def report_aggregate(
-    results_root: Annotated[Path, typer.Option(help="Root directory produced by evalhub eval / cot finalize")],
-    output: Annotated[Path, typer.Option(help="Destination CSV for the long-form aggregated table")],
+    results_root: Annotated[Path, typer.Option(help="Root directory produced by evalhub eval / cot finalize")] = Path("results"),
+    output: Annotated[Path, typer.Option(help="Destination CSV for the wide aggregated table")] = DEFAULT_CSV,
 ):
-    r"""Walk ``results_root`` and write a master long-form CSV.
+    r"""Walk ``results_root`` and write the master **wide** CSV (full rebuild).
 
-    Every ``*_summary.json`` (base eval) and ``*_cot_summary.json`` (CoT-vetted
-    eval) discovered under the root contributes one row per K to the CSV.
+    Every ``*_summary.json`` (No-Judge) and ``*_cot_summary.json`` (judged)
+    contributes one row carrying every metric at every K and τ. The
+    ``judge_model`` column is empty for No-Judge rows and set for cot rows.
+    Defaults to ``results/report.csv`` (the CSV lives inside the results tree).
     """
     out = cmd_aggregate(results_root, output)
-    console.print(f"[green]Aggregated CSV -> {out}[/green]")
+    console.print(f"[green]Aggregated wide CSV -> {out}[/green]")
+
+
+@report_app.command("upsert")
+def report_upsert(
+    summary: Annotated[Path, typer.Option(help="A single *_summary.json / *_cot_summary.json to add")],
+    csv: Annotated[Path, typer.Option(help="Master CSV to append to / update")] = DEFAULT_CSV,
+    results_root: Annotated[
+        Path | None,
+        typer.Option(help="Optional results root (only sets the row's source_root)"),
+    ] = None,
+):
+    r"""Add or replace **one** row in the master CSV for the given summary.
+
+    Idempotent: re-running for the same (model, state, benchmark, judge) replaces
+    that row; a new key appends; an unseen K grows the schema. Drop this into a
+    pipeline to grow the CSV one evaluation at a time.
+    """
+    out = cmd_upsert(summary, csv, results_root)
+    console.print(f"[green]Upserted 1 row -> {out}[/green]")
 
 
 @report_app.command("plot")
 def report_plot(
-    csv: Annotated[Path, typer.Option(help="Path to the aggregated CSV produced by `report aggregate`")],
-    output_dir: Annotated[Path, typer.Option(help="Directory where plot files will be written")],
-    format: Annotated[str, typer.Option(help="Output format: png | pdf | both")] = "png",
+    csv: Annotated[Path, typer.Option(help="Wide master CSV produced by `report aggregate`")] = DEFAULT_CSV,
+    output_dir: Annotated[Path, typer.Option(help="Directory for the plot suite")] = DEFAULT_PLOT_DIR,
 ):
-    r"""Render the publication-ready plot set from an aggregated CSV."""
-    written = cmd_plot(csv, output_dir, format)
+    r"""Render the Pass@K vs CoT-Pass@K visualisation suite from the wide CSV.
+
+    Line matrices (No-Judge vs each judge over K), benchmark/size comparisons,
+    veto-effect curves, summary tables and multilingual Δ heatmaps — written
+    under ``results/report_plots`` by default.
+    """
+    written = cmd_plot(csv, output_dir)
     total = sum(len(paths) for paths in written.values())
     console.print(f"[green]Rendered {total} file(s) under {output_dir}[/green]")
-    for name, paths in written.items():
-        for path in paths:
-            console.print(f"  - {name}: {path}")
 
 
-@report_app.command("dashboard")
-def report_dashboard(
-    csv: Annotated[Path, typer.Option(help="Path to the aggregated CSV produced by `report aggregate`")],
-    results_root: Annotated[
-        Path | None,
-        typer.Option(help="Optional path to OUTPUT_ROOT; enables the drill-down tab"),
-    ] = None,
-    port: Annotated[int, typer.Option(help="Streamlit server port")] = 8501,
+@report_app.command("highlights")
+def report_highlights(
+    csv: Annotated[Path, typer.Option(help="Wide master CSV produced by `report aggregate`")] = DEFAULT_CSV,
+    output: Annotated[Path, typer.Option(help="Destination PDF for the highlights report")] = DEFAULT_HIGHLIGHTS_PDF,
 ):
-    r"""Launch the Streamlit dashboard for the aggregated CSV."""
-    rc = cmd_dashboard(csv, results_root, port)
-    raise typer.Exit(code=rc)
+    r"""Render the short, paper-style **highlights PDF** of the CoT-judge veto.
+
+    One finding per page (veto vs K, language, mode, scale, judge, metric
+    stringency, extremes) with captions whose numbers are computed live from the
+    CSV. Written to ``results/report_highlights.pdf`` by default.
+    """
+    out = cmd_highlights(csv, output)
+    console.print(f"[green]Rendered highlights PDF -> {out}[/green]")
+
+
+@report_app.command("atlas")
+def report_atlas(
+    plot_dir: Annotated[Path, typer.Option(help="Plot suite dir produced by `report plot`")] = DEFAULT_PLOT_DIR,
+    output: Annotated[Path, typer.Option(help="Destination PDF for the curated plot atlas")] = DEFAULT_ATLAS_PDF,
+):
+    r"""Render the curated **plot-atlas PDF** — a visual index of the plot suite.
+
+    Cover page (suite map + reading conventions), then one section per plot family
+    with a deep caption, one or two representative plots embedded, and a complete
+    index of that family's files. Written to ``results/report_plots_atlas.pdf``.
+    """
+    out = cmd_atlas(plot_dir, output)
+    console.print(f"[green]Rendered plot atlas PDF -> {out}[/green]")
 
 
 def main():

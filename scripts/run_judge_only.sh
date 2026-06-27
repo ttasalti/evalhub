@@ -60,9 +60,24 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     exit 0
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+    PROJECT_ROOT="${SLURM_SUBMIT_DIR}"
+    SCRIPT_DIR="${PROJECT_ROOT}/scripts"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+fi
 cd "${PROJECT_ROOT}"
+
+# Activate the project conda environment under Slurm.
+if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
+    source /opt/Anaconda-2021.05/etc/profile.d/conda.sh
+    conda activate evalhub_env
+fi
+export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
+
+# nsdl2 sets ROCR_VISIBLE_DEVICES alongside CUDA_VISIBLE_DEVICES; vLLM rejects both being set
+unset ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES
 
 # shellcheck source=lib/pipeline_common.sh
 source "${SCRIPT_DIR}/lib/pipeline_common.sh"
@@ -76,9 +91,17 @@ apply_judge_defaults
 apply_common_defaults
 pipeline_init_paths
 
-# Locate the base run files. Two acceptance modes:
-#   1. BASE_RESULTS_DIR points at a benchmark directory containing both JSONLs.
-#   2. BASE_RESULTS_FILE + BASE_RAW_FILE point at the files directly.
+# Locate the base run files. Acceptance order:
+#   1. BASE_RESULTS_FILE + BASE_RAW_FILE point at the files directly.
+#   2. BASE_RESULTS_DIR points at a benchmark directory containing both JSONLs.
+#   3. Neither given -> derive the base dir the SAME way run_eval_only.sh wrote
+#      it, via compose_target_dir() (V4, state-aware). This guarantees the judge
+#      reads the base for THIS (target, state, benchmark) and never a different
+#      state's base by mistake (the cause of an earlier cross-wired cot).
+if [[ -z "${BASE_RESULTS_DIR:-}" && ( -z "${BASE_RESULTS_FILE:-}" || -z "${BASE_RAW_FILE:-}" ) ]]; then
+    BASE_RESULTS_DIR="$(compose_target_dir "${BENCHMARK}")"
+    pipeline_log "Derived BASE_RESULTS_DIR via compose_target_dir: ${BASE_RESULTS_DIR}"
+fi
 if [[ -n "${BASE_RESULTS_DIR:-}" ]]; then
     BASE_RESULTS_FILE="${BASE_RESULTS_DIR%/}/${BENCHMARK}_results.jsonl"
     BASE_RAW_FILE="${BASE_RESULTS_DIR%/}/${BENCHMARK}_raw.jsonl"
@@ -111,7 +134,7 @@ start_vllm "${JUDGE_MODEL}" "${JUDGE_PORT}" "${JUDGE_PARALLEL_COUNT}" "${JUDGE_S
 export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
 export HOSTED_VLLM_API_KEY="EMPTY"
 
-pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}"
+pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}" "${BENCHMARK}"
 judge_solutions="${JUDGE_SOLUTIONS_OUT}"
 stop_vllm
 

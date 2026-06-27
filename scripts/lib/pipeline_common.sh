@@ -165,28 +165,13 @@ detect_model_class() {
     fi
 }
 
-# Old-style clean name: base models -> "${basename}"; instruct/judge models ->
-# "${basename}_think-${THINK_MODE}". THINK_MODE is derived from TARGET_STATE
-# when the caller has only set the new-style variable.
+# V4 clean name: always just the basename. The state is encoded by the parent
+# directory (results/<state>/...) so embedding "_think-<true|false>" in the
+# leaf is redundant. Previous V3 emitted "${basename}_think-${flag}" for
+# instruct models; V4 drops this so every (state, model) pair lives under a
+# single directory regardless of model class.
 target_clean_name() {
-    local model="$1"
-    local class
-    class="$(detect_model_class "${model}")"
-    local base
-    base="$(basename "${model}")"
-    if [[ "${class}" == "base" ]]; then
-        echo "${base}"
-    else
-        local think="${THINK_MODE:-}"
-        if [[ -z "${think}" ]]; then
-            if [[ "${TARGET_STATE:-non-think}" == "think" ]]; then
-                think="true"
-            else
-                think="false"
-            fi
-        fi
-        echo "${base}_think-${think}"
-    fi
+    basename "$1"
 }
 
 # ---------------------------------------------------------------------------
@@ -223,6 +208,14 @@ start_vllm() {
     local _kvd="${role}_KV_CACHE_DTYPE"
     local _extra="${role}_VLLM_EXTRA_ARGS"
 
+    # TARGET_REVISION pins the target server to a specific HF revision (e.g. a
+    # mid-training checkpoint branch like "step-120"). Judge servers always
+    # use their default revision — there is no JUDGE_REVISION knob.
+    if [[ "${role}" == "TARGET" && -n "${TARGET_REVISION:-}" ]]; then
+        pipeline_log "Pinning target model to revision: ${TARGET_REVISION}"
+        args+=(--revision "${TARGET_REVISION}" --tokenizer-revision "${TARGET_REVISION}")
+    fi
+
     [[ -n "${!_gmu:-}" ]] && args+=(--gpu-memory-utilization "${!_gmu}")
     [[ -n "${!_mml:-}" ]] && args+=(--max-model-len "${!_mml}")
     [[ -n "${!_ss:-}" ]]  && args+=(--swap-space "${!_ss}")
@@ -235,11 +228,24 @@ start_vllm() {
         args+=( ${_extra_val} )
     fi
 
+    # Kill any leftover process holding the port (Slurm cgroup cleanup is not
+    # always reliable on shared nodes; a previous job's vLLM may linger).
+    if command -v fuser >/dev/null 2>&1; then
+        fuser -k -TERM "${port}/tcp" 2>/dev/null || true
+        sleep 2
+        fuser -k -KILL "${port}/tcp" 2>/dev/null || true
+    fi
+
     python -m vllm.entrypoints.openai.api_server "${args[@]}" >>"${log_file}" 2>&1 &
     SERVER_PID=$!
     local waited=0
     local timeout="${HEALTH_TIMEOUT:-1800}"
-    until curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; do
+    # /health returns 200 as soon as the API server binds — model may still be
+    # downloading or loading. We must also verify the model is registered (via
+    # /v1/models returning non-empty) AND that a real inference call succeeds.
+    until curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1 \
+       && curl -fsS "http://127.0.0.1:${port}/v1/models" 2>/dev/null \
+            | grep -q '"id"'; do
         if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
             {
                 echo ""
@@ -256,7 +262,37 @@ start_vllm() {
             pipeline_die "vLLM health timeout after ${timeout}s on port ${port}"
         fi
     done
-    pipeline_log "vLLM healthy on port ${port} (pid ${SERVER_PID})"
+    # Final probe: model must actually answer an inference call. Some vLLM
+    # configurations register the model id before the engine is fully warm.
+    local probe_model probe_status
+    probe_model="$(curl -fsS "http://127.0.0.1:${port}/v1/models" 2>/dev/null \
+        | grep -o '"id"[^,]*' | head -1 | sed -E 's/.*"id"[^"]*"([^"]+)".*/\1/')"
+
+    # Verify the served model matches what we asked vLLM to load. A stale
+    # leftover process on the port could be serving a different model.
+    if [[ "${probe_model}" != "${model}" ]]; then
+        kill "${SERVER_PID}" 2>/dev/null || true
+        pipeline_die "vLLM port ${port} is serving '${probe_model}' but we requested '${model}' — likely a stale process. Aborting."
+    fi
+    local probe_waited=0
+    local probe_timeout=600
+    while true; do
+        probe_status=$(curl -fsS -X POST "http://127.0.0.1:${port}/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -d "{\"model\":\"${probe_model}\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":1}" \
+            -o /dev/null -w "%{http_code}" 2>/dev/null || true)
+        if [[ "${probe_status}" == "200" ]]; then break; fi
+        if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
+            pipeline_die "vLLM died during inference probe on port ${port}."
+        fi
+        sleep 5
+        probe_waited=$((probe_waited + 5))
+        if (( probe_waited >= probe_timeout )); then
+            kill "${SERVER_PID}" 2>/dev/null || true
+            pipeline_die "vLLM inference probe timeout after ${probe_timeout}s (last status: ${probe_status})"
+        fi
+    done
+    pipeline_log "vLLM healthy on port ${port} (pid ${SERVER_PID}, model=${probe_model})"
 }
 
 stop_vllm() {
@@ -379,30 +415,36 @@ apply_common_defaults() {
     HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-1800}"
 }
 
-# Compose the canonical target output directory. The new V2 layout encodes
-# every parameter that distinguishes a run so two different sweeps NEVER
-# overwrite each other:
-#   ${OUTPUT_ROOT}/<target_clean>__state-<state>__t<T>__max<N>__n<NS>/<benchmark>
+# Compose the canonical target output directory. The V5 layout gives ONE folder
+# per model: the model dir carries only "<state>/<model>", and the full sampling
+# suffix is moved onto the benchmark leaf so all sampling variants of a model sit
+# side-by-side under a single model dir:
+#   ${OUTPUT_ROOT}/<state>/<target_clean>/<benchmark>__t<T>__max<N>__n<NS>
 # Same param tuple = same path (idempotent re-run). Different tuple = different
-# path (collision-free).
+# leaf (collision-free), but still under the same model dir.
 compose_target_dir() {
     local benchmark="$1"
-    local clean
+    local clean step_dir=""
     clean="$(target_clean_name "${TARGET_MODEL}")"
-    echo "${OUTPUT_ROOT}/${clean}__state-${TARGET_STATE}__t${TARGET_TEMPERATURE}__max${TARGET_MAX_COMPLETION_TOKENS}__n${TARGET_N_SAMPLES}/${benchmark}"
+    [[ -n "${TARGET_REVISION_TAG:-}" ]] && step_dir="${TARGET_REVISION_TAG}/"
+    echo "${OUTPUT_ROOT}/${TARGET_STATE}/${clean}/${step_dir}${benchmark}__t${TARGET_TEMPERATURE}__max${TARGET_MAX_COMPLETION_TOKENS}__n${TARGET_N_SAMPLES}"
 }
 
 # Compose the canonical judgment output directory. Nested under the target
-# run dir so drill-down is natural (base run → which judge graded it → which
-# benchmark):
-#   <target_dir_root>/judged_by/<judge_clean>__state-<jstate>__t<jT>__max<jN>__n<jNS>/<benchmark>
-# where <target_dir_root> is the target dir WITHOUT the trailing /<benchmark>.
+# model dir (which already sits under <state>/) so drill-down is natural:
+#   ${OUTPUT_ROOT}/<state>/<target_clean>/judged_by/<judge_clean>__state-<jstate>__t<jT>__max<jN>/<benchmark>__t<T>__max<N>__n<NS>
+# V5: the model dir drops its sampling suffix; the benchmark leaf carries the
+# TARGET's sampling (t/max/n) — identical to the base side, keeping them aligned.
+# The judge leaf still carries its own state + jT/jmax (independent of the target,
+# and there is no parent state dir on the judge side). JUDGE_N_SAMPLES stays out
+# of the path; its actual value is recorded inside each benchmark's summary file.
 compose_judge_dir() {
     local benchmark="$1"
-    local target_clean judge_clean
+    local target_clean judge_clean step_dir=""
     target_clean="$(target_clean_name "${TARGET_MODEL}")"
     judge_clean="$(basename "${JUDGE_MODEL}")"
-    echo "${OUTPUT_ROOT}/${target_clean}__state-${TARGET_STATE}__t${TARGET_TEMPERATURE}__max${TARGET_MAX_COMPLETION_TOKENS}__n${TARGET_N_SAMPLES}/judged_by/${judge_clean}__state-${JUDGE_STATE}__t${JUDGE_TEMPERATURE}__max${JUDGE_MAX_COMPLETION_TOKENS}__n${JUDGE_N_SAMPLES}/${benchmark}"
+    [[ -n "${TARGET_REVISION_TAG:-}" ]] && step_dir="${TARGET_REVISION_TAG}/"
+    echo "${OUTPUT_ROOT}/${TARGET_STATE}/${target_clean}/${step_dir}judged_by/${judge_clean}__state-${JUDGE_STATE}__t${JUDGE_TEMPERATURE}__max${JUDGE_MAX_COMPLETION_TOKENS}/${benchmark}__t${TARGET_TEMPERATURE}__max${TARGET_MAX_COMPLETION_TOKENS}__n${TARGET_N_SAMPLES}"
 }
 
 # ---------------------------------------------------------------------------
@@ -414,6 +456,11 @@ compose_judge_dir() {
 # HOSTED_VLLM_API_BASE / _API_KEY are exported.
 pipeline_run_target_gen_eval() {
     local target_dir="$1" benchmark="$2"
+
+    if [[ -f "${target_dir}/${benchmark}_summary.json" && "${EVALHUB_OVERWRITE:-0}" != "1" ]]; then
+        echo "[pipeline] skip target gen+eval: ${target_dir}/${benchmark}_summary.json exists (EVALHUB_OVERWRITE=1 to force)"
+        return 0
+    fi
 
     local target_args=(
         --model "hosted_vllm/${TARGET_MODEL}"
@@ -443,7 +490,19 @@ pipeline_run_target_gen_eval() {
 # pre-populated. Assumes vLLM is already healthy and the env exports point at
 # the judge port.
 pipeline_run_judge_gen_eval() {
-    local judge_dir="$1" judge_input="$2"
+    local judge_dir="$1" judge_input="$2" benchmark="$3"
+
+    # Overwrite guard: if the upstream CoT finalize already produced the real
+    # metric file for this benchmark, skip judge gen+eval entirely.
+    # V5: the leaf dir name now carries the sampling suffix (<benchmark>__t..__max..__n..),
+    # so it no longer equals the benchmark — the real benchmark must be passed in
+    # explicitly (cot finalize writes "<benchmark>_cot_summary.json" via --benchmark).
+    local _bm="${benchmark}"
+    if [[ -f "${judge_dir}/${_bm}_cot_summary.json" && "${EVALHUB_OVERWRITE:-0}" != "1" ]]; then
+        echo "[pipeline] skip judge gen+eval: ${judge_dir}/${_bm}_cot_summary.json exists (EVALHUB_OVERWRITE=1 to force)"
+        JUDGE_SOLUTIONS_OUT="${judge_dir}/${JUDGE_TASK}.jsonl"
+        return 0
+    fi
 
     local judge_override="{\"file_path\": \"${judge_input}\"}"
     local judge_args=(

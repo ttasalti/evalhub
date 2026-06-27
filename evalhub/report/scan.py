@@ -1,17 +1,26 @@
 """Discover and parse evaluation summary files under an ``OUTPUT_ROOT``.
 
-The orchestrator scripts write artefacts into a two-tier layout:
+The orchestrator scripts (``scripts/lib/pipeline_common.sh``) write the current
+**V5** layout: ONE folder per model. The model dir carries only ``<state>/<model>``
+and the full sampling suffix (``__t{T}__max{N}__n{NS}``) is moved onto the benchmark
+leaf, so every sampling variant of a model sits side-by-side under a single model dir:
 
     ${OUTPUT_ROOT}/
-        {target}_state-{state}_t{T}_max{N}/{benchmark}/{benchmark}_summary.json
-        judgments/
-            {target}_state-{state}_judged_by_{judge}_state-{state}_t{T}_max{N}/
-                {benchmark}/{benchmark}_cot_summary.json
-                {benchmark}/{benchmark}_cot_stats.json
+        <state>/<model>/
+            <benchmark>__t{T}__max{N}__n{NS}/<benchmark>_summary.json
+            judged_by/<judge>__state-<jstate>__t{jT}__max{jN}/
+                <benchmark>__t{T}__max{N}__n{NS}/<benchmark>_cot_summary.json
+                <benchmark>__t{T}__max{N}__n{NS}/<benchmark>_cot_stats.json
+
+(The benchmark leaf carries the TARGET's sampling on both the base side and under
+``judged_by/``. Files inside a leaf keep the bare benchmark name, e.g.
+``aime2026_summary.json``, since they are named from ``--tasks``/``--benchmark``.)
 
 This module walks that tree and emits one :class:`RunRecord` per summary file.
-A legacy fallback regex also accepts the older ``{model}_t{T}_max{N}`` layout
-that pre-dates the ``state-`` annotation.
+Fallback regexes also accept the older V3 (sampling suffix on the model dir leaf),
+V2 (``__state-..__`` in the leaf), V1 (single-underscore ``_state-..``) and V0
+(no ``state-`` annotation, flat ``judgments/`` / ``_evaluated_by_``) layouts so
+historical runs still parse.
 """
 
 from __future__ import annotations
@@ -29,9 +38,27 @@ from evalhub.utils.model_state import MODEL_STATES
 
 EvalType = Literal["base_eval", "cot_eval"]
 
-# V2 (current) base run directory:
-# "<model>__state-<state>__t<T>__max<N>__n<NS>" — uses double underscore as the
-# field separator and encodes n_samples so distinct sweeps never collide.
+# V5 (current) benchmark leaf — ONE folder per model: the model dir carries only
+# "<state>/<model>", and the sampling suffix moved onto the benchmark leaf:
+# "<benchmark>__t<T>__max<N>__n<NS>". The model dir is the leaf's parent (or its
+# grandparent across a "step_NNN"/"judged_by" level); the state is one level above
+# the model dir. Non-greedy "<benchmark>.+?" + the "__t" double-underscore boundary
+# splits cleanly even for single-underscore benchmark names (aime2026_tr, tubitak_math2026).
+_BENCH_LEAF_RE_V5 = re.compile(
+    r"^(?P<benchmark>.+?)__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
+)
+
+# V3 base run directory leaf — state hoisted to a parent dir, leaf carries
+# model + sampling knobs: "<model>__t<T>__max<N>__n<NS>".
+# The state lives in the parent dir name ({base, non-think, think, unknown}).
+_BASE_DIR_RE_V3 = re.compile(
+    r"^(?P<model>.+?)__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
+)
+
+# Recognised state dir names sitting one level above a V3 base leaf.
+_V3_STATE_DIRS: tuple[str, ...] = ("base", "non-think", "think", "unknown")
+
+# V2 base run directory (state embedded in leaf via "__state-<s>__").
 _BASE_DIR_RE_V2 = re.compile(
     r"^(?P<model>.+?)__state-(?P<state>base|non-think|think|unknown)"
     r"__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
@@ -46,12 +73,17 @@ _BASE_DIR_RE = re.compile(
 # V0 legacy: directories that pre-date the "_state-" annotation.
 _LEGACY_BASE_DIR_RE = re.compile(r"^(?P<model>.+?)_t(?P<temp>[0-9.]+)_max(?P<max>\d+)$")
 
-# V2 (current) judgment leaf directory — the leaf name under judged_by/:
-# "<judge>__state-<jstate>__t<jT>__max<jN>__n<jNS>".
-_JUDGE_DIR_RE_V2 = re.compile(
+# V4 (current) judgment leaf directory — the leaf name under judged_by/:
+# "<judge>__state-<jstate>__t<jT>__max<jN>" (no "__n<jNS>" trailer).
+# JUDGE_N_SAMPLES is consolidated out of the path; the actual value lives in
+# each benchmark's summary file. The regex still accepts the V2 trailing
+# "__n<jNS>" optionally so older on-disk runs can be parsed transparently.
+_JUDGE_DIR_RE_V4 = re.compile(
     r"^(?P<judge>.+?)__state-(?P<judge_state>base|non-think|think|unknown)"
-    r"__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
+    r"__t(?P<temp>[0-9.]+)__max(?P<max>\d+)(?:__n(?P<n_samples>\d+))?$"
 )
+# V2 legacy alias — same trailer form as V4 for backwards-compat references.
+_JUDGE_DIR_RE_V2 = _JUDGE_DIR_RE_V4
 
 # V1 judgment directory (flat under judgments/):
 # "<target>_state-<state>_judged_by_<judge>_state-<state>_t<T>_max<N>".
@@ -71,6 +103,9 @@ _LEGACY_JUDGE_DIR_RE = re.compile(
 _LEGACY_BENCHMARK_TEMP_RE = re.compile(
     r"^(?P<benchmark>.+?)_t(?P<temp>[0-9.]+)$"
 )
+
+# Intermediate RL checkpoint directory: "step_<N>" sitting inside a model run dir.
+_STEP_DIR_RE = re.compile(r"^step_(\d+)$")
 
 
 @dataclass(frozen=True)
@@ -128,6 +163,12 @@ class RunRecord:
     note: str | None = field(default=None)
     n_samples: int | None = field(default=None)
     judge_n_samples: int | None = field(default=None)
+    # G-Pass@k blocks, str-keyed exactly as written to the summary JSON:
+    #   g_pass_at_k = {"<k>": {"<tau>": value}}   mg_pass_at_k = {"<k>": value}
+    g_pass_at_k: dict | None = field(default=None)
+    mg_pass_at_k: dict | None = field(default=None)
+    # RL training step this checkpoint was evaluated at (None = pretrained or final).
+    rl_step: int | None = field(default=None)
 
 
 def _read_json(path: Path) -> dict:
@@ -135,11 +176,30 @@ def _read_json(path: Path) -> dict:
         return orjson.loads(f.read())
 
 
-def parse_base_dirname(name: str) -> ParsedBaseDir | None:
+def parse_benchmark_leaf(name: str) -> tuple[str, float, int, int] | None:
+    """Parse a V5 benchmark leaf "<benchmark>__t<T>__max<N>__n<NS>".
+
+    Returns ``(benchmark, temperature, max_completion_tokens, n_samples)`` or
+    ``None`` when ``name`` is a bare benchmark (old layouts) and carries no
+    sampling suffix — in which case the caller falls back to the V3/V2/.. path.
+    """
+    match = _BENCH_LEAF_RE_V5.match(name)
+    if match is None:
+        return None
+    return (
+        match.group("benchmark"),
+        float(match.group("temp")),
+        int(match.group("max")),
+        int(match.group("n_samples")),
+    )
+
+
+def parse_base_dirname(name: str, parent_state: str | None = None) -> ParsedBaseDir | None:
     """Parse a base run directory name. Returns ``None`` if it doesn't match.
 
-    Tries V2 (double-underscore separator with n_samples) first, then V1
-    (single-underscore with state), then V0 (no state).
+    Tries V2 (state in leaf) first because its prefix overlaps V3's. Then V3
+    (state-less leaf, state from ``parent_state``), V1 (single-underscore),
+    and finally V0 (no state — returns "unknown").
     """
     match_v2 = _BASE_DIR_RE_V2.match(name)
     if match_v2 is not None:
@@ -149,6 +209,19 @@ def parse_base_dirname(name: str) -> ParsedBaseDir | None:
             temperature=float(match_v2.group("temp")),
             max_completion_tokens=int(match_v2.group("max")),
             n_samples=int(match_v2.group("n_samples")),
+        )
+    match_v3 = _BASE_DIR_RE_V3.match(name)
+    if match_v3 is not None:
+        # V3 leaf — caller supplies the state from the parent dir. Fall back to
+        # "unknown" so a V3 leaf encountered outside a known state parent still
+        # yields a valid record.
+        state = parent_state if parent_state in _V3_STATE_DIRS else "unknown"
+        return ParsedBaseDir(
+            model=match_v3.group("model"),
+            state=state,
+            temperature=float(match_v3.group("temp")),
+            max_completion_tokens=int(match_v3.group("max")),
+            n_samples=int(match_v3.group("n_samples")),
         )
     match = _BASE_DIR_RE.match(name)
     if match is not None:
@@ -170,20 +243,22 @@ def parse_base_dirname(name: str) -> ParsedBaseDir | None:
 
 
 def parse_judge_leaf_dirname(name: str) -> ParsedBaseDir | None:
-    """Parse the V2 judge leaf directory (judge_clean__state-...__n...).
+    """Parse the V4 judge leaf directory (``judge_clean__state-..__t..__max..``).
 
-    Reuses ``ParsedBaseDir`` since the field shape is identical (model, state,
-    temp, max, n_samples). Returns None when ``name`` doesn't match V2.
+    The V2 variant with a trailing ``__n<jNS>`` is still accepted for
+    backwards-compat with on-disk runs that pre-date the V4 layout. Returns
+    None when ``name`` doesn't match either form.
     """
-    match = _JUDGE_DIR_RE_V2.match(name)
+    match = _JUDGE_DIR_RE_V4.match(name)
     if match is None:
         return None
+    n_samples_raw = match.group("n_samples")
     return ParsedBaseDir(
         model=match.group("judge"),
         state=match.group("judge_state"),
         temperature=float(match.group("temp")),
         max_completion_tokens=int(match.group("max")),
-        n_samples=int(match.group("n_samples")),
+        n_samples=int(n_samples_raw) if n_samples_raw else None,
     )
 
 
@@ -258,21 +333,48 @@ def _build_base_record(
     """Build a :class:`RunRecord` for a ``{benchmark}_summary.json`` file."""
     benchmark_dir = summary_path.parent
     run_dir = benchmark_dir.parent
-    benchmark = benchmark_dir.name
-    parsed = parse_base_dirname(run_dir.name)
-    if parsed is None:
-        logger.debug(f"Skipping unrecognised base run dir: {run_dir}")
-        return None
+
+    # Detect "step_NNN" sub-directory: an intermediate RL checkpoint sitting
+    # inside the model run dir.  Navigate up to the real model dir and record
+    # the step number; the model name gets an "@stepN" suffix to make each
+    # checkpoint a distinct row in the aggregate CSV.
+    rl_step: int | None = None
+    step_m = _STEP_DIR_RE.match(run_dir.name)
+    if step_m:
+        rl_step = int(step_m.group(1))
+        run_dir = run_dir.parent  # up to the actual model run directory
+
+    # V5 (current): sampling suffix lives on the benchmark leaf, model dir is bare.
+    leaf = parse_benchmark_leaf(benchmark_dir.name)
+    if leaf is not None:
+        benchmark, temperature, max_completion_tokens, n_samples = leaf
+        state = run_dir.parent.name if run_dir.parent.name in _V3_STATE_DIRS else "unknown"
+        model = run_dir.name
+    else:
+        # V3/V2/V1/V0 fallback: sampling suffix lives on the model run dir leaf.
+        benchmark = benchmark_dir.name
+        parent_state = run_dir.parent.name if run_dir.parent.name in _V3_STATE_DIRS else None
+        parsed = parse_base_dirname(run_dir.name, parent_state=parent_state)
+        if parsed is None:
+            logger.debug(f"Skipping unrecognised base run dir: {run_dir}")
+            return None
+        model = parsed.model
+        state = parsed.state
+        temperature = parsed.temperature
+        max_completion_tokens = parsed.max_completion_tokens
+        n_samples = parsed.n_samples
+
+    model_name = model if rl_step is None else f"{model}@step{rl_step}"
     summary = _read_json(summary_path)
     return RunRecord(
-        run_dir=run_dir.resolve(),
+        run_dir=benchmark_dir.parent.resolve(),  # points to step_NNN or model run dir
         summary_path=summary_path.resolve(),
         stats_path=None,
         eval_type="base_eval",
-        model=parsed.model,
-        state=_validate_state(parsed.state),
-        temperature=parsed.temperature,
-        max_completion_tokens=parsed.max_completion_tokens,
+        model=model_name,
+        state=_validate_state(state),
+        temperature=temperature,
+        max_completion_tokens=max_completion_tokens,
         benchmark=benchmark,
         judge_model=None,
         judge_state=None,
@@ -283,7 +385,10 @@ def _build_base_record(
         stats=_stats_from_summary(summary),
         source_root=source_root.resolve(),
         note=summary.get("note"),
-        n_samples=parsed.n_samples,
+        n_samples=n_samples,
+        g_pass_at_k=summary.get("g_pass_at_k") or None,
+        mg_pass_at_k=summary.get("mg_pass_at_k") or None,
+        rl_step=rl_step,
     )
 
 
@@ -292,21 +397,50 @@ def _build_cot_record(
 ) -> RunRecord | None:
     """Build a :class:`RunRecord` for a ``{benchmark}_cot_summary.json`` file.
 
-    Supports two layouts:
+    Supports three layouts:
 
-    * **V2 (nested)** — ``<target>__state-...__n.../judged_by/<judge>__state-...__n.../<benchmark>/``
+    * **V5 (nested, current)** — ``<state>/<model>/judged_by/<judge>__state-../<benchmark>__t..__max..__n../``
+    * **V2/V3 (nested)** — ``<target>__t..__n.../judged_by/<judge>__state-..../<benchmark>/``
     * **V1/V0 (flat)** — ``<...>/<flat_judge_dir>/<benchmark>[_t<T>]/``
     """
     benchmark_dir = summary_path.parent
     parent_dir = benchmark_dir.parent
 
-    # --- V2 nested layout detection ---------------------------------------
+    # --- V5/V3/V2 nested layout detection ---------------------------------
     if parent_dir.parent.name == "judged_by":
         target_dir = parent_dir.parent.parent
-        target_parsed = parse_base_dirname(target_dir.name)
+
+        # Detect "step_NNN" sub-directory: the judged_by/ sits inside step_NNN/.
+        rl_step: int | None = None
+        step_m = _STEP_DIR_RE.match(target_dir.name)
+        if step_m:
+            rl_step = int(step_m.group(1))
+            target_dir = target_dir.parent  # up to the actual model run directory
+
         judge_parsed = parse_judge_leaf_dirname(parent_dir.name)
-        if target_parsed is not None and judge_parsed is not None:
-            benchmark = benchmark_dir.name
+        # V5: sampling suffix on the benchmark leaf, target dir is the bare model.
+        leaf = parse_benchmark_leaf(benchmark_dir.name)
+        target_parsed: ParsedBaseDir | None = None
+        if leaf is not None and judge_parsed is not None:
+            benchmark, temperature, max_completion_tokens, n_samples = leaf
+            state = target_dir.parent.name if target_dir.parent.name in _V3_STATE_DIRS else "unknown"
+            model = target_dir.name
+        else:
+            # V3/V2 fallback: sampling suffix on the target dir leaf, bare benchmark.
+            target_parent_state = (
+                target_dir.parent.name if target_dir.parent.name in _V3_STATE_DIRS else None
+            )
+            target_parsed = parse_base_dirname(target_dir.name, parent_state=target_parent_state)
+            if target_parsed is not None:
+                benchmark = benchmark_dir.name
+                temperature = target_parsed.temperature
+                max_completion_tokens = target_parsed.max_completion_tokens
+                n_samples = target_parsed.n_samples
+                state = target_parsed.state
+                model = target_parsed.model
+
+        if judge_parsed is not None and (leaf is not None or target_parsed is not None):
+            model_name = model if rl_step is None else f"{model}@step{rl_step}"
             summary = _read_json(summary_path)
             stats_path = benchmark_dir / f"{benchmark}_cot_stats.json"
             stats = _read_json(stats_path) if stats_path.exists() else _stats_from_summary(summary)
@@ -315,10 +449,10 @@ def _build_cot_record(
                 summary_path=summary_path.resolve(),
                 stats_path=stats_path.resolve() if stats_path.exists() else None,
                 eval_type="cot_eval",
-                model=target_parsed.model,
-                state=_validate_state(target_parsed.state),
-                temperature=target_parsed.temperature,
-                max_completion_tokens=target_parsed.max_completion_tokens,
+                model=model_name,
+                state=_validate_state(state),
+                temperature=temperature,
+                max_completion_tokens=max_completion_tokens,
                 benchmark=benchmark,
                 judge_model=judge_parsed.model,
                 judge_state=_validate_state(judge_parsed.state),
@@ -329,8 +463,11 @@ def _build_cot_record(
                 stats=stats,
                 source_root=source_root.resolve(),
                 note=summary.get("note"),
-                n_samples=target_parsed.n_samples,
+                n_samples=n_samples,
                 judge_n_samples=judge_parsed.n_samples,
+                g_pass_at_k=summary.get("g_pass_at_k") or None,
+                mg_pass_at_k=summary.get("mg_pass_at_k") or None,
+                rl_step=rl_step,
             )
 
     # --- V1/V0 flat layout fallback ---------------------------------------
@@ -370,7 +507,25 @@ def _build_cot_record(
         stats=stats,
         source_root=source_root.resolve(),
         note=summary.get("note"),
+        g_pass_at_k=summary.get("g_pass_at_k") or None,
+        mg_pass_at_k=summary.get("mg_pass_at_k") or None,
     )
+
+
+def record_from_summary(
+    summary_path: Path | str, source_root: Path | str | None = None
+) -> RunRecord | None:
+    """Parse a single ``*_summary.json`` / ``*_cot_summary.json`` into a record.
+
+    ``source_root`` only sets ``RunRecord.source_root``; pass the results root if
+    you have it, otherwise the summary's own directory is used. Returns ``None``
+    when the surrounding directory names don't match any known layout.
+    """
+    path = Path(summary_path)
+    root = Path(source_root) if source_root is not None else path.parent
+    if path.name.endswith("_cot_summary.json"):
+        return _build_cot_record(path, root)
+    return _build_base_record(path, root)
 
 
 def scan_results(results_root: Path | str) -> list[RunRecord]:
@@ -390,10 +545,7 @@ def scan_results(results_root: Path | str) -> list[RunRecord]:
         if summary_path in seen:
             continue
         seen.add(summary_path)
-        if summary_path.name.endswith("_cot_summary.json"):
-            record = _build_cot_record(summary_path, root)
-        else:
-            record = _build_base_record(summary_path, root)
+        record = record_from_summary(summary_path, root)
         if record is not None:
             records.append(record)
     logger.info(f"Parsed {len(records)} run record(s) under {root}")

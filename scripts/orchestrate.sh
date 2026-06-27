@@ -31,6 +31,12 @@
 #   --judge-state X         → JUDGE_STATE
 #   --output-root DIR       → OUTPUT_ROOT
 #   --set KEY=VAL           → KEY=VAL (free-form, repeatable)
+#   --extra-dependency DEP  → slurm dependency string (e.g. "afterany:123:456")
+#                             ANDed onto every base job's own --dependency in
+#                             this DAG, in addition to any intra-DAG chaining.
+#                             Use this to hard-chain an entire orchestrate.sh
+#                             invocation after another (e.g. one checkpoint
+#                             sweep must not start before a prior one finishes).
 # ============================================================================
 set -euo pipefail
 
@@ -74,9 +80,12 @@ while [[ $# -gt 0 ]]; do
         --benchmarks)    overrides[BENCHMARKS]="$2"; shift 2 ;;
         --temps)         overrides[TARGET_TEMPERATURES]="$2"; shift 2 ;;
         --judge)         overrides[JUDGE_MODEL]="$2"; shift 2 ;;
+        --judges)        overrides[JUDGE_MODELS]="$2"; shift 2 ;;
         --target-state)  overrides[TARGET_STATE]="$2"; shift 2 ;;
+        --target-states) overrides[TARGET_STATES]="$2"; shift 2 ;;
         --judge-state)   overrides[JUDGE_STATE]="$2"; shift 2 ;;
         --output-root)   overrides[OUTPUT_ROOT]="$2"; shift 2 ;;
+        --extra-dependency) EXTRA_DEPENDENCY="$2"; shift 2 ;;
         --set)
             kv="$2"
             if [[ "${kv}" != *=* ]]; then
@@ -106,11 +115,44 @@ done
 TARGET_MODELS="${TARGET_MODELS:-${TARGET_MODEL:-}}"
 BENCHMARKS="${BENCHMARKS:-${BENCHMARK:-}}"
 TARGET_TEMPERATURES="${TARGET_TEMPERATURES:-${TARGET_TEMPERATURE:-0.6}}"
+JUDGE_MODELS="${JUDGE_MODELS:-${JUDGE_MODEL:-}}"
+TARGET_STATES="${TARGET_STATES:-${TARGET_STATE:-non-think}}"
 
-if [[ -z "${TARGET_MODELS}" || -z "${BENCHMARKS}" || -z "${JUDGE_MODEL:-}" ]]; then
-    echo "[ERROR] Required: TARGET_MODELS (or --models), BENCHMARKS (or --benchmarks), JUDGE_MODEL (or --judge)" >&2
+if [[ -z "${TARGET_MODELS}" || -z "${BENCHMARKS}" || -z "${JUDGE_MODELS}" ]]; then
+    echo "[ERROR] Required: TARGET_MODELS (or --models), BENCHMARKS (or --benchmarks), JUDGE_MODELS (or --judges/--judge)" >&2
     exit 1
 fi
+
+# Per-model SLURM resource tiering (Madde 6 H200/nsdl2). Empty values fall back
+# to SLURM_CPUS_PER_TASK / SLURM_MEM from the env file.
+slurm_tier() {
+    # Usage: slurm_tier <model_name>; sets globals TIER_CPUS / TIER_MEM.
+    # Uniform 40G host RAM (user directive); CPU tiered by model size.
+    local m="$1"
+    case "${m}" in
+        *Qwen3.5-0.8B*|*Qwen3.5-2B*|*gemma-4-E2B*)  TIER_CPUS=8;  TIER_MEM=40G ;;
+        *Qwen3.5-4B*|*gemma-4-E4B*)                  TIER_CPUS=8;  TIER_MEM=40G ;;
+        *Qwen3.5-9B*)                                 TIER_CPUS=12; TIER_MEM=40G ;;
+        *gemma-4-26B*)                                TIER_CPUS=16; TIER_MEM=40G ;;
+        *Qwen3.6-35B*)                                TIER_CPUS=16; TIER_MEM=40G ;;
+        *)                                            TIER_CPUS="${SLURM_CPUS_PER_TASK:-8}"; TIER_MEM="${SLURM_MEM:-40G}" ;;
+    esac
+}
+
+# Per-model client-side concurrency tier (--num-workers passed to evalhub gen).
+# Smaller models can absorb more parallel requests; larger ones saturate sooner.
+num_workers_tier() {
+    # Usage: num_workers_tier <model_name>; sets global TIER_NW.
+    local m="$1"
+    case "${m}" in
+        *Qwen3.5-0.8B*)                               TIER_NW=512  ;;
+        *Qwen3.5-2B*|*gemma-4-E2B*)                   TIER_NW=512  ;;
+        *Qwen3.5-4B*|*gemma-4-E4B*)                   TIER_NW=512  ;;
+        *Qwen3.5-9B*)                                 TIER_NW=384  ;;
+        *gemma-4-26B*|*Qwen3.6-35B*)                  TIER_NW=256  ;;
+        *)                                            TIER_NW="${TARGET_NUM_WORKERS:-256}" ;;
+    esac
+}
 
 # Build sbatch CLI args from SLURM_* (same shape as submit.sh).
 SBATCH_BASE_ARGS=()
@@ -156,46 +198,99 @@ echo "[orch] DAG mode        : ${dag_mode}"
 echo "[orch] TARGET_MODELS   : ${TARGET_MODELS}"
 echo "[orch] BENCHMARKS      : ${BENCHMARKS}"
 echo "[orch] TARGET_TEMPS    : ${TARGET_TEMPERATURES}"
-echo "[orch] JUDGE_MODEL     : ${JUDGE_MODEL}"
+echo "[orch] TARGET_STATES   : ${TARGET_STATES}"
+echo "[orch] JUDGE_MODELS    : ${JUDGE_MODELS}"
 echo "[orch] sbatch overrides: ${SBATCH_BASE_ARGS[*]:-(none)}"
+echo "[orch] extra dependency: ${EXTRA_DEPENDENCY:-(none)}"
 
-prev_judge=""
+prev_judge_chain=""
 all_judge_ids=()
+all_job_ids=()
 
-for MODEL in ${TARGET_MODELS}; do
-    for BM in ${BENCHMARKS}; do
-        for TEMP in ${TARGET_TEMPERATURES}; do
-            run_id="$(basename "${MODEL}")_${BM}_t${TEMP}"
-            echo
-            echo "[orch] === ${run_id} ==="
+# Build SBATCH args minus per-job mem/cpus so we can override them per model tier.
+SBATCH_BASE_NO_MEMCPU=()
+skip_next=false
+for arg in "${SBATCH_BASE_ARGS[@]}"; do
+    if $skip_next; then skip_next=false; continue; fi
+    case "${arg}" in
+        --cpus-per-task|--mem) skip_next=true ;;
+        *) SBATCH_BASE_NO_MEMCPU+=("${arg}") ;;
+    esac
+done
 
-            exports="TARGET_MODEL=${MODEL},BENCHMARK=${BM},TARGET_TEMPERATURE=${TEMP}"
-            if [[ -n "${override_file}" ]]; then
-                exports+=",EVALHUB_OVERRIDES_FILE=${override_file}"
-            fi
+for STATE in ${TARGET_STATES}; do
+    echo
+    echo "[orch] ###################################"
+    echo "[orch] ## TARGET_STATE = ${STATE}"
+    echo "[orch] ###################################"
+    for MODEL in ${TARGET_MODELS}; do
+        for BM in ${BENCHMARKS}; do
+            for TEMP in ${TARGET_TEMPERATURES}; do
+                run_id="$(basename "${MODEL}")_${BM}_t${TEMP}_${STATE}"
+                echo
+                echo "[orch] === ${run_id} ==="
 
-            base_dep_args=()
-            if [[ "${dag_mode}" == "sequential" && -n "${prev_judge}" ]]; then
-                base_dep_args=(--dependency="afterany:${prev_judge}")
-            fi
-            base_job=$(sbatch --parsable \
-                "${SBATCH_BASE_ARGS[@]}" \
-                "${base_dep_args[@]}" \
-                --job-name="base_${run_id}" \
-                --export=ALL,${exports} \
-                "${SCRIPT_DIR}/run_eval_only.sh" "${env_file}")
-            echo "[orch] base job  -> ${base_job}"
+                slurm_tier "${MODEL}";        target_cpus="${TIER_CPUS}"; target_mem="${TIER_MEM}"
+                num_workers_tier "${MODEL}";  target_nw="${TIER_NW}"
 
-            judge_job=$(sbatch --parsable \
-                "${SBATCH_BASE_ARGS[@]}" \
-                --dependency="afterany:${base_job}" \
-                --job-name="judge_${run_id}" \
-                --export=ALL,${exports} \
-                "${SCRIPT_DIR}/run_judge_only.sh" "${env_file}")
-            echo "[orch] judge job -> ${judge_job}"
+                exports="TARGET_MODEL=${MODEL},BENCHMARK=${BM},TARGET_TEMPERATURE=${TEMP},TARGET_STATE=${STATE},TARGET_NUM_WORKERS=${target_nw}"
+                if [[ -n "${override_file}" ]]; then
+                    exports+=",EVALHUB_OVERRIDES_FILE=${override_file}"
+                fi
 
-            all_judge_ids+=("${judge_job}")
-            prev_judge="${judge_job}"
+                base_dep_args=()
+                base_deps=()
+                if [[ "${dag_mode}" == "sequential" && -n "${prev_judge_chain}" ]]; then
+                    base_deps+=("afterany:${prev_judge_chain}")
+                fi
+                if [[ -n "${EXTRA_DEPENDENCY:-}" ]]; then
+                    base_deps+=("${EXTRA_DEPENDENCY}")
+                fi
+                if (( ${#base_deps[@]} > 0 )); then
+                    base_dep_args=(--dependency="$(IFS=,; echo "${base_deps[*]}")")
+                fi
+                base_job=$(sbatch --parsable \
+                    "${SBATCH_BASE_NO_MEMCPU[@]}" \
+                    --cpus-per-task="${target_cpus}" --mem="${target_mem}" \
+                    "${base_dep_args[@]}" \
+                    --job-name="base_${run_id}" \
+                    --export=ALL,${exports} \
+                    "${SCRIPT_DIR}/run_eval_only.sh" "${env_file}")
+                echo "[orch] base job  (cpu=${target_cpus} mem=${target_mem} nw=${target_nw}) -> ${base_job}"
+                all_job_ids+=("${base_job}")
+
+                # NOTE: the base output dir is deliberately NOT pre-computed here.
+                # run_judge_only.sh derives it itself via compose_target_dir()
+                # (V4, state-aware), so the judge always reads the base for the
+                # exact (target, state, benchmark) — never another state's base.
+                # (A previous hand-rolled "_think-true/false" path here cross-wired
+                # an instruct judge onto the think base.)
+
+                # One judge job per JUDGE_MODELS entry, all depending on the same
+                # base job. Next iteration's base depends on ALL judges finishing.
+                judge_ids_this_run=()
+                for JUDGE_M in ${JUDGE_MODELS}; do
+                    slurm_tier "${JUDGE_M}";       judge_cpus="${TIER_CPUS}"; judge_mem="${TIER_MEM}"
+                    num_workers_tier "${JUDGE_M}"; judge_nw="${TIER_NW}"
+                    judge_run_id="${run_id}__by_$(basename "${JUDGE_M}")"
+                    judge_exports="${exports},JUDGE_MODEL=${JUDGE_M},JUDGE_NUM_WORKERS=${judge_nw}"
+                    judge_job=$(sbatch --parsable \
+                        "${SBATCH_BASE_NO_MEMCPU[@]}" \
+                        --cpus-per-task="${judge_cpus}" --mem="${judge_mem}" \
+                        --time="${JUDGE_SLURM_TIME:-08:00:00}" \
+                        --dependency="afterany:${base_job}" \
+                        --job-name="judge_${judge_run_id}" \
+                        --export=ALL,${judge_exports} \
+                        "${SCRIPT_DIR}/run_judge_only.sh" "${env_file}")
+                    echo "[orch] judge job (cpu=${judge_cpus} mem=${judge_mem} nw=${judge_nw} judge=${JUDGE_M}) -> ${judge_job}"
+                    judge_ids_this_run+=("${judge_job}")
+                    all_judge_ids+=("${judge_job}")
+                    all_job_ids+=("${judge_job}")
+                done
+
+                # Chain next base on ALL judges from this run.
+                prev_judge_chain=$(IFS=:; echo "${judge_ids_this_run[*]}")
+            done
         done
     done
 done
@@ -216,4 +311,5 @@ if (( ${#all_judge_ids[@]} > 0 )); then
 fi
 
 echo
+echo "[orch] ALL_JOB_IDS: $(IFS=' '; echo "${all_job_ids[*]}")"
 echo "[orch] DAG submitted. Monitor with: squeue -u \$USER"

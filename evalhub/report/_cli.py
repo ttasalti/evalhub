@@ -6,82 +6,82 @@ and the report logic is independently testable.
 
 from __future__ import annotations
 
-import os
-import shutil
-import subprocess
-import sys
 from pathlib import Path
 
-from evalhub.report.aggregate import aggregate_results
-from evalhub.report.plots import render_all
+from evalhub.report.aggregate import aggregate_results, upsert_summary
 from evalhub.utils.logger import logger
+
+# The master CSV lives inside the results tree by convention.
+DEFAULT_CSV = Path("results/report.csv")
+DEFAULT_PLOT_DIR = Path("results/report_plots")
+DEFAULT_HIGHLIGHTS_PDF = Path("results/report_highlights.pdf")
+DEFAULT_ATLAS_PDF = Path("results/report_plots_atlas.pdf")
 
 
 def cmd_aggregate(results_root: Path, output: Path) -> Path:
-    """Implementation of ``evalhub report aggregate``."""
+    """Implementation of ``evalhub report aggregate`` — full wide-CSV rebuild."""
     aggregate_results(results_root, output)
     return output
 
 
-def cmd_plot(csv: Path, output_dir: Path, fmt: str) -> dict[str, list[Path]]:
-    """Implementation of ``evalhub report plot``."""
+def cmd_upsert(summary: Path, csv: Path, results_root: Path | None = None) -> Path:
+    """Implementation of ``evalhub report upsert`` — add/replace one result row."""
+    out = upsert_summary(summary, csv, results_root)
+    logger.info(f"Upserted {summary} into {out}")
+    return out
+
+
+def cmd_plot(csv: Path, output_dir: Path) -> dict[str, list[Path]]:
+    """Implementation of ``evalhub report plot`` — render the Pass@K vs CoT-Pass@K suite."""
     try:
         import pandas as pd
     except ImportError as e:  # pragma: no cover
         raise ImportError(
-            "evalhub report plot requires pandas. Install with `pip install evalhub[report]`."
+            "evalhub report plot requires pandas + matplotlib + seaborn. "
+            "Install with `pip install evalhub[report]`."
         ) from e
+    from evalhub.report.plots import render_all
+
+    if not csv.exists():
+        raise FileNotFoundError(f"CSV not found: {csv} (run `evalhub report aggregate` first)")
     df = pd.read_csv(csv)
-    formats: tuple[str, ...]
-    fmt = fmt.lower().strip()
-    if fmt == "both":
-        formats = ("png", "pdf")
-    else:
-        formats = (fmt,)
-    written = render_all(df, output_dir, formats=formats)
-    total = sum(len(paths) for paths in written.values())
-    logger.info(f"Wrote {total} plot file(s) under {output_dir}")
+    written = render_all(df, output_dir)
+    n = sum(len(v) for v in written.values())
+    logger.info(f"Wrote {n} file(s) under {output_dir}")
     return written
 
 
-def cmd_dashboard(
-    csv: Path,
-    results_root: Path | None,
-    port: int,
-) -> int:
-    """Implementation of ``evalhub report dashboard``.
+def cmd_highlights(csv: Path, output: Path) -> Path:
+    """Implementation of ``evalhub report highlights`` — render the highlights PDF."""
+    try:
+        import pandas as pd
+    except ImportError as e:  # pragma: no cover
+        raise ImportError(
+            "evalhub report highlights requires pandas + matplotlib. "
+            "Install with `pip install evalhub[report]`."
+        ) from e
+    from evalhub.report.highlights import build_highlights
 
-    Spawns ``streamlit run -m evalhub.report.dashboard`` with the CSV path and
-    optional results root exported via environment variables.
-    """
-    if shutil.which("streamlit") is None:
-        raise RuntimeError(
-            "streamlit executable not found on PATH. Install with `pip install evalhub[report]`."
-        )
     if not csv.exists():
-        raise FileNotFoundError(f"CSV not found: {csv}")
-
-    env = {
-        **os.environ,
-        "EVALHUB_REPORT_CSV": str(csv.resolve()),
-        "EVALHUB_REPORT_ROOT": str(results_root.resolve()) if results_root else "",
-    }
-    cmd = [
-        "streamlit",
-        "run",
-        "-m",
-        "evalhub.report.dashboard",
-        "--server.port",
-        str(port),
-    ]
-    logger.info(f"Launching: {' '.join(cmd)}")
-    completed = subprocess.run(cmd, env=env, check=False)
-    return completed.returncode
+        raise FileNotFoundError(f"CSV not found: {csv} (run `evalhub report aggregate` first)")
+    df = pd.read_csv(csv)
+    out = build_highlights(df, output)
+    logger.info(f"Wrote highlights PDF -> {out}")
+    return out
 
 
-def main_streamlit_entry() -> None:  # pragma: no cover - executed by streamlit
-    """Convenience entrypoint so ``python -m evalhub.report.dashboard`` works
-    when ``streamlit run`` cannot resolve ``-m``."""
-    from evalhub.report.dashboard import main
+def cmd_atlas(plot_dir: Path, output: Path) -> Path:
+    """Implementation of ``evalhub report atlas`` — curated visual index of the plot suite."""
+    try:
+        import matplotlib  # noqa: F401
+    except ImportError as e:  # pragma: no cover
+        raise ImportError(
+            "evalhub report atlas requires matplotlib. Install with `pip install evalhub[report]`."
+        ) from e
+    from evalhub.report.atlas import build_atlas
 
-    sys.exit(main() or 0)
+    if not plot_dir.exists():
+        raise FileNotFoundError(f"Plot dir not found: {plot_dir} (run `evalhub report plot` first)")
+    out = build_atlas(plot_dir, output)
+    logger.info(f"Wrote plot atlas PDF -> {out}")
+    return out

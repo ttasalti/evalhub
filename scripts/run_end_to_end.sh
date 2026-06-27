@@ -23,13 +23,16 @@
 #   sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 #
 #SBATCH --job-name=evalhub-e2e
-#SBATCH --gres=gpu:nvidia_a100-pcie-40gb:1
+#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=30G
 #SBATCH --time=12:00:00
-#SBATCH --nodelist=nscluster
-#SBATCH --output=logs/%x-%j.out 
-#SBATCH -e logs/%x-%j.err 
+# NOTE: no hard --nodelist pin — float across the partition so the job grabs the
+# first free GPU on ANY node (nscluster/nsdl2/novasearchdl). A config that needs a
+# specific node sets SLURM_NODELIST; submit.sh then passes --nodelist explicitly.
+# The ROCR_VISIBLE_DEVICES unset above makes vLLM work on H200 nodes too.
+#SBATCH --output=logs/%x-%j.out
+#SBATCH -e logs/%x-%j.err
 # ----------------------------------------------------------------------------
 #
 # Usage:
@@ -69,6 +72,9 @@ if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
 fi
 export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
 
+# nsdl2 sets ROCR_VISIBLE_DEVICES alongside CUDA_VISIBLE_DEVICES; vLLM rejects both being set
+unset ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES
+
 # shellcheck source=lib/pipeline_common.sh
 source "${SCRIPT_DIR}/lib/pipeline_common.sh"
 
@@ -88,16 +94,21 @@ if [[ -n "${BENCHMARKS:-}" && -z "${BENCHMARK:-}" ]]; then
     # All benchmarks finished — produce master CSV + plots once.
     apply_legacy_env_aliases
     pipeline_init_paths
-    pipeline_log "==[REPORT]== Aggregating results + rendering plots ===================="
-    mkdir -p "${OUTPUT_ROOT}/plots"
+    pipeline_log "==[REPORT]== Aggregating results + rendering plots/highlights/atlas ===="
+    mkdir -p "${OUTPUT_ROOT}/report_plots"
     evalhub report aggregate \
         --results-root "${OUTPUT_ROOT}" \
         --output "${OUTPUT_ROOT}/report.csv"
     evalhub report plot \
         --csv "${OUTPUT_ROOT}/report.csv" \
-        --output-dir "${OUTPUT_ROOT}/plots" \
-        --format both
-    pipeline_log "[DONE] Report CSV + plots written under ${OUTPUT_ROOT}"
+        --output-dir "${OUTPUT_ROOT}/report_plots"
+    evalhub report highlights \
+        --csv "${OUTPUT_ROOT}/report.csv" \
+        --output "${OUTPUT_ROOT}/report_highlights.pdf"
+    evalhub report atlas \
+        --plot-dir "${OUTPUT_ROOT}/report_plots" \
+        --output "${OUTPUT_ROOT}/report_plots_atlas.pdf"
+    pipeline_log "[DONE] Report CSV + plots + highlights + atlas written under ${OUTPUT_ROOT}"
     exit 0
 fi
 
@@ -150,7 +161,7 @@ if [[ -z "${EVALHUB_SKIP_JUDGE:-}" ]]; then
     export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
     export HOSTED_VLLM_API_KEY="EMPTY"
 
-    pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}"
+    pipeline_run_judge_gen_eval "${JUDGE_DIR}" "${JUDGE_INPUT}" "${BENCHMARK}"
     judge_solutions="${JUDGE_SOLUTIONS_OUT}"
     stop_vllm
 
@@ -174,14 +185,19 @@ fi
 # Skipped when invoked from the BENCHMARKS plural loop (parent runs its own).
 # --------------------------------------------------------------------------
 if [[ -z "${EVALHUB_SKIP_REPORT:-}" ]]; then
-    pipeline_log "==[4/4]== Aggregating results + rendering plots ===================="
-    mkdir -p "${OUTPUT_ROOT}/plots"
+    pipeline_log "==[4/4]== Aggregating results + rendering plots/highlights/atlas ======"
+    mkdir -p "${OUTPUT_ROOT}/report_plots"
     evalhub report aggregate \
         --results-root "${OUTPUT_ROOT}" \
         --output "${OUTPUT_ROOT}/report.csv"
     evalhub report plot \
         --csv "${OUTPUT_ROOT}/report.csv" \
-        --output-dir "${OUTPUT_ROOT}/plots" \
-        --format both
-    pipeline_log "[DONE] Report CSV + plots written under ${OUTPUT_ROOT}"
+        --output-dir "${OUTPUT_ROOT}/report_plots"
+    evalhub report highlights \
+        --csv "${OUTPUT_ROOT}/report.csv" \
+        --output "${OUTPUT_ROOT}/report_highlights.pdf"
+    evalhub report atlas \
+        --plot-dir "${OUTPUT_ROOT}/report_plots" \
+        --output "${OUTPUT_ROOT}/report_plots_atlas.pdf"
+    pipeline_log "[DONE] Report CSV + plots + highlights + atlas written under ${OUTPUT_ROOT}"
 fi

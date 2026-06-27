@@ -44,9 +44,27 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     exit 0
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# Under Slurm, BASH_SOURCE[0] points to the spool copy of the script, not the
+# project tree. Use SLURM_SUBMIT_DIR (the directory sbatch was called from) as
+# the authoritative project root instead.
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+    PROJECT_ROOT="${SLURM_SUBMIT_DIR}"
+    SCRIPT_DIR="${PROJECT_ROOT}/scripts"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+fi
 cd "${PROJECT_ROOT}"
+
+# Activate the project conda environment under Slurm.
+if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
+    source /opt/Anaconda-2021.05/etc/profile.d/conda.sh
+    conda activate evalhub_env
+fi
+export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
+
+# nsdl2 sets ROCR_VISIBLE_DEVICES alongside CUDA_VISIBLE_DEVICES; vLLM rejects both being set
+unset ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES
 
 # shellcheck source=lib/pipeline_common.sh
 source "${SCRIPT_DIR}/lib/pipeline_common.sh"
