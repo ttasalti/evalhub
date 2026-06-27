@@ -308,6 +308,43 @@ pipeline_register_cleanup() {
 }
 
 # ---------------------------------------------------------------------------
+# Judge backend abstraction. Brings the judge model online and exports
+# HOSTED_VLLM_API_BASE / HOSTED_VLLM_API_KEY so that the unchanged
+# `--model "hosted_vllm/${JUDGE_MODEL}"` gen call (pipeline_run_judge_gen_eval)
+# routes to the right place. Only the *transport* differs — the judge prompt,
+# verdict parsing and metrics are identical either way.
+#   JUDGE_BACKEND=vllm  -> serve JUDGE_MODEL locally on JUDGE_PORT (default).
+#   JUDGE_BACKEND=api   -> connect to an external OpenAI-compatible endpoint
+#                          (JUDGE_API_BASE + JUDGE_API_KEY); no GPU launched.
+# ---------------------------------------------------------------------------
+judge_backend_up() {
+    local log_file="$1"
+    case "${JUDGE_BACKEND}" in
+        api)
+            [[ -n "${JUDGE_API_BASE}" ]] || pipeline_die "JUDGE_BACKEND=api requires JUDGE_API_BASE"
+            [[ -n "${JUDGE_API_KEY}"  ]] || pipeline_die "JUDGE_BACKEND=api requires JUDGE_API_KEY (export it; do not commit)"
+            export HOSTED_VLLM_API_BASE="${JUDGE_API_BASE}"
+            export HOSTED_VLLM_API_KEY="${JUDGE_API_KEY}"
+            pipeline_log "Judge backend: external API ${JUDGE_API_BASE} (model=hosted_vllm/${JUDGE_MODEL}, n=${JUDGE_N_SAMPLES}); no local vLLM."
+            ;;
+        vllm)
+            start_vllm "${JUDGE_MODEL}" "${JUDGE_PORT}" "${JUDGE_PARALLEL_COUNT}" "${JUDGE_STATE}" "${log_file}"
+            export HOSTED_VLLM_API_BASE="http://127.0.0.1:${JUDGE_PORT}/v1"
+            export HOSTED_VLLM_API_KEY="EMPTY"
+            ;;
+        *)
+            pipeline_die "Unknown JUDGE_BACKEND='${JUDGE_BACKEND}' (use vllm|api)"
+            ;;
+    esac
+}
+
+# Tear down the judge backend. Local vLLM is stopped; the external API needs no
+# teardown (and the EXIT trap's stop_vllm is a no-op when SERVER_PID is empty).
+judge_backend_down() {
+    [[ "${JUDGE_BACKEND}" == "vllm" ]] && stop_vllm || true
+}
+
+# ---------------------------------------------------------------------------
 # Generation argument builder — appends every populated optional flag to an
 # array passed by name. `role` is "TARGET" or "JUDGE"; the function reads
 # ${role}_TOP_P, ${role}_STOP, etc.
@@ -409,6 +446,14 @@ apply_judge_defaults() {
     JUDGE_DTYPE="${JUDGE_DTYPE:-}"
     JUDGE_KV_CACHE_DTYPE="${JUDGE_KV_CACHE_DTYPE:-}"
     JUDGE_VLLM_EXTRA_ARGS="${JUDGE_VLLM_EXTRA_ARGS:-}"
+
+    # Judge backend selection. "vllm" (default) serves JUDGE_MODEL locally on a
+    # GPU; "api" routes the judge gen to an external OpenAI-compatible endpoint
+    # (no GPU server is launched). JUDGE_API_BASE / JUDGE_API_KEY are only read
+    # in api mode — keep the key out of the file and export it at run time.
+    JUDGE_BACKEND="${JUDGE_BACKEND:-vllm}"
+    JUDGE_API_BASE="${JUDGE_API_BASE:-}"
+    JUDGE_API_KEY="${JUDGE_API_KEY:-}"
 }
 
 apply_common_defaults() {
