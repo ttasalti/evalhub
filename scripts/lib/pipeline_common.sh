@@ -544,3 +544,23 @@ pipeline_write_empty_cot_summary() {
     echo '{"pass_at_k": {}, "cons_at_k": 0.0, "note": "no base-correct samples"}' \
         > "${judge_dir}/${benchmark}_cot_summary.json"
 }
+
+# Aggregate everything under OUTPUT_ROOT into the master CSV and render the
+# plot suite, the highlights PDF, and the plot atlas. Used by the single-run
+# Stage 4 and by the BENCHMARKS-sweep tail so both produce an identical report.
+pipeline_run_report() {
+    mkdir -p "${OUTPUT_ROOT}/report_plots"
+    evalhub report aggregate \
+        --results-root "${OUTPUT_ROOT}" \
+        --output "${OUTPUT_ROOT}/report.csv"
+    evalhub report plot \
+        --csv "${OUTPUT_ROOT}/report.csv" \
+        --output-dir "${OUTPUT_ROOT}/report_plots"
+    evalhub report highlights \
+        --csv "${OUTPUT_ROOT}/report.csv" \
+        --output "${OUTPUT_ROOT}/report_highlights.pdf"
+    evalhub report atlas \
+        --plot-dir "${OUTPUT_ROOT}/report_plots" \
+        --output "${OUTPUT_ROOT}/report_plots_atlas.pdf"
+    pipeline_log "[DONE] Report CSV + plots + highlights + atlas written under ${OUTPUT_ROOT}"
+}
