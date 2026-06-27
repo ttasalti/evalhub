@@ -1,8 +1,8 @@
 # 🔮 EvalHub
 
 <p align="center">
-    <a href="https://github.com/yourusername/evalhub"><img src="https://img.shields.io/badge/Eval-Hub-blue.svg"></a>
-    <a href="https://github.com/yourusername/evalhub/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+    <a href="https://github.com/tekup99/evalhub"><img src="https://img.shields.io/badge/Eval-Hub-blue.svg"></a>
+    <a href="https://github.com/tekup99/evalhub/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
     <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json"></a>
     <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
 </p>
@@ -13,7 +13,7 @@
     <a href="#-installation">📦 Installation</a> •
     <a href="#-quick-start">🚀 Quick Start</a> •
     <a href="#-cot-passk-pipeline">🧠 CoT-Pass@K Pipeline</a> •
-    <a href="#-reporting--dashboard">📊 Reporting & Dashboard</a> •
+    <a href="#-reporting">📊 Reporting</a> •
     <a href="#-development">🛠 Development</a> •
     <a href="#-roadmap">🛣 Roadmap</a>
 </p>
@@ -21,6 +21,16 @@
 ## 📖 About
 
 All-in-one benchmarking platform for evaluating Large Language Models (LLMs) with comprehensive metrics and standardized testing frameworks.
+
+> [!Note]
+> This repository is a fork of [`ysy-phoenix/evalhub`](https://github.com/ysy-phoenix/evalhub).
+> On top of the upstream Pass@K evaluation it adds:
+> - a **CoT-Pass@K** pipeline — every base-correct generation is re-checked by a stronger
+>   judge LLM and majority-voted to keep or veto the original verdict;
+> - extra **math benchmarks** (`aime2026`, multilingual `aime2026_tr` / `aime2026_pt`,
+>   `tubitak_math2026`, `pt_exams_math`);
+> - an `evalhub report` sub-app that **aggregates** every run into a master CSV and renders
+>   publication-ready **plots / highlights / atlas**.
 
 > [!Warning]
 > This project is under active development and the API is not stable yet.
@@ -153,11 +163,11 @@ scripts/orchestrate.sh scripts/configs/base.env sequential \
 override flags (`--model`, `--benchmark[s]`, `--judge`, ...) so the env
 file stays static while runs vary.
 
-## 📊 Reporting & Dashboard
+## 📊 Reporting
 
 The `evalhub report` sub-app aggregates every summary file under an
-`OUTPUT_ROOT` into a single long-form CSV, renders publication-ready plots,
-and launches a Streamlit + Plotly dashboard for interactive analysis:
+`OUTPUT_ROOT` into a single long-form CSV and renders publication-ready plots,
+a highlights PDF, and a combined atlas:
 
 ```bash
 # 1. Aggregate every {benchmark}_summary.json / *_cot_summary.json into one CSV
@@ -166,8 +176,9 @@ evalhub report aggregate --results-root ./results --output ./report.csv
 # 2. Render PNG + PDF plots (Pass@K curves, base-vs-CoT bars, heatmaps, veto rate)
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
 
-# 3. Launch the interactive dashboard
-evalhub report dashboard --csv ./report.csv --results-root ./results --port 8501
+# 3. Condensed highlights PDF + a single-file atlas of every plot
+evalhub report highlights --csv ./report.csv --output ./report_highlights.pdf
+evalhub report atlas --plot-dir ./report_plots --output ./report_plots_atlas.pdf
 ```
 
 Install the optional dependency group first: `uv pip install -e ".[report]"`.
