@@ -1,0 +1,113 @@
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import orjson
+from rich.console import Console
+from rich.progress import track
+from rich.table import Table
+
+CODE_TASKS = ["humaneval", "mbpp", "livecodebench", "bigcodebench"]
+MATH_TASKS = ["gsm8k", "hendrycks_math", "aime2024", "aime2025", "math500", "gpqa", "mmlu_redux"]
+INCLUDED_TASKS = CODE_TASKS + MATH_TASKS
+
+
+def get_stats_for_lengths(lengths: list[int]) -> dict[str, Any]:
+    lengths = np.array(lengths)
+    return {
+        "count": len(lengths),
+        "min": int(np.min(lengths)),
+        "max": int(np.max(lengths)),
+        "max_rank2": sorted(set(lengths))[-2],
+        "mean": int(np.mean(lengths)),
+        "median": int(np.median(lengths)),
+        "std": float(np.std(lengths)),
+        "percentiles": {
+            "25": int(np.percentile(lengths, 25)),
+            "50": int(np.percentile(lengths, 50)),
+            "75": int(np.percentile(lengths, 75)),
+            "95": int(np.percentile(lengths, 95)),
+        },
+        "max_cnt": Counter(lengths).most_common(1)[0][1],
+        "max_ratio": Counter(lengths).most_common(1)[0][1] / len(lengths),
+    }
+
+
+def analyze_length_distribution(dir_path: Path, show_progress: bool = True):
+    console = Console()
+    task_lengths = defaultdict(list)
+    all_lengths = []
+
+    for task in INCLUDED_TASKS:
+        file_path = dir_path / f"{task}_raw.jsonl"
+        try:
+            with open(file_path, "rb") as f:
+                lines = f.readlines()
+        except FileNotFoundError:
+            continue
+
+        if show_progress:
+            iter_lines = track(lines, description=f"[cyan]Analyzing {task} solutions...")
+        else:
+            iter_lines = lines
+
+        for line in iter_lines:
+            data = orjson.loads(line)
+            length = data["response"]["usage"]["completion_tokens"]
+            task_lengths[task].append(length)
+            all_lengths.append(length)
+
+    # Calculate stats for each task and overall
+    stats = {task: get_stats_for_lengths(lengths) for task, lengths in task_lengths.items()}
+    stats["overall"] = get_stats_for_lengths(all_lengths)
+
+    # Create table with all tasks
+    table = Table(title="Solution Length Distribution by Task", show_header=True, header_style="bold magenta")
+    table.add_column("Statistic", style="dim")
+    for task in list(task_lengths.keys()) + ["overall"]:
+        table.add_column(task.upper(), justify="right")
+
+    # Add rows for each statistic
+    metrics = [
+        ("Total Samples", "count", "integer", ""),
+        ("Minimum Length", "min", "integer", ""),
+        ("Maximum Length", "max", "integer", ""),
+        ("Maximum(Rank 2)", "max_rank2", "integer", ""),
+        ("Mean Length", "mean", "integer", ""),
+        ("Median Length", "median", "integer", ""),
+        ("Std Length", "std", "float", ""),
+        ("25th Percentile", ("percentiles", "25"), "integer", ""),
+        ("50th Percentile", ("percentiles", "50"), "integer", ""),
+        ("75th Percentile", ("percentiles", "75"), "integer", ""),
+        ("95th Percentile", ("percentiles", "95"), "integer", ""),
+        ("Max Count", "max_cnt", "integer", ""),
+        ("Max Ratio", "max_ratio", "float", ""),
+    ]
+
+    for label, key, value_type, suffix in metrics:
+        row = [label]
+        for task in list(task_lengths.keys()) + ["overall"]:
+            value = stats[task][key] if isinstance(key, str) else stats[task][key[0]][key[1]]
+            if value_type == "integer":
+                formatted_value = f"{int(value):,d}"
+            else:  # float
+                formatted_value = f"{value:,.2f}"
+            row.append(f"{formatted_value}{suffix}")
+        table.add_row(*row)
+
+    console.print(table)
+    return stats
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Analyze the length distribution of solutions in a JSONL file.")
+    parser.add_argument("--dir", type=str, help="Path to the directory containing the JSONL files.")
+    args = parser.parse_args()
+
+    if args.dir:
+        stats = analyze_length_distribution(Path(args.dir))
+    else:
+        print("Please provide a directory path using --dir argument")

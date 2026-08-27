@@ -1,0 +1,99 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evalhub"
+version = "0.1.0"
+description = "All-in-one benchmarking platform for evaluating LLMs"
+readme = "README.md"
+requires-python = ">=3.8,<3.13"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Shengyu Ye", email = "ysy007@mail.ustc.edu.cn"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# Core minimal dependencies
+dependencies = [
+    "typer",
+    "litellm",
+    "tenacity",
+    "requests",
+    "pydantic",
+    "rich",
+    "tqdm",
+    "loguru",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "pre-commit",
+]
+
+# All production dependencies
+base = [
+    "numpy",
+    "psutil",
+    "orjson",
+    "openai",
+    "datasets",
+    "huggingface-hub",
+    "hf_transfer",
+    "sympy",
+    "pylatexenc",
+    "evalplus",
+    "omegaconf",
+    "latex2sympy2",
+    "jsonlines",
+    "aiofiles",
+    "antlr4-python3-runtime==4.7.2",
+]
+
+# SGLang specific dependencies
+sglang = [
+    "sglang>=0.5.5.post1",
+    "sglang-router",
+]
+
+# Complete set (all + dev)
+all = [
+    "evalhub[base,dev,sglang]",
+]
+
+[project.scripts]
+evalhub = "evalhub.cli:main"
+
+[tool.setuptools]
+packages = ["evalhub"]
+package-dir = {"evalhub" = "evalhub"}
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP", "N", "C", "W"]
+ignore = ["C901", "N818"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["evalhub"]
