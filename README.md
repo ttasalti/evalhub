@@ -1,8 +1,8 @@
 # 🔮 EvalHub
 
 <p align="center">
-    <a href="https://github.com/tekup99/evalhub"><img src="https://img.shields.io/badge/Eval-Hub-blue.svg"></a>
-    <a href="https://github.com/tekup99/evalhub/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+    <a href="https://github.com/ttasalti/evalhub"><img src="https://img.shields.io/badge/Eval-Hub-blue.svg"></a>
+    <a href="https://github.com/ttasalti/evalhub/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
     <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json"></a>
     <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
 </p>
@@ -15,7 +15,8 @@
     <a href="#-cot-passk-pipeline">🧠 CoT-Pass@K Pipeline</a> •
     <a href="#-reporting">📊 Reporting</a> •
     <a href="#-development">🛠 Development</a> •
-    <a href="#-roadmap">🛣 Roadmap</a>
+    <a href="#-roadmap">🛣 Roadmap</a> •
+    <a href="#-status">🚧 Status</a>
 </p>
 
 ## 📖 About
@@ -24,13 +25,26 @@ All-in-one benchmarking platform for evaluating Large Language Models (LLMs) wit
 
 > [!Note]
 > This repository is a fork of [`ysy-phoenix/evalhub`](https://github.com/ysy-phoenix/evalhub).
-> On top of the upstream Pass@K evaluation it adds:
-> - a **CoT-Pass@K** pipeline — every base-correct generation is re-checked by a stronger
->   judge LLM and majority-voted to keep or veto the original verdict;
+> The upstream harness measures **Pass@K** only: whether a model reaches a correct
+> answer, never how it got there. This fork builds the judged variant on top of it,
+> end to end:
+> - a **CoT-Pass@K** pipeline — every base-correct generation is re-assessed by a
+>   stronger judge LLM and majority-voted to keep or veto the original verdict;
+> - **local and API judge backends** — long-context judging served locally with vLLM
+>   (SGLang also supported), plus a cached API path for hosted models;
 > - extra **math benchmarks** (`aime2026`, multilingual `aime2026_tr` / `aime2026_pt`,
 >   `tubitak_math2026`, `pt_exams_math`);
-> - an `evalhub report` sub-app that **aggregates** every run into a master CSV and renders
->   publication-ready **plots**.
+> - an `evalhub report` sub-app that **aggregates** an entire campaign into a master
+>   CSV and renders publication-ready **tables and plots**.
+
+> [!Note]
+> **Research use.** That judging stage was then put under audit. Correct solutions
+> are corrupted with deterministic edits that damage the reasoning chain and the
+> final answer separately, so the correct verdict is known by construction. Across
+> five mathematical benchmarks in English, Turkish and Portuguese, the judge accepts
+> corrupted chains almost as often as clean ones and rejects them mainly when the
+> final answer is wrong — evidence that the step scores answer agreement rather than
+> the validity of the reasoning. See [`error_study/`](error_study/).
 
 > [!Warning]
 > This project is under active development and the API is not stable yet.
@@ -234,6 +248,12 @@ pytest -W ignore::Warning
 ## 🛣 Roadmap
 
 See [docs/history.md](docs/history.md) for more details.
+
+## 🚧 Status
+
+Actively developed. The pipeline layer was written to drive a large multi-model
+campaign on a SLURM cluster and still carries environment-specific assumptions;
+a cleanup pass to generalise it is planned.
 
 ## 🌐 Acknowledgements
 
