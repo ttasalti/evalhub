@@ -45,6 +45,9 @@ All-in-one benchmarking platform for evaluating Large Language Models (LLMs) wit
 > corrupted chains almost as often as clean ones and rejects them mainly when the
 > final answer is wrong — evidence that the step scores answer agreement rather than
 > the validity of the reasoning. See [`error_study/`](error_study/).
+> 
+> This audit is described in *"Does CoT-Pass@k Really Check the CoT? A Multilingual
+> Mathematical Audit"* (first author; under review, MRL Workshop @ EMNLP 2026).
 
 > [!Warning]
 > This project is under active development and the API is not stable yet.
