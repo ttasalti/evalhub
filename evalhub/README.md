@@ -23,5 +23,5 @@ Newly created for this project:
 |---|---|
 | [`cot/`](./cot/README.md) | Pure-Python CoT-Pass@K post-processing pipeline. |
 | [`benchmarks/cot/`](./benchmarks/cot/README.md) | Parameterised LLM-as-a-Judge dataset. |
-| `utils/model_state.py` | Model + state → chat template registry. |
+| `utils/model_state.py` | Model + state -> chat template registry. |
 | `report/` | Result aggregation and publication-ready plots. Powers `evalhub report aggregate / upsert / plot`. See [`../docs/reporting.md`](../docs/reporting.md). |

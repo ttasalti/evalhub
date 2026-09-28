@@ -5,13 +5,13 @@ Root cause: ``evalhub gen`` appended on a re-run (``base.py`` opened the output
 files in ``"ab"``), so a judge stage run twice produced 6 votes per generation
 (or a mix of 3/4/5/6 when interrupted). This keeps the **first 3** votes per
 generation id and re-derives the CoT majority + metrics from them, so every
-correct answer ends up with exactly 3 cot votes — consistent with every other
+correct answer ends up with exactly 3 cot votes, consistent with every other
 cell.
 
 Only cells where some generation id has **>3** votes are touched. Cells already
 uniform at 3 (incl. the separately re-judged cross-wired cell) are left alone. A
 ``.tar.gz`` backup of each touched cell is taken first. The original judge
-verdicts are reused — no model inference (no GPU) is performed.
+verdicts are reused, no model inference (no GPU) is performed.
 
     python scripts/trim_judge_votes.py             # dry-run (report only)
     python scripts/trim_judge_votes.py --execute   # apply (with backup)
@@ -182,8 +182,10 @@ def main() -> int:
         if sol_ids != bc_ids:
             extra = len(sol_ids - bc_ids)
             missing = len(bc_ids - sol_ids)
-            print(f"[SKIP] {label}\n   votes/id={dist} | judge_ids={len(sol_ids)} base_correct_ids={len(bc_ids)} "
-                  f"(judge-only={extra}, base-only={missing}) -> MISALIGNED (cross-wire?), SKIPPED")
+            print(
+                f"[SKIP] {label}\n   votes/id={dist} | judge_ids={len(sol_ids)} base_correct_ids={len(bc_ids)} "
+                f"(judge-only={extra}, base-only={missing}) -> MISALIGNED (cross-wire?), SKIPPED"
+            )
             skipped += 1
             continue
 

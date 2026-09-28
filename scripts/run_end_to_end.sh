@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# ============================================================================
 # scripts/run_end_to_end.sh
 #
 # Full CoT-Pass@K pipeline: base generation -> judge -> CoT finalization
-# -> report aggregation + plots (when BENCHMARKS plural triggers the loop).
+# -> incremental report upsert + plots (when BENCHMARKS plural triggers the loop).
 #
 # Pipeline stages
 #   1. start vLLM with the target model + its chat template
@@ -18,8 +17,7 @@
 # All knobs come from an env file; pass it as $1 or set EVALHUB_PIPELINE_ENV.
 # A defaults sample lives at scripts/cot_pipeline.env.example.
 #
-# ----------------------------------------------------------------------------
-# Slurm (nscluster):
+# Slurm:
 #   sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 #
 #SBATCH --job-name=evalhub-e2e
@@ -27,13 +25,12 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=30G
 #SBATCH --time=12:00:00
-# NOTE: no hard --nodelist pin — float across the partition so the job grabs the
-# first free GPU on ANY node (nscluster/nsdl2/novasearchdl). A config that needs a
+# NOTE: no hard --nodelist pin, float across the partition so the job grabs the
+# first free GPU on any node. A config that needs a
 # specific node sets SLURM_NODELIST; submit.sh then passes --nodelist explicitly.
 # The ROCR_VISIBLE_DEVICES unset above makes vLLM work on H200 nodes too.
 #SBATCH --output=logs/%x-%j.out
 #SBATCH -e logs/%x-%j.err
-# ----------------------------------------------------------------------------
 #
 # Usage:
 #   sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
@@ -44,7 +41,6 @@
 # Optional env: every TARGET_*/JUDGE_* knob documented in
 #               scripts/cot_pipeline.env.example, plus OUTPUT_ROOT, TARGET_PORT,
 #               JUDGE_PORT, HEALTH_TIMEOUT, LOG_DIR.
-# ============================================================================
 set -euo pipefail
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -64,15 +60,24 @@ else
 fi
 cd "${PROJECT_ROOT}"
 
-# Activate the project conda environment and ensure its bin directory comes
-# first in PATH (conda activate alone may not override ~/.local/bin).
-if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
-    source /opt/Anaconda-2021.05/etc/profile.d/conda.sh
-    conda activate evalhub_env
+# Activate the project environment when the job does not inherit it. Set
+# EVALHUB_CONDA_SH to the site's conda.sh and EVALHUB_CONDA_ENV to the
+# environment name (default evalhub_env), or point EVALHUB_ENV_BIN at the
+# environment's bin directory. Export these in the shell that submits the job.
+if [[ -n "${EVALHUB_CONDA_SH:-}" && "${CONDA_DEFAULT_ENV:-}" != "${EVALHUB_CONDA_ENV:-evalhub_env}" ]]; then
+    # shellcheck disable=SC1090
+    source "${EVALHUB_CONDA_SH}"
+    conda activate "${EVALHUB_CONDA_ENV:-evalhub_env}"
 fi
-export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
+if [[ -n "${CONDA_PREFIX:-}" ]]; then
+    # conda activate alone may not override ~/.local/bin; put the env first.
+    export PATH="${CONDA_PREFIX}/bin:${PATH}"
+fi
+if [[ -n "${EVALHUB_ENV_BIN:-}" ]]; then
+    export PATH="${EVALHUB_ENV_BIN}:${PATH}"
+fi
 
-# nsdl2 sets ROCR_VISIBLE_DEVICES alongside CUDA_VISIBLE_DEVICES; vLLM rejects both being set
+# Some nodes export ROCR_VISIBLE_DEVICES next to CUDA_VISIBLE_DEVICES; vLLM rejects both being set.
 unset ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES
 
 # shellcheck source=lib/pipeline_common.sh
@@ -85,17 +90,26 @@ pipeline_load_env "${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/configs/qwen_0.8b_
 if [[ -n "${BENCHMARKS:-}" && -z "${BENCHMARK:-}" ]]; then
     _env_arg="${1:-${EVALHUB_PIPELINE_ENV:-${SCRIPT_DIR}/configs/qwen_0.8b_demo.env}}"
     for _bm in ${BENCHMARKS}; do
-        # Child runs handle their own REPORT stage; that produces a stale
-        # OUTPUT_ROOT/report.csv after each one. The final aggregate below
-        # overwrites it with the full set so the leftover state is harmless.
+        # Children skip their own REPORT stage; the parent upserts every
+        # benchmark's rows in one batch below instead (single plot render,
+        # no full results-tree rescan while this job's GPU is still held).
         BENCHMARK="${_bm}" EVALHUB_SKIP_REPORT=1 bash "${BASH_SOURCE[0]}" "${_env_arg}"
     done
 
-    # All benchmarks finished — produce master CSV + plots once.
+    # All benchmarks finished, upsert each one's rows, then render plots once.
     apply_legacy_env_aliases
+    apply_target_defaults
+    apply_judge_defaults
+    apply_common_defaults
     pipeline_init_paths
-    pipeline_log "==[REPORT]== Aggregating results + rendering plots ===="
-    pipeline_run_report
+    pipeline_log "==[REPORT]== Upserting all benchmark rows + refreshing plots ===="
+    _summaries=()
+    for _bm in ${BENCHMARKS}; do
+        _tdir="$(compose_target_dir "${_bm}")"
+        _jdir="$(compose_judge_dir "${_bm}")"
+        _summaries+=("${_tdir}/${_bm}_summary.json" "${_jdir}/${_bm}_cot_summary.json")
+    done
+    pipeline_run_report_incremental "${_summaries[@]}"
     exit 0
 fi
 
@@ -112,9 +126,7 @@ mkdir -p "${TARGET_DIR}" "${JUDGE_DIR}"
 
 pipeline_register_cleanup
 
-# --------------------------------------------------------------------------
-# Stage 1 — base generation + evaluation
-# --------------------------------------------------------------------------
+# Stage 1: base generation + evaluation
 pipeline_log "==[1/3]== Base generation & evaluation =================================="
 start_vllm "${TARGET_MODEL}" "${TARGET_PORT}" "${TARGET_PARALLEL_COUNT}" "${TARGET_STATE}" \
     "${LOG_DIR_LOCAL}/vllm_target_${SLURM_JOB_ID:-local}_${BENCHMARK}.log"
@@ -124,9 +136,7 @@ export HOSTED_VLLM_API_KEY="EMPTY"
 pipeline_run_target_gen_eval "${TARGET_DIR}" "${BENCHMARK}"
 stop_vllm
 
-# --------------------------------------------------------------------------
-# Stage 2 — extract correct generations & run the judge
-# --------------------------------------------------------------------------
+# Stage 2: extract correct generations & run the judge
 pipeline_log "==[2/3]== Extract correct generations & judge ==========================="
 JUDGE_INPUT="${JUDGE_DIR}/${BENCHMARK}_cot_judge_input.jsonl"
 evalhub cot extract \
@@ -152,9 +162,7 @@ if [[ -z "${EVALHUB_SKIP_JUDGE:-}" ]]; then
     judge_solutions="${JUDGE_SOLUTIONS_OUT}"
     stop_vllm
 
-    # ----------------------------------------------------------------------
-    # Stage 3 — aggregate majority vote, apply CoT veto, produce summary
-    # ----------------------------------------------------------------------
+    # Stage 3: aggregate majority vote, apply CoT veto, produce summary
     pipeline_log "==[3/3]== CoT-Pass@K aggregation ========================================"
     evalhub cot finalize \
         --base-results "${TARGET_DIR}/${BENCHMARK}_results.jsonl" \
@@ -166,12 +174,12 @@ if [[ -z "${EVALHUB_SKIP_JUDGE:-}" ]]; then
     pipeline_log "[DONE] CoT-Pass@K summary written under ${JUDGE_DIR}"
 fi
 
-# --------------------------------------------------------------------------
-# Stage 4 — Aggregate report + plots so the OUTPUT_ROOT looks end-to-end
+# Stage 4: Aggregate report + plots so the OUTPUT_ROOT looks end-to-end
 # complete after every run (single benchmark or final tail of a sweep).
 # Skipped when invoked from the BENCHMARKS plural loop (parent runs its own).
-# --------------------------------------------------------------------------
 if [[ -z "${EVALHUB_SKIP_REPORT:-}" ]]; then
-    pipeline_log "==[4/4]== Aggregating results + rendering plots ======"
-    pipeline_run_report
+    pipeline_log "==[4/4]== Upserting result rows + refreshing plots ======"
+    pipeline_run_report_incremental \
+        "${TARGET_DIR}/${BENCHMARK}_summary.json" \
+        "${JUDGE_DIR}/${BENCHMARK}_cot_summary.json"
 fi

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# ============================================================================
 # scripts/submit.sh
 #
 # sbatch wrapper with two jobs:
@@ -30,22 +29,21 @@
 #       --benchmarks "aime2026 aime2026_tr aime2026_pt"
 #
 # Recognized CLI overrides (CLI > env > defaults):
-#   --model X                    → TARGET_MODEL=X
-#   --judge X                    → JUDGE_MODEL=X
-#   --benchmark X                → BENCHMARK=X
-#   --benchmarks "X Y Z"         → BENCHMARKS="X Y Z"  (loop in run_end_to_end.sh)
-#   --target-state X             → TARGET_STATE=X      (base|non-think|think)
-#   --judge-state X              → JUDGE_STATE=X
-#   --output-root DIR            → OUTPUT_ROOT=DIR
-#   --temperature N              → TARGET_TEMPERATURE=N
-#   --judge-temperature N        → JUDGE_TEMPERATURE=N
-#   --n-samples N                → TARGET_N_SAMPLES=N
-#   --judge-n-samples N          → JUDGE_N_SAMPLES=N
-#   --max-completion-tokens N    → TARGET_MAX_COMPLETION_TOKENS=N
-#   --set KEY=VAL                → KEY=VAL (free-form passthrough; repeatable)
+#   --model X                    -> TARGET_MODEL=X
+#   --judge X                    -> JUDGE_MODEL=X
+#   --benchmark X                -> BENCHMARK=X
+#   --benchmarks "X Y Z"         -> BENCHMARKS="X Y Z"  (loop in run_end_to_end.sh)
+#   --target-state X             -> TARGET_STATE=X      (base|non-think|think)
+#   --judge-state X              -> JUDGE_STATE=X
+#   --output-root DIR            -> OUTPUT_ROOT=DIR
+#   --temperature N              -> TARGET_TEMPERATURE=N
+#   --judge-temperature N        -> JUDGE_TEMPERATURE=N
+#   --n-samples N                -> TARGET_N_SAMPLES=N
+#   --judge-n-samples N          -> JUDGE_N_SAMPLES=N
+#   --max-completion-tokens N    -> TARGET_MAX_COMPLETION_TOKENS=N
+#   --set KEY=VAL                -> KEY=VAL (free-form passthrough; repeatable)
 #
 # Everything after `--` is passed verbatim to sbatch.
-# ============================================================================
 set -euo pipefail
 
 if [[ $# -lt 2 ]]; then

@@ -2,7 +2,7 @@
 """Re-finalize CoT cells whose judge votes are intact but metrics are missing/broken.
 
 Some cells have valid, aligned judge verdicts on disk but no (or an empty/stale)
-``*_cot_summary.json`` / ``*_cot_results.jsonl`` — e.g. ``cot finalize`` was never
+``*_cot_summary.json`` / ``*_cot_results.jsonl``, e.g. ``cot finalize`` was never
 run, was interrupted (empty ``{}`` summary), or the per-generation results file
 was deleted in a space cleanup. The judge inference already happened, so this is
 recoverable **without a GPU**: re-run the majority vote + CoT metrics from the
@@ -11,7 +11,7 @@ existing ``cot_judge*.jsonl`` solutions.
 A cell is only touched when its judged generation ids EXACTLY match the
 base-correct ids (so we never finalize a cross-wired or truncated run). Cells with
 no votes (judge never produced output) or misaligned votes are reported and
-skipped — those need a GPU re-judge.
+skipped: those need a GPU re-judge.
 
     python scripts/finalize_missing_cot.py                 # dry-run
     python scripts/finalize_missing_cot.py --execute       # apply (with backup)
@@ -157,8 +157,7 @@ def backup(cell: Path) -> Path:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--execute", action="store_true", help="apply (default: dry-run)")
     ap.add_argument("--only", default=None, help="only cells whose path contains this substring")
     ap.add_argument("--exclude", default=None, help="skip cells whose path contains this substring")
@@ -199,8 +198,10 @@ def main() -> int:
             empty_votes += 1
             continue
         if jids != base_ids:
-            print(f"[MISALIGNED]  {label}  judged={len(jids)} base_correct={len(base_ids)} "
-                  f"(extra={len(jids - base_ids)}, missing={len(base_ids - jids)}); GPU re-judge needed")
+            print(
+                f"[MISALIGNED]  {label}  judged={len(jids)} base_correct={len(base_ids)} "
+                f"(extra={len(jids - base_ids)}, missing={len(base_ids - jids)}); GPU re-judge needed"
+            )
             misaligned += 1
             continue
 
@@ -208,8 +209,10 @@ def main() -> int:
         # different state's generations (cross-wire). Never re-finalize those.
         text_bad = judge_input_text_mismatch(cell, bench)
         if text_bad > 0:
-            print(f"[CROSS-WIRE]  {label}  {text_bad} judged generation(s) text != own-state base; "
-                  f"GPU re-judge needed (do NOT re-finalize)")
+            print(
+                f"[CROSS-WIRE]  {label}  {text_bad} judged generation(s) text != own-state base; "
+                f"GPU re-judge needed (do NOT re-finalize)"
+            )
             misaligned += 1
             continue
 
@@ -222,12 +225,16 @@ def main() -> int:
         backup(cell)
         aggregate_judge_votes(sols[0], majority)
         summary = apply_cot_metrics(base_results, majority, cot_results, cot_summary, stats)
-        print(f"    -> true={summary['true_count']} cot_false={summary['cot_false_count']} "
-              f"pass@1={summary['pass_at_k'].get('1')}")
+        print(
+            f"    -> true={summary['true_count']} cot_false={summary['cot_false_count']} "
+            f"pass@1={summary['pass_at_k'].get('1')}"
+        )
         repaired += 1
 
-    print(f"\n{'Applied' if args.execute else 'Dry-run'}: {repaired} repairable, "
-          f"{empty_votes} empty-votes, {misaligned} misaligned, {healthy} already-healthy.")
+    print(
+        f"\n{'Applied' if args.execute else 'Dry-run'}: {repaired} repairable, "
+        f"{empty_votes} empty-votes, {misaligned} misaligned, {healthy} already-healthy."
+    )
     return 0
 
 

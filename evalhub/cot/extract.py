@@ -31,9 +31,9 @@ def extract_correct_generations(
     """Filter the base raw generations down to only those marked correct.
 
     The base-evaluation step writes two files in lockstep:
-      * ``*_results.jsonl`` — one record per task with a ``correct`` array
+      * ``*_results.jsonl``, one record per task with a ``correct`` array
         aligned to ``solutions``.
-      * ``*_raw.jsonl`` — one record per generation, in the same order, where
+      * ``*_raw.jsonl``, one record per generation, in the same order, where
         the n-th occurrence of a given ``task_id`` corresponds to the n-th
         entry of that task's ``correct`` array.
 

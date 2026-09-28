@@ -1,4 +1,4 @@
-# `evalhub/benchmarks/cot/` — LLM-as-a-Judge dataset for CoT-Pass@K
+# `evalhub/benchmarks/cot/`: LLM-as-a-Judge dataset for CoT-Pass@K
 
 **Newly created for this project.** Replaces the three near-duplicate
 `math_judge`, `math_judge_tr`, `math_judge_pt` packages previously kept under
@@ -7,7 +7,7 @@
 | File | Responsibility |
 |---|---|
 | `prompts.py` | One `{question, solution}` prompt template per language. Adding a new language is a single dictionary entry. |
-| `judge.py`   | `CoTJudgeDataset` — parameterised by `language`. Reads a JSONL of correct base generations (produced by `evalhub cot extract`), resolves the original question by looking up the source dataset in `DATASET_MAP`, and emits one judge task per generation. Registers three names (`cot_judge`, `cot_judge_tr`, `cot_judge_pt`). |
+| `judge.py`   | `CoTJudgeDataset`, parameterised by `language`. Reads a JSONL of correct base generations (produced by `evalhub cot extract`), resolves the original question by looking up the source dataset in `DATASET_MAP`, and emits one judge task per generation. Registers three names (`cot_judge`, `cot_judge_tr`, `cot_judge_pt`). |
 
 The judge:
 

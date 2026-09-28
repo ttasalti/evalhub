@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# ============================================================================
 # scripts/run_report.sh
 #
 # Standalone report stage: walks OUTPUT_ROOT, builds the master CSV, and
@@ -16,7 +15,6 @@
 #SBATCH --time=00:30:00
 #SBATCH --output=logs/%x-%j.out
 #SBATCH -e logs/%x-%j.err
-# ============================================================================
 set -euo pipefail
 
 if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
@@ -28,11 +26,22 @@ else
 fi
 cd "${PROJECT_ROOT}"
 
-if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
-    source /opt/Anaconda-2021.05/etc/profile.d/conda.sh
-    conda activate evalhub_env
+# Activate the project environment when the job does not inherit it. Set
+# EVALHUB_CONDA_SH to the site's conda.sh and EVALHUB_CONDA_ENV to the
+# environment name (default evalhub_env), or point EVALHUB_ENV_BIN at the
+# environment's bin directory. Export these in the shell that submits the job.
+if [[ -n "${EVALHUB_CONDA_SH:-}" && "${CONDA_DEFAULT_ENV:-}" != "${EVALHUB_CONDA_ENV:-evalhub_env}" ]]; then
+    # shellcheck disable=SC1090
+    source "${EVALHUB_CONDA_SH}"
+    conda activate "${EVALHUB_CONDA_ENV:-evalhub_env}"
 fi
-export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
+if [[ -n "${CONDA_PREFIX:-}" ]]; then
+    # conda activate alone may not override ~/.local/bin; put the env first.
+    export PATH="${CONDA_PREFIX}/bin:${PATH}"
+fi
+if [[ -n "${EVALHUB_ENV_BIN:-}" ]]; then
+    export PATH="${EVALHUB_ENV_BIN}:${PATH}"
+fi
 
 # shellcheck source=lib/pipeline_common.sh
 source "${SCRIPT_DIR}/lib/pipeline_common.sh"

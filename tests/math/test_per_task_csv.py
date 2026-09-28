@@ -59,5 +59,5 @@ def test_columns_include_per_k_pass_rates(tmp_path):
 def test_empty_results_is_safe(tmp_path):
     out = tmp_path / "x_per_task.csv"
     write_per_task_csv([], out, has_cot=False)
-    # No file written when no rows — caller must not crash.
+    # No file written when no rows, caller must not crash.
     assert not out.exists()

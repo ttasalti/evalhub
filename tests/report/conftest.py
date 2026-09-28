@@ -30,10 +30,7 @@ def fake_results_root(tmp_path: Path) -> Path:
     )
 
     judge_dir = (
-        root
-        / "judgments"
-        / "qwen-mini_state-non-think_judged_by_qwen-judge_state-think_t0.6_max16384"
-        / "gsm8k"
+        root / "judgments" / "qwen-mini_state-non-think_judged_by_qwen-judge_state-think_t0.6_max16384" / "gsm8k"
     )
     _write_json(
         judge_dir / "gsm8k_cot_summary.json",
@@ -84,12 +81,7 @@ def v3_results_root(tmp_path: Path) -> Path:
             "invalid_format_count": 0,
         },
     )
-    judge_dir = (
-        target_root
-        / "judged_by"
-        / "qwen-judge__state-think__t0.6__max16384__n3"
-        / "gsm8k"
-    )
+    judge_dir = target_root / "judged_by" / "qwen-judge__state-think__t0.6__max16384__n3" / "gsm8k"
     _write_json(
         judge_dir / "gsm8k_cot_summary.json",
         {
@@ -108,10 +100,10 @@ def v3_results_root(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def v5_results_root(tmp_path: Path) -> Path:
-    """V5 layout (current): ONE folder per model — model dir is bare, the sampling
+    """V5 layout (current): ONE folder per model, model dir is bare, the sampling
     suffix lives on the benchmark leaf, on both the base side and under judged_by/."""
     root = tmp_path / "v5"
-    model_root = root / "base" / "qwen-mini"           # bare model dir, no suffix
+    model_root = root / "base" / "qwen-mini"  # bare model dir, no suffix
     base_dir = model_root / "gsm8k__t0.6__max2048__n64"  # suffix on the benchmark leaf
     _write_json(
         base_dir / "gsm8k_summary.json",
@@ -130,7 +122,7 @@ def v5_results_root(tmp_path: Path) -> Path:
         model_root
         / "judged_by"
         / "qwen-judge__state-think__t0.6__max16384"
-        / "gsm8k__t0.6__max2048__n64"                   # same target suffix on the leaf
+        / "gsm8k__t0.6__max2048__n64"  # same target suffix on the leaf
     )
     _write_json(
         judge_dir / "gsm8k_cot_summary.json",
@@ -150,7 +142,7 @@ def v5_results_root(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def v2_results_root(tmp_path: Path) -> Path:
-    """V2 layout: target → judged_by → judge → benchmark, with n_samples + aggregate counts."""
+    """V2 layout: target -> judged_by -> judge -> benchmark, with n_samples + aggregate counts."""
     root = tmp_path / "v2"
     target_root = root / "qwen-mini__state-base__t0.6__max2048__n64"
     base_dir = target_root / "gsm8k"
@@ -168,12 +160,7 @@ def v2_results_root(tmp_path: Path) -> Path:
         },
     )
 
-    judge_dir = (
-        target_root
-        / "judged_by"
-        / "qwen-judge__state-think__t0.6__max16384__n3"
-        / "gsm8k"
-    )
+    judge_dir = target_root / "judged_by" / "qwen-judge__state-think__t0.6__max16384__n3" / "gsm8k"
     _write_json(
         judge_dir / "gsm8k_cot_summary.json",
         {

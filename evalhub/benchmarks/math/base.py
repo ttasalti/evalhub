@@ -171,7 +171,7 @@ class MathDataset(Dataset):
             f.write(orjson.dumps(summary))
         logger.info(f"Evaluation summary saved to {summary_path}")
 
-        # Per-task CSV — one row per task_id with all the data a researcher
+        # Per-task CSV, one row per task_id with all the data a researcher
         # typically wants in Excel: per-K pass rates, the four count buckets,
         # ground truth, majority vote, and whether the majority was correct.
         csv_path = output_dir / f"{self.name}_per_task.csv"
@@ -183,20 +183,27 @@ def write_per_task_csv(
     results: list[dict[str, Any]],
     csv_path: PathLike,
     has_cot: bool,
+    extra_fields: list[str] | None = None,
 ) -> None:
     """Write per-task CSV with K-axis pass@k columns, counts, and ground truth.
 
     When ``has_cot`` is True the CSV's count columns reflect post-judge values
     (cot_false / invalid_format may be > 0). When False they are always 0 in
-    those columns — convenient for diff-ing base vs CoT runs side by side.
+    those columns, convenient for diff-ing base vs CoT runs side by side.
+
+    ``extra_fields`` (CoT threshold path only) appends extra top-level record keys
+    as trailing columns, e.g. the ``true_any`` / ``cot_false_any`` / ``true_all`` /
+    ``cot_false_all`` per-task counts for the any/all judge-approval thresholds.
     """
     if not results:
         return
     k_keys = sorted(results[0].get("pass_at_k", {}).keys(), key=lambda x: int(x))
+    extra_fields = list(extra_fields or [])
     fieldnames = (
         ["task_id", "true", "false", "cot_false", "invalid_format"]
         + [f"pass@{k}" for k in k_keys]
         + ["ground_truth", "majority_vote", "is_correct_majority"]
+        + extra_fields
     )
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -215,4 +222,6 @@ def write_per_task_csv(
             }
             for k in k_keys:
                 row[f"pass@{k}"] = r["pass_at_k"].get(k, "")
+            for fld in extra_fields:
+                row[fld] = r.get(fld, "")
             writer.writerow(row)

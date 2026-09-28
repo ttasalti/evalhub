@@ -2,14 +2,14 @@
 
 Walks an ``OUTPUT_ROOT`` produced by ``evalhub eval`` and ``evalhub cot
 finalize`` and normalises every summary file into one **wide** row per
-evaluated ``(model, mode, benchmark, judge)`` — every K and τ in a single row.
+evaluated ``(model, mode, benchmark, judge)``, every K and τ in a single row.
 The ``judge_model`` column is empty for the No-Judge reference and set for the
 cot (judged) variant.
 
 Two CLI surfaces:
 
-* ``evalhub report aggregate`` — full rebuild of the master CSV.
-* ``evalhub report upsert``    — append-or-replace a single result row.
+* ``evalhub report aggregate``, full rebuild of the master CSV.
+* ``evalhub report upsert``, append-or-replace a single result row.
 
 The package is read-only over the artefacts the rest of the framework produces.
 """

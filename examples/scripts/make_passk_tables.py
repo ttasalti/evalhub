@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """Render pass@k / cot-pass@k tables with RL progression columns.
 
+RETIRED: this script reads/writes results/rl_train/combined_report/, which was
+removed during the results/ path standardization (no more RL-comparison
+analysis/plots are tracked; raw jsonl/json data for RL runs now lives under
+results/rl_train/base/... same as every other model and is picked up by the
+regular `evalhub report aggregate` over the whole results/ tree). Kept for
+reference only, CSV_PATH/OUT_DIR below no longer exist on disk.
+
 Columns: Base (pretrained) | s120 | s240 | RL Final
-One PNG per benchmark written to:
-  results/RL train/combined_report/report_plots/custom_tables/
+One PNG per benchmark was written to:
+  results/rl_train/combined_report/report_plots/custom_tables/   (retired)
 """
+
 from __future__ import annotations
 
 import csv
@@ -15,19 +23,19 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-CSV_PATH = Path("results/RL train/combined_report/report.csv")
-OUT_DIR = Path("results/RL train/combined_report/report_plots/custom_tables")
+CSV_PATH = Path("results/rl_train/combined_report/report.csv")
+OUT_DIR = Path("results/rl_train/combined_report/report_plots/custom_tables")
 
 K_VALUES = [1, 2, 4, 8, 16, 32, 64]
 BENCHMARKS = ["aime2026", "aime2026_tr", "aime2026_pt", "tubitak_math2026"]
 JUDGES = ["Qwen3.6-35B-A3B", "gemma-4-26B-A4B-it"]
 
-# (model_short, display_label) — left to right column order
+# (model_short, display_label), left to right column order
 MODEL_ORDER = [
-    ("Q-2B·Base",                        "Base"),
-    ("DAPO-EN-Q-2B-t16g48·Base·s120",    "s120"),
-    ("DAPO-EN-Q-2B-t16g48·Base·s240",    "s240"),
-    ("DAPO-EN-Q-2B-t16g48·Base",         "RL Final"),
+    ("Q-2B·Base", "Base"),
+    ("DAPO-EN-Q-2B-t16g48·Base·s120", "s120"),
+    ("DAPO-EN-Q-2B-t16g48·Base·s240", "s240"),
+    ("DAPO-EN-Q-2B-t16g48·Base", "RL Final"),
 ]
 
 
@@ -85,7 +93,7 @@ def render(benchmark, col_labels, table_rows, out_path):
     fig_w = 1.5 * n_cols + 1.0
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
     ax.axis("off")
-    ax.set_title(f"{benchmark} — pass@k progression (Base → s120 → s240 → RL Final)", fontsize=11, pad=6)
+    ax.set_title(f"{benchmark}: pass@k progression (Base -> s120 -> s240 -> RL Final)", fontsize=11, pad=6)
 
     col_widths = [0.32] + [0.17] * (n_cols - 1)
     tbl = ax.table(

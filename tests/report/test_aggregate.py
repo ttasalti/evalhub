@@ -20,8 +20,7 @@ from evalhub.report.scan import scan_results  # noqa: E402
 
 def test_meta_columns_lead_and_key_present():
     assert META_COLUMNS[0] == "model"
-    for col in ("model_short", "is_base", "mode", "language", "judged", "series",
-                "judge_model", "judge_state"):
+    for col in ("model_short", "is_base", "mode", "language", "judged", "series", "judge_model", "judge_state"):
         assert col in META_COLUMNS
 
 
@@ -31,7 +30,7 @@ def test_metric_columns_cover_all_k_and_tau():
     assert "mgpass@64" in cols
     for t in TAUS:
         assert f"gpass@64_t{t}" in cols
-    # Grouped per K: pass, then 4 g-pass τ, then mg → 6 columns per K.
+    # Grouped per K: pass, then 4 g-pass τ, then mg -> 6 columns per K.
     assert len(cols) == 2 * (1 + len(TAUS) + 1)
 
 
@@ -80,6 +79,12 @@ def test_aggregate_results_writes_csv(fake_results_root, tmp_path):
     reloaded = pd.read_csv(out)
     assert len(reloaded) == len(df)
     assert list(reloaded.columns) == list(df.columns)
+    # report_tasks.csv is a separate file; its task_id/n_generations columns
+    # (the two names genuinely unique to it -- true_count/false_count/
+    # cot_false_count/cot_false_trunc_induced/cot_false_complete_verdict
+    # already existed in report.csv as whole-run aggregates) must not leak in.
+    for col in ("task_id", "n_generations"):
+        assert col not in df.columns
 
 
 def test_write_csv_handles_missing_parent(tmp_path):

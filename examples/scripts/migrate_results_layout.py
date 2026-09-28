@@ -16,7 +16,7 @@ distinct because each now carries its own t/max/n.
 ================================  DATA SAFETY  =================================
 This script is built to make data loss IMPOSSIBLE:
 
-  * Default is DRY-RUN — prints the planned moves and does nothing.
+  * Default is DRY-RUN, prints the planned moves and does nothing.
   * --execute first writes a tar.gz BACKUP of every root, then performs moves.
   * Moves are os.rename within the same filesystem (atomic, lossless). It NEVER
     copies-then-deletes and NEVER calls rm -rf.
@@ -35,6 +35,7 @@ Usage:
   python scripts/migrate_results_layout.py --execute
   python scripts/migrate_results_layout.py --revert results_layout_manifest_<ts>.tsv
 """
+
 from __future__ import annotations
 
 import argparse
@@ -73,7 +74,7 @@ def _benchmark_leaf_dirs(model_dir: Path) -> list[Path]:
         M/step_*/<b>                       (b not judged_by)
         M/judged_by/<judge>/<b>
         M/step_*/judged_by/<judge>/<b>
-    Empty leaves are included (so they migrate too — never silently dropped).
+    Empty leaves are included (so they migrate too, never silently dropped).
     """
     leaves: list[Path] = []
 
@@ -124,12 +125,12 @@ def plan_moves(roots: list[Path]) -> list[tuple[Path, Path]]:
                 continue
             m = _V3_MODEL_RE.match(model_dir.name)
             if not m:
-                continue  # already V5 (bare model) or unrelated — skip
+                continue  # already V5 (bare model) or unrelated, skip
             suffix = _V3_SUFFIX_RE.search(model_dir.name).group("suffix")
             new_model_dir = state_dir / m.group("model")
             for leaf in _benchmark_leaf_dirs(model_dir):
-                rel = leaf.relative_to(model_dir)            # e.g. judged_by/<j>/<b>
-                new_rel = rel.parent / (rel.name + suffix)   # append suffix to leaf name
+                rel = leaf.relative_to(model_dir)  # e.g. judged_by/<j>/<b>
+                new_rel = rel.parent / (rel.name + suffix)  # append suffix to leaf name
                 moves.append((leaf, new_model_dir / new_rel))
     return moves
 
@@ -174,7 +175,7 @@ def prune_empty_dirs(roots: list[Path]) -> None:
 def do_migrate(roots: list[Path], execute: bool) -> int:
     moves = plan_moves(roots)
     if not moves:
-        print("[migrate] nothing to migrate — no V3 model dirs found (already V5?).")
+        print("[migrate] nothing to migrate, no V3 model dirs found (already V5?).")
         return 0
 
     print(f"[migrate] planned {len(moves)} leaf move(s):")
@@ -183,7 +184,7 @@ def do_migrate(roots: list[Path], execute: bool) -> int:
 
     conflicts = find_conflicts(moves)
     if conflicts:
-        print("\n[ABORT] conflicts detected — NOTHING was moved:")
+        print("\n[ABORT] conflicts detected, NOTHING was moved:")
         for c in conflicts:
             print("  " + c)
         return 2
@@ -200,7 +201,7 @@ def do_migrate(roots: list[Path], execute: bool) -> int:
     with manifest.open("w") as mf:
         for src, dst in moves:
             dst.parent.mkdir(parents=True, exist_ok=True)
-            if dst.exists():  # paranoia — pre-scan already guaranteed this can't happen
+            if dst.exists():  # paranoia, pre-scan already guaranteed this can't happen
                 print(f"[ABORT] dst appeared mid-run: {dst}")
                 return 3
             os.rename(src, dst)
@@ -211,8 +212,10 @@ def do_migrate(roots: list[Path], execute: bool) -> int:
 
     after = _count_files(roots)
     if before != after:
-        print(f"[FATAL] file-count changed: before={before} after={after}. "
-              f"Investigate immediately; revert with: --revert {manifest}")
+        print(
+            f"[FATAL] file-count changed: before={before} after={after}. "
+            f"Investigate immediately; revert with: --revert {manifest}"
+        )
         return 4
     print(f"[verify] file count unchanged ({before}). Migration OK.")
     return 0
@@ -244,13 +247,14 @@ def do_revert(manifest: Path) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--root", action="append", default=None,
-                    help="results root to migrate (repeatable). "
-                         "Default: 'results' and 'results/RL train'.")
-    ap.add_argument("--execute", action="store_true",
-                    help="apply the moves (default is dry-run).")
-    ap.add_argument("--revert", metavar="MANIFEST.tsv",
-                    help="undo a prior migration from its manifest, then exit.")
+    ap.add_argument(
+        "--root",
+        action="append",
+        default=None,
+        help="results root to migrate (repeatable). Default: 'results' and 'results/RL train'.",
+    )
+    ap.add_argument("--execute", action="store_true", help="apply the moves (default is dry-run).")
+    ap.add_argument("--revert", metavar="MANIFEST.tsv", help="undo a prior migration from its manifest, then exit.")
     args = ap.parse_args()
 
     if args.revert:

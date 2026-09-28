@@ -11,17 +11,56 @@ from evalhub.report.scan import (
 )
 
 
+def test_parse_judge_leaf_dirname_canonical_basemax_no_re_eb():
+    # V4 canonical form as written by the current compose_judge_dir: basemax is
+    # always present, __re-/__eb- are omitted entirely when unset/"none".
+    parsed = parse_judge_leaf_dirname("gemma-4-26B-A4B-it__state-think__t0.6__max16384__basemax16384")
+    assert parsed is not None
+    assert parsed.model == "gemma-4-26B-A4B-it"
+    assert parsed.state == "think"
+    assert parsed.temperature == 0.6
+    assert parsed.max_completion_tokens == 16384
+    assert parsed.reasoning_effort is None
+    assert parsed.extra_body is None
+
+
+def test_parse_judge_leaf_dirname_basemax_differs_from_judge_max():
+    # Real case: judge budgeted lower than the target it judges.
+    parsed = parse_judge_leaf_dirname("DeepSeek-R1-0528-Qwen3-8B__state-think__t0.6__max32768__basemax65536")
+    assert parsed is not None
+    assert parsed.max_completion_tokens == 32768
+
+
+def test_parse_judge_leaf_dirname_with_reasoning_and_extra_body():
+    parsed = parse_judge_leaf_dirname(
+        "deepseek-v4-flash__state-think__t0.6__max32768__basemax32768__re-high__eb-thinking-enabled"
+    )
+    assert parsed is not None
+    assert parsed.reasoning_effort == "high"
+    assert parsed.extra_body == "thinking-enabled"
+
+
+def test_parse_judge_leaf_dirname_legacy_missing_basemax_still_parses():
+    # Older/legacy dirs written before basemax existed must still parse (basemax=None).
+    parsed = parse_judge_leaf_dirname("gemma-4-26B-A4B-it__state-think__t0.6__max16384")
+    assert parsed is not None
+    assert parsed.max_completion_tokens == 16384
+
+
 def test_parse_benchmark_leaf_v5():
     assert parse_benchmark_leaf("aime2026__t0.6__max16384__n64") == ("aime2026", 0.6, 16384, 64)
     # Single-underscore benchmark names must not be split at the wrong place.
     assert parse_benchmark_leaf("aime2026_tr__t0.6__max20480__n16") == ("aime2026_tr", 0.6, 20480, 16)
     assert parse_benchmark_leaf("tubitak_math2026__t0.6__max16384__n64") == (
-        "tubitak_math2026", 0.6, 16384, 64,
+        "tubitak_math2026",
+        0.6,
+        16384,
+        64,
     )
 
 
 def test_parse_benchmark_leaf_bare_is_none():
-    # A bare benchmark (old layouts) carries no sampling suffix → None (caller falls back).
+    # A bare benchmark (old layouts) carries no sampling suffix -> None (caller falls back).
     assert parse_benchmark_leaf("aime2026") is None
     assert parse_benchmark_leaf("tubitak_math2026") is None
     # A model dir name must never be mistaken for a benchmark leaf.
@@ -34,12 +73,12 @@ def test_scan_results_v5_one_folder_per_model(v5_results_root):
     assert set(by_type) == {"base_eval", "cot_eval"}
 
     base = by_type["base_eval"]
-    assert base.model == "qwen-mini"          # bare model dir name
-    assert base.state == "base"               # from the state dir above the model
-    assert base.benchmark == "gsm8k"          # suffix stripped off the leaf
+    assert base.model == "qwen-mini"  # bare model dir name
+    assert base.state == "base"  # from the state dir above the model
+    assert base.benchmark == "gsm8k"  # suffix stripped off the leaf
     assert base.temperature == 0.6
     assert base.max_completion_tokens == 2048
-    assert base.n_samples == 64               # from the benchmark leaf, not the model dir
+    assert base.n_samples == 64  # from the benchmark leaf, not the model dir
     assert base.pass_at_k == {1: 0.50, 2: 0.65, 4: 0.78}
     assert base.stats is not None and base.stats["true_count"] == 1600
 
@@ -47,7 +86,7 @@ def test_scan_results_v5_one_folder_per_model(v5_results_root):
     assert cot.model == "qwen-mini"
     assert cot.state == "base"
     assert cot.benchmark == "gsm8k"
-    assert cot.n_samples == 64                # target n from the benchmark leaf
+    assert cot.n_samples == 64  # target n from the benchmark leaf
     assert cot.judge_model == "qwen-judge"
     assert cot.judge_state == "think"
     assert cot.judge_max_completion_tokens == 16384

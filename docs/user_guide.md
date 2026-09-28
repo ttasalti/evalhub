@@ -1,4 +1,4 @@
-# User guide — running the CoT-Pass@K pipeline end to end
+# User guide: running the CoT-Pass@K pipeline end to end
 
 A practical, copy-paste guide to running, sweeping, debugging, and extending the
 pipeline on your own. New here? Start with the **Quick start** below; for the CSV
@@ -38,26 +38,26 @@ full `run_end_to_end.sh` (§2). If a step fails, see **Debugging tips** (§8).
 ## 1. One-time setup
 
 ```bash
-# Activate the project environment (conda or uv — see the README).
+# Activate the project environment (conda or uv: see the README).
 conda activate evalhub          # or: source .venv/bin/activate
 
 # HuggingFace token (only needed for gated datasets/models):
-# create a "read" token at HF → Settings → Access Tokens, then put
+# create a "read" token at HF -> Settings -> Access Tokens, then put
 #   HF_TOKEN="hf_..."
-# into scripts/secrets.env  (gitignored — never committed).
+# into scripts/secrets.env  (gitignored: never committed).
 cp scripts/secrets.env.example scripts/secrets.env
 ```
 
-## 2. A single run — three ways
+## 2. A single run: three ways
 
 ```bash
-# 2A. Fixed demo (everything in the env file) — ~3 benchmarks, a few minutes.
+# 2A. Fixed demo (everything in the env file): ~3 benchmarks, a few minutes.
 sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 
 # 2B. Same, but let submit.sh forward the env's SLURM_* knobs as sbatch flags.
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 
-# 2C. Dynamic — pick model + benchmark on the CLI, reuse one generic env file.
+# 2C. Dynamic: pick model + benchmark on the CLI, reuse one generic env file.
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \
     --model Qwen/Qwen3.5-0.8B-Base \
     --judge Qwen/Qwen3.5-0.8B \
@@ -94,11 +94,11 @@ tail -f logs/evalhub-e2e-<JOBID>.out                         # live stdout
 tail -f logs/vllm_target_<JOBID>_aime2026.log               # live vLLM log (one per benchmark)
 ```
 
-### Where results land (V5 layout — one folder per model)
+### Where results land (V5 layout: one folder per model)
 
 The sampling suffix (`__t<T>__max<N>__n<NS>`) lives on the **benchmark leaf**, so
-every model has a single folder; same tuple → same path (idempotent re-run),
-different tuple → different leaf (no collision).
+every model has a single folder; same tuple -> same path (idempotent re-run),
+different tuple -> different leaf (no collision).
 
 ```
 <OUTPUT_ROOT>/
@@ -111,10 +111,20 @@ different tuple → different leaf (no collision).
         │   ├── aime2026_raw.jsonl               # raw LLM responses
         │   ├── aime2026_results.jsonl           # per-task correct[] + counts
         │   └── aime2026_summary.json            # Pass@K, Cons@K, G-Pass@k, counts
-        └── judged_by/Qwen3.5-0.8B__state-think__t0.6__max20480/
+        └── judged_by/Qwen3.5-0.8B__state-think__t0.6__max20480__basemax20480/
             └── aime2026__t0.6__max20480__n64/
                 └── aime2026_cot_summary.json    # CoT-Pass@K after the judge veto
 ```
+
+The judge directory name is self-describing: `__basemax<N>` always records the
+*target's* max_completion_tokens (the length that was actually judged, this can
+differ from the judge's own `__max<N>`, e.g. a judge budgeted at 32768 judging a
+target run generated at 65536), and the judge's reasoning config is appended only
+when set to a non-default value: `[__re-<reasoning_effort>][__eb-<extra_body_slug>]`
+(omitted entirely when unset/`none`, no `__re-none__eb-none` noise in the common
+case). Set `JUDGE_REASONING_EFFORT` / `JUDGE_EXTRA_BODY` (+ a path-safe
+`JUDGE_EXTRA_BODY_TAG`) to drive thinking models (e.g. DeepSeek V4 Flash). The
+report exposes these as the `reasoning_effort` and `extra_body` columns.
 
 ## 4. Turning results into a report
 
@@ -191,7 +201,7 @@ evalhub tasks | grep <benchmark_name>      # should appear in the list
 
 Working examples: `aime2026_tr/`, `aime2026_pt/`, `math500/`, `gsm8k/`.
 
-### Local CSV benchmark — the `tubitak_math2026` example
+### Local CSV benchmark: the `tubitak_math2026` example
 
 `evalhub/benchmarks/math/tubitak_math2026/` reads a local
 `tubitak_math2026.csv` (no HF Hub). After editing the CSV, invalidate the cache
@@ -204,7 +214,7 @@ evalhub gen --model hosted_vllm/Qwen/Qwen3.5-0.8B-Base --tasks tubitak_math2026 
 evalhub eval --tasks tubitak_math2026 \
     --solutions results/tubitak/tubitak_math2026.jsonl --output-dir results/tubitak/
 
-# CoT-Pass@K (Turkish benchmark → Turkish judge prompt: JUDGE_TASK=cot_judge_tr)
+# CoT-Pass@K (Turkish benchmark -> Turkish judge prompt: JUDGE_TASK=cot_judge_tr)
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env \
     --model Qwen/Qwen3.5-0.8B-Base --judge Qwen/Qwen3.5-0.8B
 ```
@@ -215,16 +225,16 @@ scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env
   a shell trace, or read the per-benchmark vLLM log under `logs/`.
 - **vLLM health timeout:** the model is still downloading or hit OOM. Raise
   `HEALTH_TIMEOUT`, lower `TARGET_PARALLEL_COUNT`, or use a smaller model.
-- **`Missing required env vars`:** the env file wasn't loaded — pass it as `$1`
+- **`Missing required env vars`:** the env file wasn't loaded, pass it as `$1`
   or export `EVALHUB_PIPELINE_ENV=path/to/env`.
 - **`evalhub gen` AuthenticationError:** export `HOSTED_VLLM_API_BASE` /
   `HOSTED_VLLM_API_KEY` (the orchestrators do this for you once vLLM is up).
-- **Empty CoT summary:** the base run produced no `correct=True` generations —
+- **Empty CoT summary:** the base run produced no `correct=True` generations,
   increase `TARGET_N_SAMPLES` or pick an easier benchmark.
-- **`address already in use`:** another process holds `TARGET_PORT` — set
+- **`address already in use`:** another process holds `TARGET_PORT`, set
   `TARGET_PORT=30010` (or any free port) in the env file.
 - **`report aggregate` returns 0 rows:** no directory under `--results-root`
-  matched a recognised layout — confirm the dir names use the V5 layout (or a
+  matched a recognised layout, confirm the dir names use the V5 layout (or a
   legacy fallback).
 - **`ModuleNotFoundError: matplotlib` (on `report plot`):** install the report
   extra: `pip install -e ".[report]"`.
@@ -235,12 +245,12 @@ scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env
 |---|---|
 | `scripts/run_eval_only.sh` | base generation + evaluation only |
 | `scripts/run_judge_only.sh` | judge an existing base run, then finalize |
-| `scripts/run_end_to_end.sh` | the full target → judge → CoT finalize → report job |
+| `scripts/run_end_to_end.sh` | the full target -> judge -> CoT finalize -> report job |
 | `scripts/orchestrate.sh` | multi-cell DAG sweep submitter |
 | `scripts/submit.sh` | single-job submitter with CLI overrides |
 | `scripts/lib/pipeline_common.sh` | shared bash helpers (env loading, path composition, vLLM lifecycle) |
 | `scripts/configs/*.env` | per-run knobs; `*.env.example` document them |
 | `scripts/templates/*.jinja` | per-family chat templates |
-| `evalhub/cot/` | CoT-Pass@K post-processing (extract → aggregate → metrics → finalize) |
+| `evalhub/cot/` | CoT-Pass@K post-processing (extract -> aggregate -> metrics -> finalize) |
 | `evalhub/report/` | `evalhub report` aggregation + plots |
 | `examples/scripts/` | reusable result-management tools (audit, migrate, tables) |

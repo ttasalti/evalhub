@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# ============================================================================
 # scripts/orchestrate.sh
 #
 # Multi-model × multi-benchmark × multi-temperature DAG submitter. Reads
@@ -12,7 +11,7 @@
 # DAG_MODE: sequential (default) | parallel
 #
 # Examples:
-#   # Single model, multi-benchmark — env file holds the lists:
+#   # Single model, multi-benchmark, env file holds the lists:
 #   scripts/orchestrate.sh scripts/configs/qwen_0.8b_demo.env parallel
 #
 #   # Generic config + CLI sweep:
@@ -23,21 +22,20 @@
 #       --judge Qwen/Qwen3.5-0.8B
 #
 # Recognized CLI overrides:
-#   --models "A B"          → TARGET_MODELS
-#   --benchmarks "X Y"      → BENCHMARKS
-#   --temps "0.6 0.9"       → TARGET_TEMPERATURES
-#   --judge X               → JUDGE_MODEL
-#   --target-state X        → TARGET_STATE
-#   --judge-state X         → JUDGE_STATE
-#   --output-root DIR       → OUTPUT_ROOT
-#   --set KEY=VAL           → KEY=VAL (free-form, repeatable)
-#   --extra-dependency DEP  → slurm dependency string (e.g. "afterany:123:456")
+#   --models "A B"          -> TARGET_MODELS
+#   --benchmarks "X Y"      -> BENCHMARKS
+#   --temps "0.6 0.9"       -> TARGET_TEMPERATURES
+#   --judge X               -> JUDGE_MODEL
+#   --target-state X        -> TARGET_STATE
+#   --judge-state X         -> JUDGE_STATE
+#   --output-root DIR       -> OUTPUT_ROOT
+#   --set KEY=VAL           -> KEY=VAL (free-form, repeatable)
+#   --extra-dependency DEP  -> slurm dependency string (e.g. "afterany:123:456")
 #                             ANDed onto every base job's own --dependency in
 #                             this DAG, in addition to any intra-DAG chaining.
 #                             Use this to hard-chain an entire orchestrate.sh
 #                             invocation after another (e.g. one checkpoint
 #                             sweep must not start before a prior one finishes).
-# ============================================================================
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
@@ -72,7 +70,7 @@ set -a
 source "${env_file}"
 set +a
 
-# Parse CLI overrides — these win over env values.
+# Parse CLI overrides, these win over env values.
 declare -A overrides=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -123,11 +121,11 @@ if [[ -z "${TARGET_MODELS}" || -z "${BENCHMARKS}" || -z "${JUDGE_MODELS}" ]]; th
     exit 1
 fi
 
-# Per-model SLURM resource tiering (Madde 6 H200/nsdl2). Empty values fall back
+# Per-model SLURM resource tiering. Empty values fall back
 # to SLURM_CPUS_PER_TASK / SLURM_MEM from the env file.
 slurm_tier() {
     # Usage: slurm_tier <model_name>; sets globals TIER_CPUS / TIER_MEM.
-    # Uniform 40G host RAM (user directive); CPU tiered by model size.
+    # Uniform 40G host RAM; CPU tiered by model size.
     local m="$1"
     case "${m}" in
         *Qwen3.5-0.8B*|*Qwen3.5-2B*|*gemma-4-E2B*)  TIER_CPUS=8;  TIER_MEM=40G ;;
@@ -262,7 +260,7 @@ for STATE in ${TARGET_STATES}; do
                 # NOTE: the base output dir is deliberately NOT pre-computed here.
                 # run_judge_only.sh derives it itself via compose_target_dir()
                 # (V4, state-aware), so the judge always reads the base for the
-                # exact (target, state, benchmark) — never another state's base.
+                # exact (target, state, benchmark), never another state's base.
                 # (A previous hand-rolled "_think-true/false" path here cross-wired
                 # an instruct judge onto the think base.)
 

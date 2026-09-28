@@ -8,9 +8,12 @@ leaf, so every sampling variant of a model sits side-by-side under a single mode
     ${OUTPUT_ROOT}/
         <state>/<model>/
             <benchmark>__t{T}__max{N}__n{NS}/<benchmark>_summary.json
-            judged_by/<judge>__state-<jstate>__t{jT}__max{jN}/
+            judged_by/<judge>__state-<jstate>__t{jT}__max{jN}__re-<re>__eb-<eb>/
                 <benchmark>__t{T}__max{N}__n{NS}/<benchmark>_cot_summary.json
                 <benchmark>__t{T}__max{N}__n{NS}/<benchmark>_cot_stats.json
+
+(The optional ``__re-<re>__eb-<eb>`` tokens record the judge's reasoning_effort /
+extra_body slug; they default to ``none`` and are absent on pre-token runs.)
 
 (The benchmark leaf carries the TARGET's sampling on both the base side and under
 ``judged_by/``. Files inside a leaf keep the bare benchmark name, e.g.
@@ -38,22 +41,18 @@ from evalhub.utils.model_state import MODEL_STATES
 
 EvalType = Literal["base_eval", "cot_eval"]
 
-# V5 (current) benchmark leaf — ONE folder per model: the model dir carries only
+# V5 (current) benchmark leaf: ONE folder per model: the model dir carries only
 # "<state>/<model>", and the sampling suffix moved onto the benchmark leaf:
 # "<benchmark>__t<T>__max<N>__n<NS>". The model dir is the leaf's parent (or its
 # grandparent across a "step_NNN"/"judged_by" level); the state is one level above
 # the model dir. Non-greedy "<benchmark>.+?" + the "__t" double-underscore boundary
 # splits cleanly even for single-underscore benchmark names (aime2026_tr, tubitak_math2026).
-_BENCH_LEAF_RE_V5 = re.compile(
-    r"^(?P<benchmark>.+?)__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
-)
+_BENCH_LEAF_RE_V5 = re.compile(r"^(?P<benchmark>.+?)__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$")
 
-# V3 base run directory leaf — state hoisted to a parent dir, leaf carries
+# V3 base run directory leaf: state hoisted to a parent dir, leaf carries
 # model + sampling knobs: "<model>__t<T>__max<N>__n<NS>".
 # The state lives in the parent dir name ({base, non-think, think, unknown}).
-_BASE_DIR_RE_V3 = re.compile(
-    r"^(?P<model>.+?)__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$"
-)
+_BASE_DIR_RE_V3 = re.compile(r"^(?P<model>.+?)__t(?P<temp>[0-9.]+)__max(?P<max>\d+)__n(?P<n_samples>\d+)$")
 
 # Recognised state dir names sitting one level above a V3 base leaf.
 _V3_STATE_DIRS: tuple[str, ...] = ("base", "non-think", "think", "unknown")
@@ -73,16 +72,24 @@ _BASE_DIR_RE = re.compile(
 # V0 legacy: directories that pre-date the "_state-" annotation.
 _LEGACY_BASE_DIR_RE = re.compile(r"^(?P<model>.+?)_t(?P<temp>[0-9.]+)_max(?P<max>\d+)$")
 
-# V4 (current) judgment leaf directory — the leaf name under judged_by/:
-# "<judge>__state-<jstate>__t<jT>__max<jN>" (no "__n<jNS>" trailer).
-# JUDGE_N_SAMPLES is consolidated out of the path; the actual value lives in
-# each benchmark's summary file. The regex still accepts the V2 trailing
-# "__n<jNS>" optionally so older on-disk runs can be parsed transparently.
+# V4 (current) judgment leaf directory: the leaf name under judged_by/:
+# "<judge>__state-<jstate>__t<jT>__max<jN>[__re-<re>__eb-<eb>]" (no "__n<jNS>"
+# trailer). JUDGE_N_SAMPLES is consolidated out of the path; the actual value
+# lives in each benchmark's summary file. The optional "__re-/__eb-" tokens
+# record reasoning_effort / extra_body (slug); they are absent on older runs and
+# captured as None there. The regex still accepts the V2 trailing "__n<jNS>"
+# optionally so older on-disk runs can be parsed transparently.
 _JUDGE_DIR_RE_V4 = re.compile(
     r"^(?P<judge>.+?)__state-(?P<judge_state>base|non-think|think|unknown)"
-    r"__t(?P<temp>[0-9.]+)__max(?P<max>\d+)(?:__n(?P<n_samples>\d+))?$"
+    r"__t(?P<temp>[0-9.]+)__max(?P<max>\d+)"
+    # Optional "__basemax<N>" records the BASE max_completion_tokens (self-describing
+    # judged_by segment). Absent on older runs -> base_max=None. The base max is also
+    # carried by the benchmark leaf, so report fields are unaffected either way.
+    r"(?:__basemax(?P<base_max>\d+))?"
+    r"(?:__re-(?P<reasoning_effort>[^_]+))?(?:__eb-(?P<extra_body>[^_]+))?"
+    r"(?:__n(?P<n_samples>\d+))?$"
 )
-# V2 legacy alias — same trailer form as V4 for backwards-compat references.
+# V2 legacy alias: same trailer form as V4 for backwards-compat references.
 _JUDGE_DIR_RE_V2 = _JUDGE_DIR_RE_V4
 
 # V1 judgment directory (flat under judgments/):
@@ -97,12 +104,8 @@ _JUDGE_DIR_RE = re.compile(
 # "<target>_evaluated_by_<judge>_<max>", with the benchmark subdir holding
 # the temperature as "<benchmark>_t<T>". Both fields are extracted in
 # _build_cot_record so the scanner picks up CoT runs from these directories.
-_LEGACY_JUDGE_DIR_RE = re.compile(
-    r"^(?P<target>.+?)_evaluated_by_(?P<judge>.+?)_(?P<max>\d+)$"
-)
-_LEGACY_BENCHMARK_TEMP_RE = re.compile(
-    r"^(?P<benchmark>.+?)_t(?P<temp>[0-9.]+)$"
-)
+_LEGACY_JUDGE_DIR_RE = re.compile(r"^(?P<target>.+?)_evaluated_by_(?P<judge>.+?)_(?P<max>\d+)$")
+_LEGACY_BENCHMARK_TEMP_RE = re.compile(r"^(?P<benchmark>.+?)_t(?P<temp>[0-9.]+)$")
 
 # Intermediate RL checkpoint directory: "step_<N>" sitting inside a model run dir.
 _STEP_DIR_RE = re.compile(r"^step_(\d+)$")
@@ -117,6 +120,10 @@ class ParsedBaseDir:
     temperature: float
     max_completion_tokens: int
     n_samples: int | None = None
+    # Judge-only: reasoning_effort / extra_body slug parsed from __re-/__eb-
+    # tokens in a judge leaf dir name (None for base runs and pre-token judges).
+    reasoning_effort: str | None = None
+    extra_body: str | None = None
 
 
 @dataclass(frozen=True)
@@ -169,6 +176,13 @@ class RunRecord:
     mg_pass_at_k: dict | None = field(default=None)
     # RL training step this checkpoint was evaluated at (None = pretrained or final).
     rl_step: int | None = field(default=None)
+    # Judge reasoning controls, parsed from the judge dir __re-/__eb- tokens
+    # (None for base/No-Judge rows and pre-token judge runs).
+    reasoning_effort: str | None = field(default=None)
+    extra_body: str | None = field(default=None)
+    # any/all judge-approval-threshold metric blocks (judged rows only; None on
+    # No-Judge rows and summaries predating the threshold suite). Keyed "any"/"all".
+    threshold_metrics: dict | None = field(default=None)
 
 
 def _read_json(path: Path) -> dict:
@@ -181,7 +195,7 @@ def parse_benchmark_leaf(name: str) -> tuple[str, float, int, int] | None:
 
     Returns ``(benchmark, temperature, max_completion_tokens, n_samples)`` or
     ``None`` when ``name`` is a bare benchmark (old layouts) and carries no
-    sampling suffix — in which case the caller falls back to the V3/V2/.. path.
+    sampling suffix, in which case the caller falls back to the V3/V2/.. path.
     """
     match = _BENCH_LEAF_RE_V5.match(name)
     if match is None:
@@ -199,7 +213,7 @@ def parse_base_dirname(name: str, parent_state: str | None = None) -> ParsedBase
 
     Tries V2 (state in leaf) first because its prefix overlaps V3's. Then V3
     (state-less leaf, state from ``parent_state``), V1 (single-underscore),
-    and finally V0 (no state — returns "unknown").
+    and finally V0 (no state, returns "unknown").
     """
     match_v2 = _BASE_DIR_RE_V2.match(name)
     if match_v2 is not None:
@@ -212,7 +226,7 @@ def parse_base_dirname(name: str, parent_state: str | None = None) -> ParsedBase
         )
     match_v3 = _BASE_DIR_RE_V3.match(name)
     if match_v3 is not None:
-        # V3 leaf — caller supplies the state from the parent dir. Fall back to
+        # V3 leaf, caller supplies the state from the parent dir. Fall back to
         # "unknown" so a V3 leaf encountered outside a known state parent still
         # yields a valid record.
         state = parent_state if parent_state in _V3_STATE_DIRS else "unknown"
@@ -259,6 +273,8 @@ def parse_judge_leaf_dirname(name: str) -> ParsedBaseDir | None:
         temperature=float(match.group("temp")),
         max_completion_tokens=int(match.group("max")),
         n_samples=int(n_samples_raw) if n_samples_raw else None,
+        reasoning_effort=match.group("reasoning_effort"),
+        extra_body=match.group("extra_body"),
     )
 
 
@@ -303,6 +319,32 @@ def _summary_to_pass_at_k(summary: dict) -> dict[int, float]:
     return out
 
 
+# CoT judge-approval thresholds beyond the primary (unsuffixed) majority one.
+_EXTRA_THRESHOLDS = ("any", "all")
+
+
+def _threshold_metrics_from_summary(summary: dict) -> dict | None:
+    """Pull the any/all judge-approval-threshold metric blocks out of a cot summary.
+
+    Present only on judged summaries written/backfilled with the threshold suite; each
+    block mirrors the majority metrics (pass_at_k / g_pass_at_k / mg_pass_at_k / cons_at_k
+    / true_count / cot_false_count). Returns ``None`` when absent (old summaries).
+    """
+    out: dict[str, dict] = {}
+    for t in _EXTRA_THRESHOLDS:
+        if f"pass_at_k_{t}" not in summary:
+            continue
+        out[t] = {
+            "pass_at_k": _summary_to_pass_at_k({"pass_at_k": summary.get(f"pass_at_k_{t}")}),
+            "cons_at_k": float(summary.get(f"cons_at_k_{t}", 0.0) or 0.0),
+            "g_pass_at_k": summary.get(f"g_pass_at_k_{t}") or None,
+            "mg_pass_at_k": summary.get(f"mg_pass_at_k_{t}") or None,
+            "true_count": summary.get(f"true_count_{t}"),
+            "cot_false_count": summary.get(f"cot_false_count_{t}"),
+        }
+    return out or None
+
+
 def _validate_state(state: str) -> str:
     if state in MODEL_STATES or state == "unknown":
         return state
@@ -315,8 +357,7 @@ def _stats_from_summary(summary: dict) -> dict[str, int] | None:
     Normalises ``invalid_format_count`` (summary key) to ``invalid_count``
     (stats.json + aggregate column) for downstream consistency.
     """
-    keys = ("total_tasks", "total_generations", "true_count", "false_count",
-            "cot_false_count")
+    keys = ("total_tasks", "total_generations", "true_count", "false_count", "cot_false_count")
     if not any(k in summary for k in keys + ("invalid_format_count", "invalid_count")):
         return None
     out: dict[str, int] = {k: int(summary[k]) for k in keys if k in summary}
@@ -327,9 +368,7 @@ def _stats_from_summary(summary: dict) -> dict[str, int] | None:
     return out
 
 
-def _build_base_record(
-    summary_path: Path, source_root: Path
-) -> RunRecord | None:
+def _build_base_record(summary_path: Path, source_root: Path) -> RunRecord | None:
     """Build a :class:`RunRecord` for a ``{benchmark}_summary.json`` file."""
     benchmark_dir = summary_path.parent
     run_dir = benchmark_dir.parent
@@ -388,25 +427,24 @@ def _build_base_record(
         n_samples=n_samples,
         g_pass_at_k=summary.get("g_pass_at_k") or None,
         mg_pass_at_k=summary.get("mg_pass_at_k") or None,
+        threshold_metrics=_threshold_metrics_from_summary(summary),
         rl_step=rl_step,
     )
 
 
-def _build_cot_record(
-    summary_path: Path, source_root: Path
-) -> RunRecord | None:
+def _build_cot_record(summary_path: Path, source_root: Path) -> RunRecord | None:
     """Build a :class:`RunRecord` for a ``{benchmark}_cot_summary.json`` file.
 
     Supports three layouts:
 
-    * **V5 (nested, current)** — ``<state>/<model>/judged_by/<judge>__state-../<benchmark>__t..__max..__n../``
-    * **V2/V3 (nested)** — ``<target>__t..__n.../judged_by/<judge>__state-..../<benchmark>/``
-    * **V1/V0 (flat)** — ``<...>/<flat_judge_dir>/<benchmark>[_t<T>]/``
+    * **V5 (nested, current)**, ``<state>/<model>/judged_by/<judge>__state-../<benchmark>__t..__max..__n../``
+    * **V2/V3 (nested)**, ``<target>__t..__n.../judged_by/<judge>__state-..../<benchmark>/``
+    * **V1/V0 (flat)**, ``<...>/<flat_judge_dir>/<benchmark>[_t<T>]/``
     """
     benchmark_dir = summary_path.parent
     parent_dir = benchmark_dir.parent
 
-    # --- V5/V3/V2 nested layout detection ---------------------------------
+    # V5/V3/V2 nested layout detection
     if parent_dir.parent.name == "judged_by":
         target_dir = parent_dir.parent.parent
 
@@ -427,9 +465,7 @@ def _build_cot_record(
             model = target_dir.name
         else:
             # V3/V2 fallback: sampling suffix on the target dir leaf, bare benchmark.
-            target_parent_state = (
-                target_dir.parent.name if target_dir.parent.name in _V3_STATE_DIRS else None
-            )
+            target_parent_state = target_dir.parent.name if target_dir.parent.name in _V3_STATE_DIRS else None
             target_parsed = parse_base_dirname(target_dir.name, parent_state=target_parent_state)
             if target_parsed is not None:
                 benchmark = benchmark_dir.name
@@ -467,10 +503,13 @@ def _build_cot_record(
                 judge_n_samples=judge_parsed.n_samples,
                 g_pass_at_k=summary.get("g_pass_at_k") or None,
                 mg_pass_at_k=summary.get("mg_pass_at_k") or None,
+                threshold_metrics=_threshold_metrics_from_summary(summary),
                 rl_step=rl_step,
+                reasoning_effort=judge_parsed.reasoning_effort,
+                extra_body=judge_parsed.extra_body,
             )
 
-    # --- V1/V0 flat layout fallback ---------------------------------------
+    # V1/V0 flat layout fallback
     parsed = parse_judge_dirname(parent_dir.name)
     if parsed is None:
         logger.debug(f"Skipping unrecognised judgment dir: {parent_dir}")
@@ -509,12 +548,11 @@ def _build_cot_record(
         note=summary.get("note"),
         g_pass_at_k=summary.get("g_pass_at_k") or None,
         mg_pass_at_k=summary.get("mg_pass_at_k") or None,
+        threshold_metrics=_threshold_metrics_from_summary(summary),
     )
 
 
-def record_from_summary(
-    summary_path: Path | str, source_root: Path | str | None = None
-) -> RunRecord | None:
+def record_from_summary(summary_path: Path | str, source_root: Path | str | None = None) -> RunRecord | None:
     """Parse a single ``*_summary.json`` / ``*_cot_summary.json`` into a record.
 
     ``source_root`` only sets ``RunRecord.source_root``; pass the results root if
@@ -531,7 +569,7 @@ def record_from_summary(
 def scan_results(results_root: Path | str) -> list[RunRecord]:
     """Walk ``results_root`` and parse every summary file into a :class:`RunRecord`.
 
-    Unrecognised directory names are skipped with a debug log entry — this keeps
+    Unrecognised directory names are skipped with a debug log entry, this keeps
     the scanner robust to hand-crafted output dirs sitting next to the
     canonical ones.
     """

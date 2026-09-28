@@ -2,9 +2,9 @@
 
 Three explicit states are supported:
 
-  * ``base``      — pretraining checkpoint, completion-style template.
-  * ``non-think`` — instruct/chat checkpoint, plain reply template.
-  * ``think``     — chat checkpoint configured to emit a ``<think>`` reasoning
+  * ``base``: pretraining checkpoint, completion-style template.
+  * ``non-think``: instruct/chat checkpoint, plain reply template.
+  * ``think``: chat checkpoint configured to emit a ``<think>`` reasoning
                     block before the answer.
 
 Resolution is a two-key lookup ``(model_family, state)`` against
@@ -112,7 +112,7 @@ def resolve_template_path(
 ) -> Path | None:
     """Return the absolute path of the Jinja template for ``(model, state)``.
 
-    Returns ``None`` if no family is registered for this model — the caller is
+    Returns ``None`` if no family is registered for this model, the caller is
     responsible for either failing or letting vLLM apply the tokenizer's
     built-in template.
     """

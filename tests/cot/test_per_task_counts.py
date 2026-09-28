@@ -61,10 +61,10 @@ def test_cot_metrics_writes_per_task_counts(tmp_path: Path) -> None:
     assert len(records) == 1
     counts = records[0]["per_task_counts"]
     assert counts == {
-        "true": 1,           # idx 0: still correct after judge approved
-        "false": 2,          # idx 2, 3: base-wrong, never changed
-        "cot_false": 1,      # idx 1: was True, judge vetoed
-        "invalid_format": 0, # no unknown verdicts in this fixture
+        "true": 1,  # idx 0: still correct after judge approved
+        "false": 2,  # idx 2, 3: base-wrong, never changed
+        "cot_false": 1,  # idx 1: was True, judge vetoed
+        "invalid_format": 0,  # no unknown verdicts in this fixture
     }, counts
 
 

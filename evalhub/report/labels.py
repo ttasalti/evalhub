@@ -1,6 +1,6 @@
 """Semantic labelling helpers for report aggregation (no plotting deps).
 
-Short model names, family/size parsing, language and mode mappings — used by the
+Short model names, family/size parsing, language and mode mappings, used by the
 aggregator to enrich the master CSV. Kept matplotlib-free so the data pipeline
 never imports a plotting stack.
 """

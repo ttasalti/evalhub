@@ -12,10 +12,10 @@ Python package and is exercised via `evalhub` CLI commands.
 
 | File | Purpose |
 |---|---|
-| `lib/pipeline_common.sh` | **Shared bash library** — env loading, template resolution, vLLM start/stop, default population, canonical output-path composition, and the high-level `pipeline_run_*` stage runners. Sourced by every orchestrator. |
+| `lib/pipeline_common.sh` | **Shared bash library**, env loading, template resolution, vLLM start/stop, default population, canonical output-path composition, and the high-level `pipeline_run_*` stage runners. Sourced by every orchestrator. |
 | `run_eval_only.sh` | Stage 1 only: base generation + base evaluation. Produces `*_results.jsonl` + `*_summary.json` under the canonical layout. |
 | `run_judge_only.sh` | Stages 2+3 over an existing base run: extract correct generations, run the judge LLM, majority-vote, CoT-Pass@K. |
-| `run_end_to_end.sh` | All three stages + report — single Slurm job, base + judge + CoT finalize + report. |
+| `run_end_to_end.sh` | All three stages + report, single Slurm job, base + judge + CoT finalize + report. |
 | `run_report.sh` | Just the report stage (`evalhub report aggregate + plot`); used as the DAG tail. |
 | `submit.sh` | Thin wrapper that reads `SLURM_*` from the env file and accepts CLI overrides (`--model`, `--benchmark`, `--judge`, ...). |
 | `orchestrate.sh` | Multi-model × multi-benchmark × multi-temperature DAG submitter with dependency chains. |
@@ -28,7 +28,7 @@ Python package and is exercised via `evalhub` CLI commands.
 ## Quick start
 
 ```bash
-# Concrete demo — Qwen 0.8B on 3 AIME benchmarks (no edits needed):
+# Concrete demo: Qwen 0.8B on 3 AIME benchmarks (no edits needed):
 sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 
 # Pick model + benchmark dynamically with a generic config + CLI overrides:
@@ -62,19 +62,22 @@ scripts/run_end_to_end.sh --help
 
 By default the judge model is served locally on a GPU (`JUDGE_BACKEND=vllm`).
 Set `JUDGE_BACKEND=api` to route the judge to an external OpenAI-compatible
-endpoint instead — no GPU is launched. In that mode also set `JUDGE_API_BASE`
+endpoint instead, no GPU is launched. In that mode also set `JUDGE_API_BASE`
 and `JUDGE_API_KEY` (export the key or put it in the gitignored
-`scripts/secrets.env`; never commit it). Only the transport changes — the judge
+`scripts/secrets.env`; never commit it). Only the transport changes, the judge
 prompt, verdicts and metrics are identical. See
 [`configs/judge_api_deepseek.env`](configs/judge_api_deepseek.env) for a ready
 single-generation DeepSeek setup.
 
-## HPC / nscluster (Slurm) usage
+## HPC (Slurm) usage
 
-The scripts are intentionally **environment-agnostic** — they do not embed
-`#SBATCH` directives so they remain portable across HPC sites. Wrap them in
+The scripts are intentionally **environment-agnostic**: they do not embed
+`#SBATCH` directives so they remain portable across HPC sites. When a job does
+not inherit an activated environment, export `EVALHUB_CONDA_SH` (the site's
+`conda.sh`) and `EVALHUB_CONDA_ENV` (default `evalhub_env`), or
+`EVALHUB_ENV_BIN` (the environment's `bin/` directory) before submitting. Wrap them in
 a one-line `sbatch` invocation, or copy the recommended header from the
-docstring at the top of each script. Example wrapper for nscluster:
+docstring at the top of each script. Example wrapper:
 
 ```bash
 #!/usr/bin/env bash
@@ -100,7 +103,7 @@ for bench in aime2024 aime2025 aime2026; do
 done
 ```
 
-## After the run — aggregation & plots
+## After the run: aggregation & plots
 
 Once you have one or more populated `OUTPUT_ROOT` directories, the
 `evalhub report` sub-app aggregates every summary file into a master CSV and

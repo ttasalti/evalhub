@@ -26,16 +26,16 @@ def test_math500(ground_truth, given_answer, task_id):
 @pytest.mark.parametrize(
     "given_answer,ground_truth",
     [
-        # Turkish decimal comma — new behaviour.
+        # Turkish decimal comma, new behaviour.
         ("0,5", "\\frac{1}{2}"),
-        # Decimal point — regression.
+        # Decimal point, regression.
         ("0.5", "\\frac{1}{2}"),
-        # Degree symbol stripped from ground truth — regression.
+        # Degree symbol stripped from ground truth, regression.
         ("105", "105^\\circ"),
         ("27^\\circ", "27^\\circ"),
-        # Thousand separator — regression.
+        # Thousand separator, regression.
         ("1,234", "1234"),
-        # Sqrt simplify — regression.
+        # Sqrt simplify, regression.
         ("3\\sqrt{10}", "\\sqrt{90}"),
         ("\\sqrt{7}+1", "1+\\sqrt{7}"),
     ],

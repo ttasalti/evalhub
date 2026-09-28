@@ -1,5 +1,4 @@
 import asyncio
-import random
 from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
@@ -77,6 +76,24 @@ class LLMGenerator:
         if tools:
             params["tools"] = tools
 
+        # Optional thinking controls: only forward when meaningful. "none"/empty
+        # means "do not send"; extra_body is authored as a JSON string and must be
+        # decoded to a dict for the OpenAI-compatible client.
+        reasoning_effort = params.pop("reasoning_effort", None)
+        if reasoning_effort and str(reasoning_effort).strip().lower() != "none":
+            params["reasoning_effort"] = reasoning_effort
+        extra_body = params.pop("extra_body", None)
+        if extra_body and str(extra_body).strip().lower() != "none":
+            params["extra_body"] = orjson.loads(extra_body) if isinstance(extra_body, str) else extra_body
+
+        # Some OpenAI-compatible endpoints (e.g. DeepSeek) silently ignore
+        # `max_completion_tokens` and fall back to their own model ceiling, so the
+        # requested cap is not enforced. litellm forwards the field verbatim (it is
+        # not translated to `max_tokens`), so mirror the cap into `max_tokens`,
+        # which both vLLM and DeepSeek honour. Targets here are vLLM/DeepSeek only.
+        if params.get("max_completion_tokens") is not None:
+            params["max_tokens"] = params["max_completion_tokens"]
+
         response = await acompletion(**params)
         if response.choices[0].finish_reason == "length":
             logger.warning("Max tokens exceeded!")
@@ -112,12 +129,25 @@ class LLMGenerator:
             resume_tasks = dict.fromkeys(task_ids, self.config.n_samples)
 
         results: dict[str, list[dict[str, str]]] = defaultdict(list)
+        # Order requests for two-level prefix-cache locality (vLLM prefix cache):
+        #   L1: the N samples of a task share the FULL prompt (template+question+
+        #        solution); keep them consecutive so samples 2..N reuse the (often
+        #        ~30k token) prefill of sample 1.
+        #   L2: tasks of the same source problem share the template+question
+        #        PREFIX; sorting by task_id (e.g. "AIME2026/1_gen_0") keeps a
+        #        problem's solutions adjacent so that prefix stays cached too.
+        # A flat shuffle scatters identical prompts across thousands of requests
+        # so the first sample's KV blocks are evicted before the rest run (hit
+        # rate ~0%). Sorting by task_id gives both levels of locality.
+        active_tasks = sorted(
+            (task for task in tasks_list if resume_tasks[task.task_id] > 0),
+            key=lambda task: task.task_id,
+        )
         coroutines = [
             self._generate_single_sample(task.task_id, str(sample_id), task.prompt, task.metadata)
-            for task in tasks_list
+            for task in active_tasks
             for sample_id in range(resume_tasks[task.task_id])
         ]
-        random.shuffle(coroutines)
         total_tasks = sum(1 if resume_tasks[task_id] > 0 else 0 for task_id in task_ids)
         total_samples = sum(resume_tasks.values())
 

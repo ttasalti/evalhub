@@ -43,9 +43,7 @@ def finalize_cot_pipeline(
     majority_path = output_dir / f"{benchmark}_cot_majority.jsonl"
     output_results_path = output_dir / f"{benchmark}_cot_results.jsonl"
     summary_path = output_dir / f"{benchmark}_cot_summary.json"
-    resolved_stats_path = (
-        Path(stats_path) if stats_path is not None else output_dir / f"{benchmark}_cot_stats.json"
-    )
+    resolved_stats_path = Path(stats_path) if stats_path is not None else output_dir / f"{benchmark}_cot_stats.json"
 
     extracted = extract_correct_generations(
         base_results_path=base_results_path,

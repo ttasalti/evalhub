@@ -24,6 +24,7 @@ Usage:
     python scripts/migrate_legacy_paths.py --phase 2 --execute
     python scripts/migrate_legacy_paths.py --report-json out.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,9 +42,7 @@ from pathlib import Path
 ROOT = Path("results")
 BACKUP_DIR = Path(".migration_backup")
 
-TARGET_SUFFIX_RE = re.compile(
-    r"^(?P<base>.+?)_think-(?:true|false)__(?P<rest>t.+)$"
-)
+TARGET_SUFFIX_RE = re.compile(r"^(?P<base>.+?)_think-(?:true|false)__(?P<rest>t.+)$")
 JUDGE_N_RE = re.compile(
     r"^(?P<head>.+?__state-(?:base|non-think|think|unknown)__t[0-9.]+__max\d+)"
     r"__n\d+$"
@@ -131,10 +130,16 @@ def backup(src: Path, phase: int) -> Path:
 def rsync_merge(src: Path, dst: Path) -> int:
     dst.mkdir(parents=True, exist_ok=True)
     if shutil.which("rsync"):
-        return subprocess.call([
-            "rsync", "-a", "--ignore-existing", "--checksum",
-            f"{src}/", f"{dst}/",
-        ])
+        return subprocess.call(
+            [
+                "rsync",
+                "-a",
+                "--ignore-existing",
+                "--checksum",
+                f"{src}/",
+                f"{dst}/",
+            ]
+        )
     for rel, sp in relative_files(src).items():
         tp = dst / rel
         if tp.exists():
@@ -182,10 +187,7 @@ def run_phase(ops: list[MergeOp], phase: int) -> None:
             sys.exit(f"[P{phase}] rsync failed for {src} (rc={rc})")
         ok, why = verify_merge(src, dst)
         if not ok:
-            sys.exit(
-                f"[P{phase}] verify FAILED for {src}: {why} "
-                f"(source preserved; tar backup at {tar})"
-            )
+            sys.exit(f"[P{phase}] verify FAILED for {src}: {why} (source preserved; tar backup at {tar})")
         shutil.rmtree(src)
         print(f"[P{phase}] merged + removed {src}")
 
@@ -194,7 +196,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--execute", action="store_true")
     ap.add_argument(
-        "--phase", type=int, choices=[1, 2], default=None,
+        "--phase",
+        type=int,
+        choices=[1, 2],
+        default=None,
         help="Run only this phase (default: both)",
     )
     ap.add_argument("--report-json", type=Path)
@@ -213,13 +218,11 @@ def main() -> None:
             all_ops.extend(enumerate_phase2())
         print(fmt_report(all_ops))
         if args.report_json:
-            args.report_json.write_text(
-                json.dumps([asdict(o) for o in all_ops], indent=2)
-            )
+            args.report_json.write_text(json.dumps([asdict(o) for o in all_ops], indent=2))
             print(f"\nReport written: {args.report_json}")
         differ = sum(len(o.differ_conflict) for o in all_ops)
         if differ:
-            print(f"\n*** {differ} differing-content conflicts — would ABORT ***")
+            print(f"\n*** {differ} differing-content conflicts, would ABORT ***")
             sys.exit(2)
         print("\nDry-run OK. Run with --execute to apply.")
         return

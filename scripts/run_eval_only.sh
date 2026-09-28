@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# ============================================================================
 # scripts/run_eval_only.sh
 #
 # Run base generation + base evaluation for a single (model, benchmark).
@@ -12,8 +11,7 @@
 #       <benchmark>_results.jsonl
 #       <benchmark>_summary.json
 #
-# ----------------------------------------------------------------------------
-# Recommended Slurm header for nscluster (paste at the top of a wrapper job):
+# Recommended Slurm header (paste at the top of a wrapper job):
 #   #SBATCH --job-name=evalhub-eval
 #   #SBATCH --partition=gpu
 #   #SBATCH --gres=gpu:1
@@ -21,7 +19,6 @@
 #   #SBATCH --mem=64G
 #   #SBATCH --time=08:00:00
 #   #SBATCH --output=logs/slurm-%j.out
-# ----------------------------------------------------------------------------
 #
 # Usage:
 #   scripts/run_eval_only.sh                    # uses $EVALHUB_PIPELINE_ENV
@@ -36,7 +33,6 @@
 #               TARGET_CALLBACK, TARGET_MAX_TURNS, TARGET_ENABLE_MULTITURN,
 #               TARGET_RESUME, TARGET_PARALLEL_COUNT, OUTPUT_ROOT, TARGET_PORT,
 #               HEALTH_TIMEOUT, LOG_DIR.
-# ============================================================================
 set -euo pipefail
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -56,14 +52,24 @@ else
 fi
 cd "${PROJECT_ROOT}"
 
-# Activate the project conda environment under Slurm.
-if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
-    source /opt/Anaconda-2021.05/etc/profile.d/conda.sh
-    conda activate evalhub_env
+# Activate the project environment when the job does not inherit it. Set
+# EVALHUB_CONDA_SH to the site's conda.sh and EVALHUB_CONDA_ENV to the
+# environment name (default evalhub_env), or point EVALHUB_ENV_BIN at the
+# environment's bin directory. Export these in the shell that submits the job.
+if [[ -n "${EVALHUB_CONDA_SH:-}" && "${CONDA_DEFAULT_ENV:-}" != "${EVALHUB_CONDA_ENV:-evalhub_env}" ]]; then
+    # shellcheck disable=SC1090
+    source "${EVALHUB_CONDA_SH}"
+    conda activate "${EVALHUB_CONDA_ENV:-evalhub_env}"
 fi
-export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
+if [[ -n "${CONDA_PREFIX:-}" ]]; then
+    # conda activate alone may not override ~/.local/bin; put the env first.
+    export PATH="${CONDA_PREFIX}/bin:${PATH}"
+fi
+if [[ -n "${EVALHUB_ENV_BIN:-}" ]]; then
+    export PATH="${EVALHUB_ENV_BIN}:${PATH}"
+fi
 
-# nsdl2 sets ROCR_VISIBLE_DEVICES alongside CUDA_VISIBLE_DEVICES; vLLM rejects both being set
+# Some nodes export ROCR_VISIBLE_DEVICES next to CUDA_VISIBLE_DEVICES; vLLM rejects both being set.
 unset ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES
 
 # shellcheck source=lib/pipeline_common.sh
@@ -93,3 +99,8 @@ stop_vllm
 
 pipeline_log "[OK] Base results: ${TARGET_DIR}/${BENCHMARK}_results.jsonl"
 pipeline_log "[OK] Base summary: ${TARGET_DIR}/${BENCHMARK}_summary.json"
+
+if [[ -z "${EVALHUB_SKIP_REPORT:-}" ]]; then
+    pipeline_log "==[report]== Upserting result row + refreshing plots =================="
+    pipeline_run_report_incremental "${TARGET_DIR}/${BENCHMARK}_summary.json"
+fi

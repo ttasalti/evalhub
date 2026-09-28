@@ -1,6 +1,6 @@
 """Smoke test: the four ``evalhub cot ...`` CLI commands behave end-to-end.
 
-We exercise them via Typer's ``CliRunner`` so the test is hermetic — no
+We exercise them via Typer's ``CliRunner`` so the test is hermetic, no
 subprocess, no shell, no network.
 """
 
@@ -56,11 +56,16 @@ def test_cot_finalize_cli(tmp_path):
         [
             "cot",
             "finalize",
-            "--base-results", str(base_results),
-            "--base-raw", str(base_raw),
-            "--judge-solutions", str(judge_solutions),
-            "--output-dir", str(out_dir),
-            "--benchmark", "bench",
+            "--base-results",
+            str(base_results),
+            "--base-raw",
+            str(base_raw),
+            "--judge-solutions",
+            str(judge_solutions),
+            "--output-dir",
+            str(out_dir),
+            "--benchmark",
+            "bench",
         ],
     )
     assert result.exit_code == 0, result.stdout
@@ -97,10 +102,16 @@ def test_cot_extract_then_aggregate_then_metrics_cli(tmp_path):
 
     r1 = runner.invoke(
         app,
-        ["cot", "extract",
-         "--base-results", str(base_results),
-         "--base-raw", str(base_raw),
-         "--output", str(judge_input)],
+        [
+            "cot",
+            "extract",
+            "--base-results",
+            str(base_results),
+            "--base-raw",
+            str(base_raw),
+            "--output",
+            str(judge_input),
+        ],
     )
     assert r1.exit_code == 0, r1.stdout
     assert judge_input.exists() and judge_input.stat().st_size > 0
@@ -109,19 +120,24 @@ def test_cot_extract_then_aggregate_then_metrics_cli(tmp_path):
 
     r2 = runner.invoke(
         app,
-        ["cot", "aggregate",
-         "--judge-solutions", str(judge_solutions),
-         "--output", str(majority)],
+        ["cot", "aggregate", "--judge-solutions", str(judge_solutions), "--output", str(majority)],
     )
     assert r2.exit_code == 0, r2.stdout
 
     r3 = runner.invoke(
         app,
-        ["cot", "metrics",
-         "--base-results", str(base_results),
-         "--majority", str(majority),
-         "--output", str(cot_results),
-         "--summary", str(summary)],
+        [
+            "cot",
+            "metrics",
+            "--base-results",
+            str(base_results),
+            "--majority",
+            str(majority),
+            "--output",
+            str(cot_results),
+            "--summary",
+            str(summary),
+        ],
     )
     assert r3.exit_code == 0, r3.stdout
     summary_data = orjson.loads(summary.read_bytes())

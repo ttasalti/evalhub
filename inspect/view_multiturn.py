@@ -16,26 +16,25 @@ def print_messages(messages):
         tool_calls = message.get("tool_calls", [])
 
         if role == "user":
-            title = "[bold green]👤 User[/]"
+            title = "[bold green] User[/]"
             console.print(Panel(content, title=title, border_style="green"))
         elif role == "assistant":
-            title = "[bold blue]🤖 Assistant[/]"
+            title = "[bold blue] Assistant[/]"
             console.print(Panel(content, title=title, border_style="blue"))
             if tool_calls:
                 tool_text = Text()
-                title = "[bold magenta]🛠️ Tool Calls[/]"
+                title = "[bold magenta] Tool Calls[/]"
                 for tool_call in tool_calls:
                     tool_text.append(
-                        f"🔧 Tool Call: {tool_call['function']['name']}\t"
-                        f"arguments: {tool_call['function']['arguments']}",
+                        f" Tool Call: {tool_call['function']['name']}\targuments: {tool_call['function']['arguments']}",
                     )
                 console.print(Panel(tool_text, title=title, border_style="magenta"))
         elif role == "tool":
             name = message.get("name", "")
-            title = f"[bold magenta]🛠️ Tool Result[/] ([italic]{name}[/])"
+            title = f"[bold magenta] Tool Result[/] ([italic]{name}[/])"
             console.print(Panel(content, title=title, border_style="magenta"))
         elif role == "system":
-            console.print(Panel(content, title=f"[bold yellow]⚙️ {role}[/]", border_style="yellow"))
+            console.print(Panel(content, title=f"[bold yellow] {role}[/]", border_style="yellow"))
         else:
             console.print(Panel(content, title=f"[bold red]? {role}[/]", border_style="red"))
 

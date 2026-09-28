@@ -19,6 +19,7 @@ from evalhub.report._cli import (
     DEFAULT_CSV,
     DEFAULT_PLOT_DIR,
     cmd_aggregate,
+    cmd_backfill_anyall,
     cmd_plot,
     cmd_upsert,
 )
@@ -116,7 +117,7 @@ def list_tasks():
     sorted_tasks = sorted(DATASET_MAP.keys())
 
     for task in sorted_tasks:
-        evaluable = "✅" if task in EVALUATE_DATASETS else "❌(Third-party)"
+        evaluable = "" if task in EVALUATE_DATASETS else "(Third-party)"
         hf_name = DATASET_HUB[task]
         task_table.add_row(task, evaluable, hf_name)
 
@@ -206,9 +207,9 @@ def cot_finalize(
 
 @report_app.command("aggregate")
 def report_aggregate(
-    results_root: Annotated[
-        Path, typer.Option(help="Root directory produced by evalhub eval / cot finalize")
-    ] = Path("results"),
+    results_root: Annotated[Path, typer.Option(help="Root directory produced by evalhub eval / cot finalize")] = Path(
+        "results"
+    ),
     output: Annotated[Path, typer.Option(help="Destination CSV for the wide aggregated table")] = DEFAULT_CSV,
 ):
     r"""Walk ``results_root`` and write the master **wide** CSV (full rebuild).
@@ -220,6 +221,22 @@ def report_aggregate(
     """
     out = cmd_aggregate(results_root, output)
     console.print(f"[green]Aggregated wide CSV -> {out}[/green]")
+
+
+@report_app.command("backfill-anyall")
+def report_backfill_anyall(
+    results_root: Annotated[Path, typer.Option(help="Root directory of judged results to backfill")] = Path("results"),
+    dry_run: Annotated[bool, typer.Option("--dry-run", help="Report what would change without writing")] = False,
+):
+    r"""Add the **any / all** judge-approval-threshold metrics to every judged leaf.
+
+    For each ``*_cot_summary.json`` / ``*_cot_per_task.csv`` on disk this appends the
+    ``_any`` / ``_all`` threshold blocks (majority values untouched). No re-eval / no
+    re-judge; additive + idempotent. Raw base ``_results.jsonl`` and ground truth are
+    never modified. Run this before ``report aggregate`` to surface the columns.
+    """
+    tally = cmd_backfill_anyall(results_root, dry_run)
+    console.print(f"[green]backfill-anyall {'(dry-run) ' if dry_run else ''}-> {tally}[/green]")
 
 
 @report_app.command("upsert")
@@ -238,7 +255,10 @@ def report_upsert(
     pipeline to grow the CSV one evaluation at a time.
     """
     out = cmd_upsert(summary, csv, results_root)
-    console.print(f"[green]Upserted 1 row -> {out}[/green]")
+    if out is None:
+        console.print(f"[yellow]Skipped {summary} (excluded model)[/yellow]")
+    else:
+        console.print(f"[green]Upserted 1 row -> {out}[/green]")
 
 
 @report_app.command("plot")
@@ -249,7 +269,7 @@ def report_plot(
     r"""Render the Pass@K vs CoT-Pass@K visualisation suite from the wide CSV.
 
     Line matrices (No-Judge vs each judge over K), benchmark/size comparisons,
-    veto-effect curves, summary tables and multilingual Δ heatmaps — written
+    veto-effect curves, summary tables and multilingual Δ heatmaps, written
     under ``results/report_plots`` by default.
     """
     written = cmd_plot(csv, output_dir)

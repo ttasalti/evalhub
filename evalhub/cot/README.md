@@ -1,4 +1,4 @@
-# `evalhub/cot/` — CoT-Pass@K post-processing
+# `evalhub/cot/`: CoT-Pass@K post-processing
 
 **Newly created for this project.**
 

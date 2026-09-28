@@ -210,6 +210,7 @@ scripts/gemma4_pipeline.env
 !scripts/configs/base.env
 !scripts/configs/qwen_0.8b_demo.env
 !scripts/configs/judge_api_deepseek.env
+!scripts/configs/tubitak_math2026.env
 
 # --- Results & generated report artifacts (never commit real eval data) ---
 results_demo/
@@ -230,20 +231,23 @@ slurm-*.out
 .migration_backup/
 
 # --- Pipeline runtime state ---
-scripts/.job_watch_ledger.tsv
-scripts/.sequential_pairs.tsv
 
 # --- Personal experiment one-offs (kept locally, not published; reusable tools
 #     live under examples/scripts/) ---
-scripts/watch_*.sh
-scripts/eval_dapo_en_2b_checkpoints.sh
-scripts/submit_pt_exams_sweep.sh
-scripts/verify_and_trim_step_judges.sh
-scripts/bench_workers.sh
-scripts/fix_gemma_judge_state.py
-scripts/backfill_gpass.py
-scripts/strip_gpass_answer.py
 
-# --- Repo-prep local working notes (not for publication) ---
-REPO_PREP_PLAN.md
-.prompt_baseline.sha256
+# Paper sources
+paper/
+
+# Local run bookkeeping
+scripts/.*
+scripts/configs/.*
+scripts/configs/*.md
+
+# Error-injection study: only the two summary tables are published
+error_study/output/*
+!error_study/output/cell_summary.csv
+!error_study/output/per_question_summary.csv
+
+# Analysis package: the published data layer is kept although data/ is ignored above
+!analysis/data/
+analysis/cache/

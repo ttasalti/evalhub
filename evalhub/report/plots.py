@@ -2,20 +2,20 @@
 
 Two reference papers frame everything here:
 
-* **2504.13837** — Pass@K curves over K (log-x), base vs RL. Here the contrast is
-  **No-Judge** (``judge_model`` empty → ``pass@k`` / ``g-pass@k`` / ``mg-pass@k``)
-  vs **Judge** (``judge_model`` set → the *cot* family).
-* **2506.14245** — introduces **CoT-Pass@K**: a generation only counts when both the
+* **2504.13837**: Pass@K curves over K (log-x), base vs RL. Here the contrast is
+  **No-Judge** (``judge_model`` empty -> ``pass@k`` / ``g-pass@k`` / ``mg-pass@k``)
+  vs **Judge** (``judge_model`` set -> the *cot* family).
+* **2506.14245**: introduces **CoT-Pass@K**: a generation only counts when both the
   final answer *and* its reasoning are correct. Our judged rows are exactly that.
 
 So the through-line of every figure is: **how much does the CoT veto move the
-metric, per model, per benchmark, per language** — never averaged away.
+metric, per model, per benchmark, per language**, never averaged away.
 
 Design rules carried from the spec:
 
 * The judge is **always** ``think`` (any non-think judge label is a migration
   mislabel and never appears in the data; see ``project_judge_always_think``).
-* **Y axis runs 0 → the cell's own max** (not a fixed 0–100%), so small No-Judge↔cot
+* **Y axis runs 0 -> the cell's own max** (not a fixed 0–100%), so small No-Judge↔cot
   gaps stay visible. The 0 baseline is kept so absolute rates remain readable.
 * X axis is K on a log₂ scale.
 
@@ -44,9 +44,7 @@ from evalhub.utils.logger import logger  # noqa: E402
 
 sns.set_theme(style="whitegrid", context="paper")
 
-# ---------------------------------------------------------------------------
 # Static ordering / styling
-# ---------------------------------------------------------------------------
 
 # The six metric "lenses". key -> filename stem; base/tau pick the wide columns.
 METRIC_SPECS: list[dict] = [
@@ -76,9 +74,7 @@ def _state_rank(s: str) -> int:
     return STATE_ORDER.index(s) if s in STATE_ORDER else 99
 
 
-# ---------------------------------------------------------------------------
 # Wide-column access
-# ---------------------------------------------------------------------------
 
 
 def _col(base: str, k: int, tau: str | None) -> str:
@@ -110,13 +106,13 @@ def _value(row, base: str, k: int, tau: str | None) -> float | None:
 
 
 def _k_axis(df: pd.DataFrame) -> list[int]:
-    ks = sorted(int(c.split("@")[1]) for c in df.columns if c.startswith("pass@"))
+    # Only bare pass@<k> columns define the K axis; skip threshold-expanded cot
+    # columns like pass@16__all / pass@64__any (their "<k>__any" tail isn't an int).
+    ks = sorted(int(c.split("@")[1]) for c in df.columns if c.startswith("pass@") and c.split("@")[1].isdigit())
     return ks or [1, 2, 4, 8, 16, 32, 64, 128]
 
 
-# ---------------------------------------------------------------------------
 # Small helpers
-# ---------------------------------------------------------------------------
 
 
 def _judge_style(df: pd.DataFrame) -> dict[str, tuple]:
@@ -134,8 +130,16 @@ def _judge_handles(df: pd.DataFrame, style: dict[str, tuple]) -> list[Line2D]:
     handles = [Line2D([0], [0], color=NJ_COLOR, lw=2.2, marker="o", ms=5, label="No-Judge · pass@k")]
     for jm, c in style.items():
         handles.append(
-            Line2D([0], [0], color=c, lw=1.7, ls="--", marker="s", ms=4,
-                   label=f"cot · {labels.short_judge(jm, _judge_state(df, jm))}")
+            Line2D(
+                [0],
+                [0],
+                color=c,
+                lw=1.7,
+                ls="--",
+                marker="s",
+                ms=4,
+                label=f"cot · {labels.short_judge(jm, _judge_state(df, jm))}",
+            )
         )
     return handles
 
@@ -145,14 +149,11 @@ def _lang_handles() -> list[Line2D]:
 
 
 def _mode_handles() -> list[Line2D]:
-    return [
-        Line2D([0], [0], color=MODE_COLORS[s], lw=2, marker="o", label=labels.mode_label(s))
-        for s in STATE_ORDER
-    ]
+    return [Line2D([0], [0], color=MODE_COLORS[s], lw=2, marker="o", label=labels.mode_label(s)) for s in STATE_ORDER]
 
 
 def _setup_ax(ax, ymax: float, ks: list[int]) -> None:
-    """Log₂ K on x; **0 → cell-max** on y (per spec, so precision stays visible)."""
+    """Log₂ K on x; **0 -> cell-max** on y (per spec, so precision stays visible)."""
     ax.set_xscale("log", base=2)
     ax.set_xticks(ks)
     ax.set_xticklabels([str(k) for k in ks], fontsize=6.5)
@@ -194,17 +195,19 @@ def _save(fig, path: Path) -> Path:
 def _finish(fig, suptitle: str, handles: list[Line2D] | None, path: Path) -> Path:
     if handles:
         fig.legend(
-            handles=handles, loc="lower center", ncol=min(len(handles), 6),
-            fontsize=8, frameon=False, bbox_to_anchor=(0.5, -0.01),
+            handles=handles,
+            loc="lower center",
+            ncol=min(len(handles), 6),
+            fontsize=8,
+            frameon=False,
+            bbox_to_anchor=(0.5, -0.01),
         )
     fig.suptitle(suptitle, y=1.0, fontsize=12, fontweight="bold")
     fig.tight_layout(rect=[0, 0.04 if handles else 0.0, 1, 0.97])
     return _save(fig, path)
 
 
-# ---------------------------------------------------------------------------
 # Cell painters (return cell ymax, or None when nothing was drawn)
-# ---------------------------------------------------------------------------
 
 
 def _cell_judge_effect(ax, sub: pd.DataFrame, spec: dict, style: dict, ks: list[int]) -> float | None:
@@ -221,8 +224,17 @@ def _cell_judge_effect(ax, sub: pd.DataFrame, spec: dict, style: dict, ks: list[
         pts = series(r, spec["base"], spec["tau"], ks)
         if pts:
             xs, ys = zip(*pts, strict=False)
-            ax.plot(xs, ys, color=style.get(r["judge_model"], "gray"), lw=1.7, ls="--",
-                    marker="s", ms=3, alpha=0.95, zorder=4)
+            ax.plot(
+                xs,
+                ys,
+                color=style.get(r["judge_model"], "gray"),
+                lw=1.7,
+                ls="--",
+                marker="s",
+                ms=3,
+                alpha=0.95,
+                zorder=4,
+            )
             ymax, drew = max(ymax, max(ys)), True
     if not drew:
         return None
@@ -323,8 +335,7 @@ def _cell_veto(ax, sub: pd.DataFrame, spec: dict, style: dict, ks: list[int]) ->
         xs = [k for k in ks if k in base_pts and k in cot]
         ys = [base_pts[k] - cot[k] for k in xs]
         if xs:
-            ax.plot(xs, ys, color=style.get(r["judge_model"], "gray"), lw=1.7, ls="--",
-                    marker="s", ms=3, alpha=0.95)
+            ax.plot(xs, ys, color=style.get(r["judge_model"], "gray"), lw=1.7, ls="--", marker="s", ms=3, alpha=0.95)
             ymax, drew = max(ymax, max(ys)), True
     if not drew:
         return None
@@ -333,15 +344,24 @@ def _cell_veto(ax, sub: pd.DataFrame, spec: dict, style: dict, ks: list[int]) ->
     return ymax
 
 
-# ---------------------------------------------------------------------------
 # Generic curve-matrix builder (rows × cols of cells)
-# ---------------------------------------------------------------------------
 
 
 def _grid(
-    df: pd.DataFrame, *, rows: list, cols: list, row_field, col_field,
-    painter, row_label, col_label, suptitle: str, handles, path: Path,
-    cell_w: float = 2.9, cell_h: float = 2.3,
+    df: pd.DataFrame,
+    *,
+    rows: list,
+    cols: list,
+    row_field,
+    col_field,
+    painter,
+    row_label,
+    col_label,
+    suptitle: str,
+    handles,
+    path: Path,
+    cell_w: float = 2.9,
+    cell_h: float = 2.3,
 ) -> Path | None:
     nr, nc = len(rows), len(cols)
     if nr == 0 or nc == 0:
@@ -369,9 +389,7 @@ def _grid(
     return _finish(fig, suptitle, handles, path)
 
 
-# ---------------------------------------------------------------------------
-# Family A — judge_effect (the core Pass@K vs CoT-Pass@K matrices)
-# ---------------------------------------------------------------------------
+# Family A: judge_effect (the core Pass@K vs CoT-Pass@K matrices)
 
 
 def render_judge_effect(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -381,28 +399,31 @@ def render_judge_effect(df: pd.DataFrame, out: Path, ks: list[int], style: dict)
         d = df[df["state"] == state]
         if d.empty:
             continue
-        # Exclude intermediate checkpoints — they have no CoT data and would
+        # Exclude intermediate checkpoints, they have no CoT data and would
         # appear as empty rows in the judge_effect grid.
         models = [m for m in _ordered_models(d) if not _STEP_MODEL_RE.match(m)]
         benches = sorted(d["benchmark"].dropna().unique(), key=_bench_rank)
         for spec in METRIC_SPECS:
             path = out / "judge_effect" / f"{spec['key']}__{state}.png"
             p = _grid(
-                d, rows=models, cols=benches, row_field="model", col_field="benchmark",
+                d,
+                rows=models,
+                cols=benches,
+                row_field="model",
+                col_field="benchmark",
                 painter=lambda ax, sub, _spec=spec: _cell_judge_effect(ax, sub, _spec, style, ks),
                 row_label=lambda m: labels.short_model(m),
                 col_label=lambda b: f"{labels.language(b)}",
                 suptitle=f"{spec['nj']}  vs  {spec['cot']}   ·   {labels.mode_label(state)}",
-                handles=handles, path=path,
+                handles=handles,
+                path=path,
             )
             if p:
                 written.append(p)
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family B — bench_compare (language transfer; nojudge + cot variants)
-# ---------------------------------------------------------------------------
+# Family B: bench_compare (language transfer; nojudge + cot variants)
 
 
 def render_bench_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -413,7 +434,7 @@ def render_bench_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict
         if d.empty:
             continue
         models = _ordered_models(d)
-        # --- nojudge: a grid of models, each cell = 4 language curves (No-Judge) ---
+        # nojudge: a grid of models, each cell = 4 language curves (No-Judge)
         dn = d[~d["judged"]]
         for spec in METRIC_SPECS:
             ncol = min(4, len(models)) or 1
@@ -436,31 +457,40 @@ def render_bench_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict
                 ax.set_title(labels.short_model(m), fontsize=8.5)
             path = out / "bench_compare" / f"{spec['key']}__{state}__nojudge.png"
             if drew:
-                written.append(_finish(fig, f"{spec['nj']} · language transfer (No-Judge) · {labels.mode_label(state)}",
-                                       lang_handles, path))
+                written.append(
+                    _finish(
+                        fig,
+                        f"{spec['nj']} · language transfer (No-Judge) · {labels.mode_label(state)}",
+                        lang_handles,
+                        path,
+                    )
+                )
             else:
                 plt.close(fig)
-        # --- cot: rows=model, cols=[No-Judge | each judge], cell = 4 language curves ---
+        # cot: rows=model, cols=[No-Judge | each judge], cell = 4 language curves
         series_cols = ["No-Judge"] + sorted(d.loc[d["judged"], "series"].dropna().unique())
         for spec in METRIC_SPECS:
             p = _grid(
-                d, rows=models, cols=series_cols, row_field="model", col_field="series",
+                d,
+                rows=models,
+                cols=series_cols,
+                row_field="model",
+                col_field="series",
                 painter=lambda ax, sub, _spec=spec: _cell_langs(ax, sub, _spec, ks),
                 row_label=lambda m: labels.short_model(m),
                 col_label=lambda s: s.replace("cot:", "cot·"),
-                suptitle=f"{spec['nj']} → {spec['cot']} · language × judge · {labels.mode_label(state)}",
+                suptitle=f"{spec['nj']} -> {spec['cot']} · language × judge · {labels.mode_label(state)}",
                 handles=lang_handles,
                 path=out / "bench_compare" / f"{spec['key']}__{state}__cot.png",
-                cell_w=2.7, cell_h=2.2,
+                cell_w=2.7,
+                cell_h=2.2,
             )
             if p:
                 written.append(p)
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family C — size_compare (scaling; nojudge + per-judge cot overlay)
-# ---------------------------------------------------------------------------
+# Family C: size_compare (scaling; nojudge + per-judge cot overlay)
 
 
 def render_size_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -474,9 +504,14 @@ def render_size_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict)
         for spec in METRIC_SPECS:
             # nojudge
             p = _grid(
-                d, rows=families, cols=benches, row_field="model_family", col_field="benchmark",
+                d,
+                rows=families,
+                cols=benches,
+                row_field="model_family",
+                col_field="benchmark",
                 painter=lambda ax, sub, _spec=spec: _cell_sizes(ax, sub, _spec, ks, None),
-                row_label=lambda f: f, col_label=lambda b: labels.language(b),
+                row_label=lambda f: f,
+                col_label=lambda b: labels.language(b),
                 suptitle=f"{spec['nj']} · size scaling (No-Judge) · {labels.mode_label(state)}",
                 handles=None,
                 path=out / "size_compare" / f"{spec['key']}__{state}__nojudge.png",
@@ -487,10 +522,15 @@ def render_size_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict)
             for jm in sorted(d.loc[d["judged"], "judge_model"].dropna().unique()):
                 jtag = labels.short_judge(jm, _judge_state(df, jm))
                 p = _grid(
-                    d, rows=families, cols=benches, row_field="model_family", col_field="benchmark",
+                    d,
+                    rows=families,
+                    cols=benches,
+                    row_field="model_family",
+                    col_field="benchmark",
                     painter=lambda ax, sub, _spec=spec, _jm=jm: _cell_sizes(ax, sub, _spec, ks, _jm),
-                    row_label=lambda f: f, col_label=lambda b: labels.language(b),
-                    suptitle=f"{spec['nj']} → {spec['cot']} · size scaling · cot={jtag} · {labels.mode_label(state)}",
+                    row_label=lambda f: f,
+                    col_label=lambda b: labels.language(b),
+                    suptitle=f"{spec['nj']} -> {spec['cot']} · size scaling · cot={jtag} · {labels.mode_label(state)}",
                     handles=None,
                     path=out / "size_compare" / f"{spec['key']}__{state}__cot__{labels.short_model(jm)}.png",
                 )
@@ -499,16 +539,21 @@ def render_size_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict)
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family F — veto_curve (Δ(k) = No-Judge − cot)
-# ---------------------------------------------------------------------------
+# Family F: veto_curve (Δ(k) = No-Judge − cot)
 
 
 def render_veto_curve(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
     written: list[Path] = []
     handles = [
-        Line2D([0], [0], color=c, lw=1.7, ls="--", marker="s",
-               label=f"cot · {labels.short_judge(jm, _judge_state(df, jm))}")
+        Line2D(
+            [0],
+            [0],
+            color=c,
+            lw=1.7,
+            ls="--",
+            marker="s",
+            label=f"cot · {labels.short_judge(jm, _judge_state(df, jm))}",
+        )
         for jm, c in style.items()
     ]
     for state in STATE_ORDER:
@@ -519,7 +564,11 @@ def render_veto_curve(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -
         benches = sorted(d["benchmark"].dropna().unique(), key=_bench_rank)
         for spec in METRIC_SPECS:
             p = _grid(
-                d, rows=models, cols=benches, row_field="model", col_field="benchmark",
+                d,
+                rows=models,
+                cols=benches,
+                row_field="model",
+                col_field="benchmark",
                 painter=lambda ax, sub, _spec=spec: _cell_veto(ax, sub, _spec, style, ks),
                 row_label=lambda m: labels.short_model(m),
                 col_label=lambda b: labels.language(b),
@@ -532,9 +581,7 @@ def render_veto_curve(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family H — mode_compare (pretrained vs non-think vs think)
-# ---------------------------------------------------------------------------
+# Family H: mode_compare (pretrained vs non-think vs think)
 
 
 def render_mode_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -552,10 +599,10 @@ def render_mode_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict)
         cot_judge = jcounts.index[0] if len(jcounts) else None
         jtag = labels.short_judge(cot_judge, _judge_state(df, cot_judge)) if cot_judge is not None else "cot"
         handles = _mode_handles() + [
-            Line2D([0], [0], color="#555", lw=1.4, ls="--", marker="s",
-                   label=f"cot · {jtag} (dashed)")
+            Line2D([0], [0], color="#555", lw=1.4, ls="--", marker="s", label=f"cot · {jtag} (dashed)")
         ]
         for spec in METRIC_SPECS:
+
             def paint(ax, sub, _spec=spec, _j=cot_judge):
                 return _cell_modes(ax, sub, _spec, ks, _j)
 
@@ -582,17 +629,17 @@ def render_mode_compare(df: pd.DataFrame, out: Path, ks: list[int], style: dict)
                         ax.set_ylabel(f"{sz:g}B", fontsize=8.5)
             path = out / "mode_compare" / f"{spec['key']}__{fam}.png"
             if drew:
-                written.append(_finish(
-                    fig, f"{spec['nj']} · pretrained vs instruct modes · {fam}  ·  cot judge: {jtag}",
-                    handles, path))
+                written.append(
+                    _finish(
+                        fig, f"{spec['nj']} · pretrained vs instruct modes · {fam}  ·  cot judge: {jtag}", handles, path
+                    )
+                )
             else:
                 plt.close(fig)
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family G — per_model fingerprint (rows=metric × cols=benchmark)
-# ---------------------------------------------------------------------------
+# Family G: per_model fingerprint (rows=metric × cols=benchmark)
 
 
 def render_per_model(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -624,24 +671,24 @@ def render_per_model(df: pd.DataFrame, out: Path, ks: list[int], style: dict) ->
                     ax.set_ylabel(spec["nj"], fontsize=8)
         path = out / "per_model" / f"{labels.short_model(model)}__{state}.png".replace("·", "_")
         if drew:
-            written.append(_finish(fig, f"Fingerprint · {labels.short_model(model)} · {labels.mode_label(state)}",
-                                   handles, path))
+            written.append(
+                _finish(fig, f"Fingerprint · {labels.short_model(model)} · {labels.mode_label(state)}", handles, path)
+            )
         else:
             plt.close(fig)
     return written
 
 
-# ---------------------------------------------------------------------------
-# Tables (matplotlib) — families D & I
-# ---------------------------------------------------------------------------
+# Tables (matplotlib), families D & I
 
 
 def _render_table(row_labels, col_labels, text, colors, title, path, footnote=None) -> Path:
     nr, nc = len(row_labels), len(col_labels)
     fig, ax = plt.subplots(figsize=(1.15 * nc + 2.4, 0.34 * nr + 1.3))
     ax.axis("off")
-    tbl = ax.table(cellText=text, rowLabels=row_labels, colLabels=col_labels,
-                   cellColours=colors, loc="center", cellLoc="center")
+    tbl = ax.table(
+        cellText=text, rowLabels=row_labels, colLabels=col_labels, cellColours=colors, loc="center", cellLoc="center"
+    )
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(7.5)
     tbl.scale(1, 1.25)
@@ -673,15 +720,16 @@ def render_tables(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> li
     written: list[Path] = []
     table_ks = [k for k in (1, 64) if k in ks] or [ks[-1]]
     benches = sorted(df["benchmark"].dropna().unique(), key=_bench_rank)
-    metric_heads = [s["nj"].replace("@K", "").replace("G-Pass ", "G ").replace("mG-Pass", "mG").strip()
-                    for s in METRIC_SPECS]
+    metric_heads = [
+        s["nj"].replace("@K", "").replace("G-Pass ", "G ").replace("mG-Pass", "mG").strip() for s in METRIC_SPECS
+    ]
     judges = sorted(df.loc[df["judged"], "judge_model"].dropna().unique())
 
     for b in benches:
         db = df[df["benchmark"] == b]
         mm = [(m, s) for (m, s) in _ordered_model_modes(db)]
         for k in table_ks:
-            # --- nojudge absolute (×100) ---
+            # nojudge absolute (×100)
             text, colors, rlabels = [], [], []
             for m, st in mm:
                 rn = db[(db["model"] == m) & (db["state"] == st) & (~db["judged"])]
@@ -697,13 +745,18 @@ def render_tables(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> li
                 colors.append(row_c)
                 rlabels.append(mm_label(m, st))
             if text:
-                written.append(_render_table(
-                    rlabels, metric_heads, text, colors,
-                    f"{labels.language(b)} · No-Judge · k={k} (×100)",
-                    out / "tables" / f"{b}__k{k}__nojudge.png",
-                    footnote="value = metric ×100; darker = higher",
-                ))
-            # --- cot Δ (No-Judge − cot) per judge ---
+                written.append(
+                    _render_table(
+                        rlabels,
+                        metric_heads,
+                        text,
+                        colors,
+                        f"{labels.language(b)} · No-Judge · k={k} (×100)",
+                        out / "tables" / f"{b}__k{k}__nojudge.png",
+                        footnote="value = metric ×100; darker = higher",
+                    )
+                )
+            # cot Δ (No-Judge − cot) per judge
             for jm in judges:
                 text, colors, rlabels = [], [], []
                 for m, st in mm:
@@ -729,12 +782,17 @@ def render_tables(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> li
                         rlabels.append(mm_label(m, st))
                 if text:
                     jtag = labels.short_judge(jm, _judge_state(df, jm))
-                    written.append(_render_table(
-                        rlabels, metric_heads, text, colors,
-                        f"{labels.language(b)} · veto Δ (No-Judge − cot) · {jtag} · k={k}",
-                        out / "tables" / f"{b}__k{k}__cotdelta__{labels.short_model(jm)}.png",
-                        footnote="Δ = (No-Judge − cot) ×100; red = bigger veto",
-                    ))
+                    written.append(
+                        _render_table(
+                            rlabels,
+                            metric_heads,
+                            text,
+                            colors,
+                            f"{labels.language(b)} · veto Δ (No-Judge − cot) · {jtag} · k={k}",
+                            out / "tables" / f"{b}__k{k}__cotdelta__{labels.short_model(jm)}.png",
+                            footnote="Δ = (No-Judge − cot) ×100; red = bigger veto",
+                        )
+                    )
     return written
 
 
@@ -754,8 +812,9 @@ def render_headline(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> 
                 row_t, row_c, has = [], [], False
                 for b in benches:
                     rnb = rn[rn["benchmark"] == b]
-                    rcb = df[(df["model"] == m) & (df["state"] == st)
-                             & (df["benchmark"] == b) & (df["judge_model"] == jm)]
+                    rcb = df[
+                        (df["model"] == m) & (df["state"] == st) & (df["benchmark"] == b) & (df["judge_model"] == jm)
+                    ]
                     a = _value(rnb.iloc[0], "pass", k, None) if not rnb.empty else None
                     c = _value(rcb.iloc[0], "pass", k, None) if not rcb.empty else None
                     if a is None:
@@ -774,18 +833,21 @@ def render_headline(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> 
                     colors.append(row_c)
                     rlabels.append(mm_label(m, st))
             if text:
-                written.append(_render_table(
-                    rlabels, [labels.language(b) for b in benches], text, colors,
-                    f"Headline pass@{k} / cot-pass@{k} · cot={jtag}",
-                    out / "tables" / f"headline__{labels.short_model(jm)}__k{k}.png",
-                    footnote="cell = pass / cot-pass (×100); red = larger veto",
-                ))
+                written.append(
+                    _render_table(
+                        rlabels,
+                        [labels.language(b) for b in benches],
+                        text,
+                        colors,
+                        f"Headline pass@{k} / cot-pass@{k} · cot={jtag}",
+                        out / "tables" / f"headline__{labels.short_model(jm)}__k{k}.png",
+                        footnote="cell = pass / cot-pass (×100); red = larger veto",
+                    )
+                )
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family E — multilingual veto Δ heatmaps + companion CSV
-# ---------------------------------------------------------------------------
+# Family E: multilingual veto Δ heatmaps + companion CSV
 
 
 def render_comparisons(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -796,7 +858,7 @@ def render_comparisons(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
     judges = sorted(df.loc[df["judged"], "judge_model"].dropna().unique())
     mm = _ordered_model_modes(df)
 
-    # ---- heatmaps: rows=(model·mode), cols=language, value = No-Judge − cot ----
+    # heatmaps: rows=(model·mode), cols=language, value = No-Judge − cot
     for spec in METRIC_SPECS:
         for k in table_ks:
             for jm in judges:
@@ -807,8 +869,12 @@ def render_comparisons(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
                     any_v = False
                     for b in benches:
                         rnb = rn[rn["benchmark"] == b]
-                        rcb = df[(df["model"] == m) & (df["state"] == st)
-                                 & (df["benchmark"] == b) & (df["judge_model"] == jm)]
+                        rcb = df[
+                            (df["model"] == m)
+                            & (df["state"] == st)
+                            & (df["benchmark"] == b)
+                            & (df["judge_model"] == jm)
+                        ]
                         a = _value(rnb.iloc[0], spec["base"], k, spec["tau"]) if not rnb.empty else None
                         c = _value(rcb.iloc[0], spec["base"], k, spec["tau"]) if not rcb.empty else None
                         if a is None or c is None:
@@ -833,27 +899,34 @@ def render_comparisons(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
                 for i in range(arr.shape[0]):
                     for j in range(arr.shape[1]):
                         if np.isfinite(arr[i, j]):
-                            ax.text(j, i, f"{arr[i, j]:.1f}", ha="center", va="center", fontsize=6,
-                                    color="white" if abs(arr[i, j]) > 0.6 * vmax else "black")
+                            ax.text(
+                                j,
+                                i,
+                                f"{arr[i, j]:.1f}",
+                                ha="center",
+                                va="center",
+                                fontsize=6,
+                                color="white" if abs(arr[i, j]) > 0.6 * vmax else "black",
+                            )
                 ax.set_title(f"Veto Δ · {spec['nj']} · k={k} · cot={jtag}", fontsize=10, fontweight="bold")
                 fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="No-Judge − cot (×100)")
                 written.append(
                     _save(fig, out / "comparisons" / f"veto__{spec['key']}__k{k}__{labels.short_model(jm)}.png")
                 )
 
-    # ---- companion long CSV: every (model, mode, lang, judge, metric, k) base/cot/Δ ----
+    # companion long CSV: every (model, mode, lang, judge, metric, k) base/cot/Δ
     for k in table_ks:
         rows = []
         for m, st in mm:
             for b in benches:
-                rn = df[(df["model"] == m) & (df["state"] == st)
-                        & (df["benchmark"] == b) & (~df["judged"])]
+                rn = df[(df["model"] == m) & (df["state"] == st) & (df["benchmark"] == b) & (~df["judged"])]
                 if rn.empty:
                     continue
                 r0 = rn.iloc[0]
                 for jm in judges:
-                    rc = df[(df["model"] == m) & (df["state"] == st)
-                            & (df["benchmark"] == b) & (df["judge_model"] == jm)]
+                    rc = df[
+                        (df["model"] == m) & (df["state"] == st) & (df["benchmark"] == b) & (df["judge_model"] == jm)
+                    ]
                     if rc.empty:
                         continue
                     r1 = rc.iloc[0]
@@ -862,14 +935,23 @@ def render_comparisons(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
                         c = _value(r1, spec["base"], k, spec["tau"])
                         if a is None or c is None:
                             continue
-                        rows.append({
-                            "model": m, "model_short": labels.short_model(m),
-                            "state": st, "mode": labels.mode_label(st),
-                            "benchmark": b, "language": labels.language(b),
-                            "judge_model": jm, "judge_short": labels.short_judge(jm, _judge_state(df, jm)),
-                            "metric": spec["key"], "k": k,
-                            "nojudge": a, "cot": c, "delta": a - c,
-                        })
+                        rows.append(
+                            {
+                                "model": m,
+                                "model_short": labels.short_model(m),
+                                "state": st,
+                                "mode": labels.mode_label(st),
+                                "benchmark": b,
+                                "language": labels.language(b),
+                                "judge_model": jm,
+                                "judge_short": labels.short_judge(jm, _judge_state(df, jm)),
+                                "metric": spec["key"],
+                                "k": k,
+                                "nojudge": a,
+                                "cot": c,
+                                "delta": a - c,
+                            }
+                        )
         if rows:
             csv_path = out / "comparisons" / f"pass_vs_cot_k{k}.csv"
             csv_path.parent.mkdir(parents=True, exist_ok=True)
@@ -878,9 +960,7 @@ def render_comparisons(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family RL — rl_progress (pass@K across RL training steps)
-# ---------------------------------------------------------------------------
+# Family RL: rl_progress (pass@K across RL training steps)
 
 
 def render_rl_progress(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -1000,16 +1080,26 @@ def render_rl_progress(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
                 for jm in judges:
                     jpts: list[tuple[int, float]] = []
                     for xp, _xl, model in progression:
-                        row = sub[(sub["model"] == model) & (sub["benchmark"] == b)
-                                  & (sub["judge_model"] == jm)].head(1)
+                        row = sub[(sub["model"] == model) & (sub["benchmark"] == b) & (sub["judge_model"] == jm)].head(
+                            1
+                        )
                         if not row.empty:
                             v = _value(row.iloc[0], "pass", k, None)
                             if v is not None:
                                 jpts.append((xp, v * 100))
                     if jpts:
                         pxs, pys = zip(*jpts, strict=False)
-                        ax.plot(pxs, pys, color=style.get(jm, "gray"), lw=1.7, ls="--",
-                                marker="s", ms=4, alpha=0.9, zorder=4)
+                        ax.plot(
+                            pxs,
+                            pys,
+                            color=style.get(jm, "gray"),
+                            lw=1.7,
+                            ls="--",
+                            marker="s",
+                            ms=4,
+                            alpha=0.9,
+                            zorder=4,
+                        )
                         drew = True
 
                 ax.set_xticks(xs)
@@ -1030,16 +1120,14 @@ def render_rl_progress(df: pd.DataFrame, out: Path, ks: list[int], style: dict) 
         handles = _judge_handles(sub, style)
         pre_short = labels.short_model(pretrained) if pretrained else "Pretrained"
         rl_short = labels.short_model(base_rl_model)
-        suptitle = f"RL Training Progress · {pre_short} → {rl_short}"
+        suptitle = f"RL Training Progress · {pre_short} -> {rl_short}"
         safe = re.sub(r"[·\s/]+", "_", rl_short)
         written.append(_finish(fig, suptitle, handles, out / "rl_progress" / f"{safe}.png"))
 
     return written
 
 
-# ---------------------------------------------------------------------------
-# Family I — rl_table (checkpoints as columns)
-# ---------------------------------------------------------------------------
+# Family I: rl_table (checkpoints as columns)
 
 
 def render_rl_table(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> list[Path]:
@@ -1084,7 +1172,7 @@ def render_rl_table(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> 
                 pretrained = m
                 break
 
-        # Ordered checkpoints: Base → s120 → s240 → Final
+        # Ordered checkpoints: Base -> s120 -> s240 -> Final
         progression: list[tuple[str, str]] = []  # (model_name, col_label)
         if pretrained:
             progression.append((pretrained, labels.short_model(pretrained)))
@@ -1117,14 +1205,14 @@ def render_rl_table(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> 
                     return _seq_color(v, 0.0, hi)
 
                 for spec in METRIC_SPECS:
-                    metric_key = (spec["nj"].replace("@K", "")
-                                  .replace("G-Pass ", "G").replace("mG-Pass", "mG").strip())
+                    metric_key = spec["nj"].replace("@K", "").replace("G-Pass ", "G").replace("mG-Pass", "mG").strip()
 
                     # No-Judge row
                     nj_vals = []
                     for m, _ in progression:
-                        r = df[(df["model"] == m) & (df["state"] == state)
-                               & (df["benchmark"] == b) & (~df["judged"])].head(1)
+                        r = df[
+                            (df["model"] == m) & (df["state"] == state) & (df["benchmark"] == b) & (~df["judged"])
+                        ].head(1)
                         v = _value(r.iloc[0], spec["base"], k, spec["tau"]) if not r.empty else None
                         nj_vals.append(v)
                     row_labels.append(f"{metric_key} NJ")
@@ -1137,8 +1225,12 @@ def render_rl_table(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> 
                         jtag = labels.short_judge(jm, _judge_state(df, jm))
                         cot_vals = []
                         for m, _ in progression:
-                            r = df[(df["model"] == m) & (df["state"] == state)
-                                   & (df["benchmark"] == b) & (df["judge_model"] == jm)].head(1)
+                            r = df[
+                                (df["model"] == m)
+                                & (df["state"] == state)
+                                & (df["benchmark"] == b)
+                                & (df["judge_model"] == jm)
+                            ].head(1)
                             v = _value(r.iloc[0], spec["base"], k, spec["tau"]) if not r.empty else None
                             cot_vals.append(v)
                         if any(v is not None for v in cot_vals):
@@ -1153,15 +1245,22 @@ def render_rl_table(df: pd.DataFrame, out: Path, ks: list[int], style: dict) -> 
                 title = f"{labels.language(b)} · RL progression · k={k} (×100)"
                 safe_rl = re.sub(r"[·\s/]+", "_", labels.short_model(base_rl_model))
                 path = out / "rl_table" / f"{b}__k{k}__{safe_rl}.png"
-                written.append(_render_table(row_labels, col_labels, text, tcolors, title, path,
-                                             footnote="NJ = No-Judge; darker = higher; – = no data"))
+                written.append(
+                    _render_table(
+                        row_labels,
+                        col_labels,
+                        text,
+                        tcolors,
+                        title,
+                        path,
+                        footnote="NJ = No-Judge; darker = higher; – = no data",
+                    )
+                )
 
     return written
 
 
-# ---------------------------------------------------------------------------
 # Orchestrator
-# ---------------------------------------------------------------------------
 
 _FAMILIES = {
     "judge_effect": render_judge_effect,
@@ -1190,9 +1289,7 @@ def render_all(df: pd.DataFrame, output_dir: Path | str) -> dict[str, list[Path]
     df = df.copy()
     # Normalise the discriminator to real booleans regardless of CSV dtype.
     if df["judged"].dtype == object:
-        df["judged"] = df["judged"].map(
-            {"True": True, "False": False, True: True, False: False}
-        ).fillna(False)
+        df["judged"] = df["judged"].map({"True": True, "False": False, True: True, False: False}).fillna(False)
     df["judged"] = df["judged"].astype(bool)
 
     ks = _k_axis(df)

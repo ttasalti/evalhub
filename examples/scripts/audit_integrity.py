@@ -8,20 +8,20 @@ publishing ``report.csv`` to prove the join between base eval, judge votes, and
 CoT metrics is sound.
 
 Invariants (per cell):
-  1. content   — cot_results.solutions == base_results.solutions, task by task.
+  1. content: cot_results.solutions == base_results.solutions, task by task.
                  The CoT stage only relabels ``correct``; it must never alter the
                  generations themselves. A mismatch means the judge read a
                  different base run (cross-wire).
-  2. count     — base_true == cot.true_count + cot.cot_false_count. Every base
+  2. count: base_true == cot.true_count + cot.cot_false_count. Every base
                  correct generation is either still true or vetoed; none vanish.
-  3. votes     — every base-correct generation id has EXACTLY ``--votes`` (3)
+  3. votes: every base-correct generation id has EXACTLY ``--votes`` (3)
                  judge verdicts; total verdicts == base_true * votes. Catches the
                  append-duplication bug (6 votes) and partial judge runs.
-  4. monotone  — for every metric/k, CoT value <= No-Judge value. The veto can
+  4. monotone: for every metric/k, CoT value <= No-Judge value. The veto can
                  only remove correct answers, so CoT-Pass@K can never exceed
                  plain Pass@K.
-  5. ids       — set(judged generation ids) == set(base-correct generation ids).
-                 The judge must score exactly the base-correct set — no extra ids
+  5. ids: set(judged generation ids) == set(base-correct generation ids).
+                 The judge must score exactly the base-correct set, no extra ids
                  (cross-wire / wrong state) and none missing (truncated run).
 
     python scripts/audit_integrity.py                       # sweep results/
@@ -243,8 +243,9 @@ def audit_cell(cell: Path, expect_votes: int = EXPECT_VOTES) -> tuple[dict[str, 
             res["votes"] = False  # vote-count check is meaningless if the set is wrong
             extra = len(judged_ids - base_correct_ids)
             miss = len(base_correct_ids - judged_ids)
-            notes.append(f"ids: judged={len(judged_ids)} base_correct={len(base_correct_ids)} "
-                         f"(extra={extra}, missing={miss})")
+            notes.append(
+                f"ids: judged={len(judged_ids)} base_correct={len(base_correct_ids)} (extra={extra}, missing={miss})"
+            )
         else:
             dist = dict(sorted(Counter(counts.values()).items()))
             off = {v: n for v, n in dist.items() if v != expect_votes}
@@ -252,7 +253,7 @@ def audit_cell(cell: Path, expect_votes: int = EXPECT_VOTES) -> tuple[dict[str, 
                 res["votes"] = False
                 notes.append(f"votes!={expect_votes}: dist={dist}")
 
-    # 6. text — judged generations must be the OWN-state base generations.
+    # 6. text: judged generations must be the OWN-state base generations.
     # Only checkable where cot_judge_input.jsonl survives (-1 => skipped).
     text_bad = judge_input_text_mismatch(cell, bench)
     if text_bad > 0:
@@ -263,13 +264,15 @@ def audit_cell(cell: Path, expect_votes: int = EXPECT_VOTES) -> tuple[dict[str, 
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results-root", default="results")
     ap.add_argument("--votes", type=int, default=EXPECT_VOTES)
     ap.add_argument("--only", default=None, help="only cells whose path contains this substring")
-    ap.add_argument("--include-excluded", action="store_true",
-                    help="also audit Ministral/Mistral cells (excluded from the report by default)")
+    ap.add_argument(
+        "--include-excluded",
+        action="store_true",
+        help="also audit Ministral/Mistral cells (excluded from the report by default)",
+    )
     ap.add_argument("-v", "--verbose", action="store_true", help="also print passing cells")
     args = ap.parse_args()
 

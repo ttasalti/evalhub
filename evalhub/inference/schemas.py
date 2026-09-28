@@ -67,6 +67,19 @@ class SamplingParams:
             "help": "API request timeout in seconds",
         },
     )
+    reasoning_effort: str | None = field(
+        default=None,
+        metadata={
+            "help": "Reasoning effort for thinking models (e.g. low|medium|high|max); 'none'/empty disables sending it",
+        },
+    )
+    extra_body: str | None = field(
+        default=None,
+        metadata={
+            "help": "JSON string passed verbatim as the request extra_body "
+            '(e.g. \'{"thinking": {"type": "enabled"}}\'); \'none\'/empty disables it',
+        },
+    )
 
     def __post_init__(self):
         r"""Ensure stop tokens are set."""

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# ============================================================================
 # scripts/run_judge_only.sh
 #
 # Run the CoT judge stage over an existing base run, skipping base generation.
@@ -7,12 +6,12 @@
 # want to re-judge it (e.g. with a different judge model, language, or temp).
 #
 # Pipeline:
-#   1. evalhub cot extract           — pull base-correct generations into a
+#   1. evalhub cot extract, pull base-correct generations into a
 #                                      judge-input JSONL.
 #   2. start vLLM with the judge model.
-#   3. evalhub gen + evalhub eval    — judge yes/no per generation.
+#   3. evalhub gen + evalhub eval, judge yes/no per generation.
 #   4. stop the judge server.
-#   5. evalhub cot finalize          — majority-vote + CoT-Pass@K summary.
+#   5. evalhub cot finalize, majority-vote + CoT-Pass@K summary.
 #
 # Output layout (matches the canonical scheme):
 #   ${OUTPUT_ROOT}/judgments/<target>_judged_by_<judge>_t<T>_max<N>/<benchmark>/
@@ -22,8 +21,7 @@
 #       <benchmark>_cot_summary.json
 #       <benchmark>_cot_stats.json
 #
-# ----------------------------------------------------------------------------
-# Recommended Slurm header for nscluster:
+# Recommended Slurm header:
 #   #SBATCH --job-name=evalhub-judge
 #   #SBATCH --partition=gpu
 #   #SBATCH --gres=gpu:1
@@ -31,7 +29,6 @@
 #   #SBATCH --mem=64G
 #   #SBATCH --time=08:00:00
 #   #SBATCH --output=logs/slurm-%j.out
-# ----------------------------------------------------------------------------
 #
 # Usage:
 #   scripts/run_judge_only.sh                    # uses $EVALHUB_PIPELINE_ENV
@@ -45,7 +42,7 @@
 #
 # Judge backend: JUDGE_BACKEND=vllm (default) serves JUDGE_MODEL locally on a
 #               GPU. JUDGE_BACKEND=api routes the judge to an external
-#               OpenAI-compatible endpoint — no GPU needed — and additionally
+#               OpenAI-compatible endpoint, no GPU needed, and additionally
 #               requires JUDGE_API_BASE and JUDGE_API_KEY (export the key; do
 #               not commit it). See scripts/configs/judge_api_deepseek.env.
 #
@@ -57,8 +54,17 @@
 #               JUDGE_FREQUENCY_PENALTY, JUDGE_PRESENCE_PENALTY, JUDGE_STOP,
 #               JUDGE_SYSTEM_PROMPT, JUDGE_TOOL_CONFIG, JUDGE_CALLBACK,
 #               JUDGE_MAX_TURNS, JUDGE_ENABLE_MULTITURN, JUDGE_RESUME,
-#               JUDGE_PARALLEL_COUNT, OUTPUT_ROOT, JUDGE_PORT, HEALTH_TIMEOUT.
-# ============================================================================
+#               JUDGE_PARALLEL_COUNT, OUTPUT_ROOT, JUDGE_PORT, HEALTH_TIMEOUT,
+#               JUDGE_REASONING_EFFORT (none|low|medium|high|max), JUDGE_EXTRA_BODY
+#               (raw JSON sent as extra_body), JUDGE_EXTRA_BODY_TAG (path slug),
+#               JUDGE_STAGED_ROUNDS / JUDGE_COMMIT_WAIT / JUDGE_TOPUP_MAX.
+#               The reasoning controls are encoded in the JUDGE_DIR path as
+#               __re-<re>__eb-<eb> (default none) and, in api mode, sent to the
+#               endpoint: driving thinking models such as DeepSeek V4 Flash.
+#               JUDGE_STAGED_ROUNDS>1 produces the N judge samples in N --resume
+#               rounds (with JUDGE_COMMIT_WAIT pauses) so a cached API only pays
+#               ~1x input instead of Nx; a top-up loop (JUDGE_TOPUP_MAX) then
+#               guarantees every solution reaches exactly N samples.
 set -euo pipefail
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -75,14 +81,24 @@ else
 fi
 cd "${PROJECT_ROOT}"
 
-# Activate the project conda environment under Slurm.
-if [[ "${CONDA_DEFAULT_ENV:-}" != "evalhub_env" ]]; then
-    source /opt/Anaconda-2021.05/etc/profile.d/conda.sh
-    conda activate evalhub_env
+# Activate the project environment when the job does not inherit it. Set
+# EVALHUB_CONDA_SH to the site's conda.sh and EVALHUB_CONDA_ENV to the
+# environment name (default evalhub_env), or point EVALHUB_ENV_BIN at the
+# environment's bin directory. Export these in the shell that submits the job.
+if [[ -n "${EVALHUB_CONDA_SH:-}" && "${CONDA_DEFAULT_ENV:-}" != "${EVALHUB_CONDA_ENV:-evalhub_env}" ]]; then
+    # shellcheck disable=SC1090
+    source "${EVALHUB_CONDA_SH}"
+    conda activate "${EVALHUB_CONDA_ENV:-evalhub_env}"
 fi
-export PATH="/user/home/t.tuna/.conda/envs/evalhub_env/bin:${PATH}"
+if [[ -n "${CONDA_PREFIX:-}" ]]; then
+    # conda activate alone may not override ~/.local/bin; put the env first.
+    export PATH="${CONDA_PREFIX}/bin:${PATH}"
+fi
+if [[ -n "${EVALHUB_ENV_BIN:-}" ]]; then
+    export PATH="${EVALHUB_ENV_BIN}:${PATH}"
+fi
 
-# nsdl2 sets ROCR_VISIBLE_DEVICES alongside CUDA_VISIBLE_DEVICES; vLLM rejects both being set
+# Some nodes export ROCR_VISIBLE_DEVICES next to CUDA_VISIBLE_DEVICES; vLLM rejects both being set.
 unset ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES
 
 # shellcheck source=lib/pipeline_common.sh
@@ -129,6 +145,12 @@ evalhub cot extract \
 if [[ ! -s "${JUDGE_INPUT}" ]]; then
     pipeline_log "No correct base generations; CoT-Pass@K = 0 by definition. Stopping."
     pipeline_write_empty_cot_summary "${JUDGE_DIR}" "${BENCHMARK}"
+    if [[ -z "${EVALHUB_SKIP_REPORT:-}" ]]; then
+        pipeline_log "==[report]== Upserting result rows + refreshing plots =================="
+        pipeline_run_report_incremental \
+            "$(dirname "${BASE_RESULTS_FILE}")/${BENCHMARK}_summary.json" \
+            "${JUDGE_DIR}/${BENCHMARK}_cot_summary.json"
+    fi
     exit 0
 fi
 
@@ -151,3 +173,10 @@ evalhub cot finalize \
 
 pipeline_log "[OK] CoT summary: ${JUDGE_DIR}/${BENCHMARK}_cot_summary.json"
 pipeline_log "[OK] CoT results: ${JUDGE_DIR}/${BENCHMARK}_cot_results.jsonl"
+
+if [[ -z "${EVALHUB_SKIP_REPORT:-}" ]]; then
+    pipeline_log "==[report]== Upserting result rows + refreshing plots =================="
+    pipeline_run_report_incremental \
+        "$(dirname "${BASE_RESULTS_FILE}")/${BENCHMARK}_summary.json" \
+        "${JUDGE_DIR}/${BENCHMARK}_cot_summary.json"
+fi

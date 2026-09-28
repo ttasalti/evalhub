@@ -3,15 +3,15 @@
 Three pure-Python stages run after a standard ``evalhub gen`` + ``evalhub eval``
 pass plus a judge ``gen`` + ``eval`` pass:
 
-  * ``extract``   — filter correct generations into a judge-input file.
-  * ``aggregate`` — majority-vote the judge verdicts per generation.
-  * ``metrics``   — apply the CoT veto and recompute Pass@K / Cons@K.
+  * ``extract``: filter correct generations into a judge-input file.
+  * ``aggregate``: majority-vote the judge verdicts per generation.
+  * ``metrics``: apply the CoT veto and recompute Pass@K / Cons@K.
 
 The ``finalize`` helper composes all three when the judge has already run.
 
-This package is the post-judge *analysis* only. The judge **benchmark** itself —
+This package is the post-judge *analysis* only. The judge **benchmark** itself,
 the ``CoTJudgeDataset`` prompt templates that the generation pass runs to produce
-the verdicts — lives separately under :mod:`evalhub.benchmarks.cot`.
+the verdicts, lives separately under :mod:`evalhub.benchmarks.cot`.
 """
 
 from evalhub.cot.aggregate import aggregate_judge_votes

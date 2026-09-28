@@ -2,8 +2,8 @@
 
 Matplotlib/seaborn are optional, so the whole module is skipped when they (or
 pandas) are missing. We build a tiny but *schema-faithful* wide DataFrame in
-memory — two model families, base + instruct modes, all four benchmarks, every
-judge ``think`` — and assert each family writes at least one non-empty file and
+memory: two model families, base + instruct modes, all four benchmarks, every
+judge ``think``, and assert each family writes at least one non-empty file and
 that the engine helpers behave.
 """
 
@@ -86,7 +86,7 @@ def wide_df() -> pd.DataFrame:
     return df[cols]
 
 
-# --- engine helpers --------------------------------------------------------
+# engine helpers
 
 
 def test_series_extracts_sorted_kv(wide_df):
@@ -115,7 +115,7 @@ def test_mm_label_modes():
     assert plots.mm_label("Qwen3.5-9B", "non-think").endswith("·NT")
 
 
-# --- families --------------------------------------------------------------
+# families
 
 
 @pytest.mark.parametrize(

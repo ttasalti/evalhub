@@ -26,7 +26,7 @@ class GenerationId:
         marker_pos = generation_id.rfind(GENERATION_ID_SEP)
         if marker_pos == -1:
             raise ValueError(f"Not a valid generation_id: {generation_id!r}")
-        suffix = generation_id[marker_pos + len(GENERATION_ID_SEP):]
+        suffix = generation_id[marker_pos + len(GENERATION_ID_SEP) :]
         try:
             idx = int(suffix)
         except ValueError as exc:
