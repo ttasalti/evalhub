@@ -40,7 +40,7 @@ class PTExamsMathDataset(MathDataset):
 
     @staticmethod
     def _strip_outer_dollars(s: str) -> str:
-        # Idempotent: "$2$" → "2", "2" → "2", "$\frac{1}{2}$" → "\frac{1}{2}".
+        # Idempotent: "$2$" -> "2", "2" -> "2", "$\frac{1}{2}$" -> "\frac{1}{2}".
         s = s.strip()
         if len(s) >= 2 and s.startswith("$") and s.endswith("$"):
             return s[1:-1].strip()

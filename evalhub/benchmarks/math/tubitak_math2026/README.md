@@ -1,30 +1,45 @@
 # `tubitak_math2026`
 
-TÜBİTAK Matematik Olimpiyatı 2026 — 32 soruluk Türkçe matematik olimpiyat benchmark'ı.
+The 32 first-stage problems of the 2026 TÜBİTAK National Mathematics Olympiad
+(Türkiye), as a Turkish open-answer benchmark.
 
-## Veri formatı
+## Source and terms
 
-`tubitak_math2026.csv` — UTF-8, üç kolon:
+The problems are published by TÜBİTAK on its past-exam page,
+<https://bilimolimpiyatlari.tubitak.gov.tr/tr/gecmis-sinav-sorulari>, and were
+transcribed from the official PDF for this benchmark. The material belongs to
+TÜBİTAK (all rights reserved). It is reproduced here, with attribution, for
+non-commercial research use only and will be removed on request from the rights
+holder. Answers were transcribed from the official key.
 
-| Kolon | İçerik |
+## Data format
+
+`tubitak_math2026.csv` (UTF-8, three columns):
+
+| Column | Content |
 |---|---|
-| `Question_Number` | 1–32 |
-| `Question_Text` | Türkçe soru metni (LaTeX inline math içerebilir, `$...$` ile) |
-| `Answer` | Doğru cevap. `$...$` wrapper opsiyonel; loader otomatik strip eder. |
+| `Question_Number` | 1 to 32 |
+| `Question_Text` | Turkish problem statement; may contain inline LaTeX (`$...$`) |
+| `Answer` | reference answer; an optional `$...$` wrapper is stripped by the loader |
 
-Cevaplar integer + LaTeX karışık: `$2$`, `$\frac{52}{5}$`, `$105^\circ$`, `$3\sqrt{10}$`, `$8^5$`, `$-\frac{49}{8}$` vb. Grading [`evalhub/benchmarks/math/verifier/`](../verifier/) zincirinden geçer (sympy + mathd + dapo), bu form'ların hepsi handle edilir.
+Answers mix integers and LaTeX (`$2$`, `$\frac{52}{5}$`, `$105^\circ$`,
+`$3\sqrt{10}$`, `$8^5$`, `$-\frac{49}{8}$`). Grading goes through the shared
+math verifier in [`evalhub/benchmarks/math/verifier/`](../verifier/) (sympy,
+mathd and dapo checkers), which handles all of these forms.
 
-## CSV güncelleme
+The solver instruction appended to every problem is the Turkish counterpart of
+the English one: "Adım adım düşün ve nihai cevabı \boxed{} içerisinde ver."
 
-Soru/cevap düzenledikten sonra evalhub'un task cache'i geçersiz olur:
+## Updating the CSV
+
+evalhub caches loaded tasks. After editing the CSV, clear the cache so the next
+`evalhub gen` or `evalhub eval` re-reads it:
 
 ```bash
 rm -rf ~/.cache/evalhub/
 ```
 
-Bir sonraki `evalhub gen` veya `evalhub eval` CSV'yi tekrar okur.
-
-## Pass@K kullanımı
+## Pass@K
 
 ```bash
 evalhub gen --model hosted_vllm/Qwen/Qwen3.5-0.8B-Base --tasks tubitak_math2026 \
@@ -33,17 +48,17 @@ evalhub eval --tasks tubitak_math2026 \
     --solutions results/tubitak/tubitak_math2026.jsonl --output-dir results/tubitak/
 ```
 
-## CoT-Pass@K kullanımı
+## CoT-Pass@K
 
-Türkçe judge prompt (`cot_judge_tr`) zorunlu:
+The Turkish judge prompt (`cot_judge_tr`) is required:
 
 ```bash
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env \
     --model X --judge Y
-# JUDGE_TASK=cot_judge_tr config dosyasında set edilmiş durumda
+# JUDGE_TASK=cot_judge_tr is set in that config file
 ```
 
-Veya `base.env` ile dinamik:
+or with the generic config:
 
 ```bash
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \

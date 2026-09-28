@@ -20,7 +20,7 @@ class AIME2026TRDataset(MathDataset):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         data_path = os.path.join(current_dir, "aime2026_tr.parquet")
         
-        # Yerel Parquet dosyasını oku
+        # Read the local Parquet file
         df = pd.read_parquet(data_path)
         
         for _, row in df.iterrows():
