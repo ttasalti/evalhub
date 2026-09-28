@@ -80,12 +80,17 @@ The model generations and the judges' outputs are not released. Everything the
 paper reports can be recomputed from the tables in `analysis/data/`; the raw
 outputs can be regenerated with the pipeline in this repository.
 
+If you use this code or the benchmark suite, please cite the paper (the
+entry will be updated with the ACL Anthology record when it appears; GitHub's
+"Cite this repository" button reads `CITATION.cff`):
+
 ```bibtex
 @inproceedings{tasalti2026cotpassk,
   title     = {Does {CoT}-{Pass}@k Really Check the {CoT}? A Multilingual Mathematical Audit},
   author    = {Ta{\c{s}}alt{\i}, Tar{\i}k Tuna and H{\"u}daverdi, Burcu and Semedo, David},
   booktitle = {Proceedings of the 6th Workshop on Multilingual Representation Learning (MRL)},
-  year      = {2026}
+  year      = {2026},
+  note      = {To appear}
 }
 ```
 
@@ -152,27 +157,28 @@ A100 and H200 GPUs):
 ### First run
 
 Three entry points, depending on what you want to measure. All three use
-Qwen3.5-0.8B so they fit on one GPU; the served-model stack is vLLM
-(`pip install vllm`). Fetch the two checkpoints first if the machine has no
-Hugging Face access at run time:
+Qwen3.5-0.8B in non-thinking mode on the Portuguese exams, so they fit on one
+GPU and finish in minutes; the served-model stack is vLLM
+(`pip install vllm`). Fetch the checkpoint first if the machine has no Hugging Face access at run
+time:
 
 ```bash
-hf download Qwen/Qwen3.5-0.8B-Base && hf download Qwen/Qwen3.5-0.8B
+hf download Qwen/Qwen3.5-0.8B
 ```
 
 **Pass@K only.** Generation and evaluation of one benchmark, no judge. Start
 a server, point the CLI at it, sample, grade:
 
 ```bash
-vllm serve Qwen/Qwen3.5-0.8B-Base --port 30000 --chat-template scripts/templates/qwen3.5-base.jinja &
+vllm serve Qwen/Qwen3.5-0.8B --port 30000 --chat-template scripts/templates/qwen3.5-no-think.jinja &
 export HOSTED_VLLM_API_BASE="http://0.0.0.0:30000/v1" HOSTED_VLLM_API_KEY="EMPTY"
-evalhub gen  --model hosted_vllm/Qwen/Qwen3.5-0.8B-Base --tasks aime2026_tr \
-    --temperature 0.6 --top-p 0.95 --n-samples 4 --max-completion-tokens 16384 --output-dir out/
-evalhub eval --tasks aime2026_tr --solutions out/aime2026_tr.jsonl --output-dir out/
+evalhub gen  --model hosted_vllm/Qwen/Qwen3.5-0.8B --tasks pt_exams_math \
+    --temperature 0.6 --top-p 0.95 --n-samples 4 --max-completion-tokens 8192 --output-dir out/
+evalhub eval --tasks pt_exams_math --solutions out/pt_exams_math.jsonl --output-dir out/
 ```
 
-`out/aime2026_tr_summary.json` holds Pass@k, G-Pass@k and mG-Pass@k;
-`out/aime2026_tr_results.jsonl` the per-generation correctness. The same two
+`out/pt_exams_math_summary.json` holds Pass@k, G-Pass@k and mG-Pass@k;
+`out/pt_exams_math_results.jsonl` the per-generation correctness. The same two
 stages under Slurm, with the server managed for you:
 `scripts/submit.sh scripts/run_eval_only.sh scripts/configs/qwen_0.8b_demo.env`.
 
@@ -180,25 +186,24 @@ stages under Slurm, with the server managed for you:
 base run you already have (the `out/` above), then apply the veto:
 
 ```bash
-evalhub cot extract --base-results out/aime2026_tr_results.jsonl --base-raw out/aime2026_tr_raw.jsonl \
-    --output out/judge/cot_judge_tr_input.jsonl
-vllm serve Qwen/Qwen3.5-0.8B --port 30001 --chat-template scripts/templates/qwen3.5-think.jinja &
-HOSTED_VLLM_API_BASE="http://0.0.0.0:30001/v1" evalhub gen --model hosted_vllm/Qwen/Qwen3.5-0.8B \
-    --tasks cot_judge_tr --temperature 0.6 --top-p 0.95 --n-samples 3 --max-completion-tokens 16384 \
-    --output-dir out/judge/ --override-args '{"file_path": "out/judge/cot_judge_tr_input.jsonl"}'
-evalhub cot finalize --base-results out/aime2026_tr_results.jsonl --base-raw out/aime2026_tr_raw.jsonl \
-    --judge-solutions out/judge/cot_judge_tr_raw.jsonl --output-dir out/judge/ --benchmark aime2026_tr
+evalhub cot extract --base-results out/pt_exams_math_results.jsonl --base-raw out/pt_exams_math_raw.jsonl \
+    --output out/judge/cot_judge_pt_input.jsonl
+evalhub gen --model hosted_vllm/Qwen/Qwen3.5-0.8B \
+    --tasks cot_judge_pt --temperature 0.6 --top-p 0.95 --n-samples 3 --max-completion-tokens 4096 \
+    --output-dir out/judge/ --override-args '{"file_path": "out/judge/cot_judge_pt_input.jsonl"}'
+evalhub cot finalize --base-results out/pt_exams_math_results.jsonl --base-raw out/pt_exams_math_raw.jsonl \
+    --judge-solutions out/judge/cot_judge_pt_raw.jsonl --output-dir out/judge/ --benchmark pt_exams_math
 ```
 
-`out/judge/aime2026_tr_cot_summary.json` holds CoT-Pass@k. Pick the judge task
+`out/judge/pt_exams_math_cot_summary.json` holds CoT-Pass@k. The same server
+serves as judge here; the paper uses a separate, stronger thinking-mode judge. Pick the judge task
 whose language matches the benchmark (`cot_judge`, `cot_judge_tr`,
 `cot_judge_pt`). Under Slurm the same stage is `run_judge_only.sh` with
 `BASE_RESULTS_DIR` pointing at the base run:
 
 ```bash
 scripts/submit.sh scripts/run_judge_only.sh scripts/configs/qwen_0.8b_demo.env \
-    --benchmark aime2026_tr --set BASE_RESULTS_DIR=results_demo/base/Qwen3.5-0.8B-Base/aime2026_tr__t0.6__max16384__n4 \
-    --set JUDGE_TASK=cot_judge_tr
+    --set BASE_RESULTS_DIR=results_demo/non-think/Qwen3.5-0.8B/pt_exams_math__t0.6__max8192__n4
 ```
 
 **Both, end to end.** The demo config runs generation, evaluation, extraction,
@@ -211,10 +216,10 @@ bash scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 ```
 
-The config samples 4 generations per problem on the three AIME 2026 sets. To
-run one benchmark with the matching judge prompt, pass overrides through
-`submit.sh`, or through an overrides file for plain bash; values there win over
-the config:
+The config samples 4 generations per problem on the Portuguese exams and
+judges with the Portuguese prompt. To run another benchmark with its matching
+judge prompt, pass overrides through `submit.sh`, or through an overrides file
+for plain bash; values there win over the config:
 
 ```bash
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env \
@@ -224,23 +229,29 @@ printf 'BENCHMARKS="aime2026_tr"\nJUDGE_TASK="cot_judge_tr"\n' > my_overrides.en
 EVALHUB_OVERRIDES_FILE=my_overrides.env bash scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 ```
 
-Where the results land (`OUTPUT_ROOT=results_demo` in the config):
+Where the results land (`OUTPUT_ROOT=results_demo` in the config), from a run
+of this config on one A100 (23 minutes):
 
 ```
-results_demo/base/Qwen3.5-0.8B-Base/
-  aime2026_tr__t0.6__max16384__n4/
-    aime2026_tr_raw.jsonl          every generation
-    aime2026_tr_results.jsonl      per-generation correctness
-    aime2026_tr_summary.json       Pass@k, G-Pass@k, mG-Pass@k
-    aime2026_tr_per_task.csv       per-problem counts
-  judged_by/Qwen3.5-0.8B__state-think__t0.6__max16384__basemax16384/
-    aime2026_tr__t0.6__max16384__n4/
-      aime2026_tr_cot_judge_input.jsonl  the answer-correct generations handed to the judge
-      cot_judge_tr_raw.jsonl       three judge verdicts per correct generation
-      aime2026_tr_cot_majority.jsonl
-      aime2026_tr_cot_summary.json CoT-Pass@k after the veto
+results_demo/non-think/Qwen3.5-0.8B/
+  pt_exams_math__t0.6__max8192__n4/
+    pt_exams_math_raw.jsonl              every generation (664)
+    pt_exams_math_results.jsonl          per-generation correctness
+    pt_exams_math_summary.json           Pass@k: 29.7 / 43.2 / 56.6 at k = 1, 2, 4
+    pt_exams_math_per_task.csv           per-problem counts
+  judged_by/Qwen3.5-0.8B__state-non-think__t0.6__max4096__basemax8192/
+    pt_exams_math__t0.6__max8192__n4/
+      pt_exams_math_cot_judge_input.jsonl  the 197 answer-correct generations handed to the judge
+      cot_judge_pt_raw.jsonl               three judge verdicts per correct generation
+      pt_exams_math_cot_majority.jsonl     the majority vote per generation
+      pt_exams_math_cot_summary.json       CoT-Pass@k: 7.1 / 12.8 / 21.7 (150 of 197 vetoed)
 results_demo/report.csv, report_tasks.csv, report_plots/
 ```
+
+The numbers say something about the demo, not about the metric: a 0.8B model
+judging its own chains in non-thinking mode vetoes most of them. The paper's
+setting, a stronger thinking-mode judge with a 16,384-token budget, is what the
+`analysis/` package documents.
 
 Then `evalhub report aggregate --results-root results_demo/ --output results_demo/report.csv`
 and `evalhub report plot --csv results_demo/report.csv --output-dir results_demo/report_plots/`
@@ -408,6 +419,10 @@ settings are read from environment variables and the config files under
 `scripts/configs/`, see [scripts/README.md](scripts/README.md).
 
 ## 🌐 Acknowledgements
+
+The audit was supported by the AMALIA project under Measure RE-C05-i08 of the
+Portuguese national Programa de Recuperação e Resiliência, and by the NOVA
+LINCS project (UID/04516/2025). The upstream project acknowledges:
 
 - [EvalPlus](https://github.com/evalplus/evalplus)
 - [deepscaler](https://github.com/agentica-project/deepscaler)

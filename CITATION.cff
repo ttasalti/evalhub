@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this code or the benchmark suite, please cite the paper below."
+title: "evalhub: CoT-Pass@K evaluation for multilingual mathematical reasoning"
+type: software
+repository-code: "https://github.com/ttasalti/evalhub"
+license: MIT
+authors:
+  - family-names: "Taşaltı"
+    given-names: "Tarık Tuna"
+preferred-citation:
+  type: conference-paper
+  title: "Does CoT-Pass@k Really Check the CoT? A Multilingual Mathematical Audit"
+  authors:
+    - family-names: "Taşaltı"
+      given-names: "Tarık Tuna"
+    - family-names: "Hüdaverdi"
+      given-names: "Burcu"
+    - family-names: "Semedo"
+      given-names: "David"
+  collection-title: "Proceedings of the 6th Workshop on Multilingual Representation Learning (MRL)"
+  year: 2026
+  notes: "To appear"

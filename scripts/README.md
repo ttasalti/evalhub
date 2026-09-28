@@ -20,14 +20,14 @@ stages and write the report, plus the configs and chat templates they use.
 | `orchestrate.sh` | Multi-model × multi-benchmark × multi-temperature DAG submitter with dependency chains. |
 | `cot_pipeline.env.example` | Annotated default values grouped by which scripts consume them. Copy to `cot_pipeline.env` and edit. |
 | `configs/base.env` | Generic, model/benchmark-agnostic config; designed for CLI overrides. |
-| `configs/qwen_0.8b_demo.env` | Concrete demo config (Qwen 0.8B + 3 AIME benchmarks). |
+| `configs/qwen_0.8b_demo.env` | Concrete demo config: Qwen3.5-0.8B as solver and judge on the Portuguese exams, non-thinking mode, finishes in minutes. |
 | `secrets.env.example` | Template for HF_TOKEN and similar secrets. Copy to `secrets.env` (gitignored). |
 | `templates/` | Jinja chat templates per `(model_family, state)`. Selected by `evalhub.utils.model_state` and passed to `vllm serve --chat-template`. |
 
 ## Quick start
 
 ```bash
-# Concrete demo: Qwen 0.8B on 3 AIME benchmarks (no edits needed):
+# Concrete demo: Qwen3.5-0.8B on the Portuguese exams (no edits needed):
 sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 
 # Pick model + benchmark dynamically with a generic config + CLI overrides:

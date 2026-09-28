@@ -52,7 +52,7 @@ cp scripts/secrets.env.example scripts/secrets.env
 ## 2. A single run: three ways
 
 ```bash
-# 2A. Fixed demo (everything in the env file): ~3 benchmarks, a few minutes.
+# 2A. Fixed demo (everything in the env file): the Portuguese exams, a few minutes.
 sbatch scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
 
 # 2B. Same, but let submit.sh forward the env's SLURM_* knobs as sbatch flags.
