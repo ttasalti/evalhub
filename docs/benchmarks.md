@@ -11,7 +11,7 @@ Portuguese material is European Portuguese.
 | `aime2026_tr` | TR | 30 | 64 | Turkish translation of `aime2026` | `evalhub/benchmarks/math/aime2026_tr/aime2026_tr.parquet` | CC BY-NC-SA 4.0, derived from the MathArena set; credit MAA and MathArena |
 | `aime2026_pt` | PT | 30 | 64 | Portuguese translation of `aime2026` | `evalhub/benchmarks/math/aime2026_pt/aime2026_pt.parquet` | CC BY-NC-SA 4.0, derived from the MathArena set; credit MAA and MathArena |
 | `tubitak_math2026` | TR | 32 | 64 | 2026 TÜBİTAK National Mathematics Olympiad, first stage | `evalhub/benchmarks/math/tubitak_math2026/tubitak_math2026.csv` | copyright TÜBİTAK, all rights reserved; reproduced with attribution for non-commercial research, removed on request |
-| `pt_exams_math` | PT | 166 | 16 | mathematics questions of PHEB (Tavares et al., LREC 2026), the Portuguese national exams 2006 to 2023, converted from multiple choice to open answer | `evalhub/benchmarks/math/pt_exams_math/pt_exams_math.csv` | derived from PHEB; see the PHEB repository for its terms |
+| `pt_exams_math` | PT | 166 | 16 | mathematics questions of PHEB (Tavares et al., LREC 2026; [AMALIA-LLM/pheb](https://github.com/AMALIA-LLM/pheb)), the Portuguese national exams 2006 to 2023, filtered by hand and converted from multiple choice to open answer | `evalhub/benchmarks/math/pt_exams_math/pt_exams_math.csv` | derived from PHEB; the full benchmark and its terms are in the PHEB repository |
 
 ## Translation protocol
 
@@ -21,7 +21,7 @@ Turkish, one of them an author. The audit corrected wording and mathematical
 notation so that every translated problem states the same problem as the
 English original; the reference answers are the MAA answers.
 
-The Portuguese exam questions keep the original wording of PHEB. Their
+The Portuguese exam questions keep the original wording of PHEB ([AMALIA-LLM/pheb](https://github.com/AMALIA-LLM/pheb)), which covers every subject of the national exams; we took only the mathematics questions. Their
 multiple-choice format was converted to open-answer form by removing the
 options and keeping the ground-truth value; two further graduate students,
 native speakers of Portuguese and independent of the translation audit, checked

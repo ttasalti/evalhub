@@ -27,7 +27,7 @@ math-evaluation-harness and verl as sources of design and code.
 | AIME 2026 (English) | downloaded at run time | [MathArena/aime_2026](https://huggingface.co/datasets/MathArena/aime_2026); problems by the Mathematical Association of America (MAA) | CC BY-NC-SA 4.0 (MathArena); problems copyright MAA |
 | AIME 2026 Turkish and Portuguese translations | `evalhub/benchmarks/math/aime2026_tr/`, `aime2026_pt/` | translations of the MathArena set made for this project | CC BY-NC-SA 4.0, credit MAA and MathArena |
 | TÜBİTAK Mathematics Olympiad 2026, first stage | `evalhub/benchmarks/math/tubitak_math2026/` | [TÜBİTAK past exams](https://bilimolimpiyatlari.tubitak.gov.tr/tr/gecmis-sinav-sorulari) | copyright TÜBİTAK, all rights reserved; reproduced with attribution for non-commercial research; removed on request |
-| Portuguese national exam mathematics questions | `evalhub/benchmarks/math/pt_exams_math/` | PHEB (Tavares et al., LREC 2026) | derived from PHEB; see the PHEB repository for its terms |
+| Portuguese national exam mathematics questions | `evalhub/benchmarks/math/pt_exams_math/` | PHEB (Tavares et al., LREC 2026), [AMALIA-LLM/pheb](https://github.com/AMALIA-LLM/pheb) | derived from PHEB: the mathematics questions, filtered by hand and converted to open answer; the PHEB repository declares no licence, so the material is used with attribution for research |
 
 The other benchmark loaders under `evalhub/benchmarks/` download their data
 from the sources named in each loader and are unchanged from upstream.
