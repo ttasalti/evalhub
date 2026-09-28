@@ -88,9 +88,9 @@ entry will be updated with the ACL Anthology record when it appears; GitHub's
 @inproceedings{tasalti2026cotpassk,
   title     = {Does {CoT}-{Pass}@k Really Check the {CoT}? A Multilingual Mathematical Audit},
   author    = {Ta{\c{s}}alt{\i}, Tar{\i}k Tuna and H{\"u}daverdi, Burcu and Semedo, David},
-  booktitle = {Proceedings of the 6th Workshop on Multilingual Representation Learning (MRL)},
+  booktitle = {Proceedings of the 6th Workshop on Multilingual Representation Learning (MRL 2026)},
   year      = {2026},
-  note      = {To appear}
+  note      = {To appear. Workshop held at EMNLP 2026}
 }
 ```
 
