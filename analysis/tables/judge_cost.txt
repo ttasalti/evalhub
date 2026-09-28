@@ -1,0 +1,40 @@
+=== per judge, pooled over the judge-matrix cells present (sums of tokens) ===
+Gemma4     cells=40 judgments= 60177 solutions= 20059 judge tok/judgment mean=   6354 share length=0.058 judge/solver(judged gens)=3.63 judge/solver(all gens)=0.92 unmatched=0
+Qwen3.6    cells=40 judgments= 60177 solutions= 20059 judge tok/judgment mean=   5661 share length=0.076 judge/solver(judged gens)=3.24 judge/solver(all gens)=0.82 unmatched=0
+R1-distill cells=16 judgments=  6540 solutions=  2180 judge tok/judgment mean=   7914 share length=0.015 judge/solver(judged gens)=26.74 judge/solver(all gens)=1.07 unmatched=0
+V4-Flash   cells=16 judgments=  6540 solutions=  2180 judge tok/judgment mean=   3456 share length=0.017 judge/solver(judged gens)=11.68 judge/solver(all gens)=0.47 unmatched=0
+
+=== per judge x generation ===
+Gemma4     current  cells=24 tok/judgment=   6198 length=0.055 j/s judged=3.22 j/s all=0.90
+Gemma4     earlier  cells=16 tok/judgment=   7638 length=0.082 j/s judged=25.81 j/s all=1.04
+Qwen3.6    current  cells=24 tok/judgment=   5432 length=0.066 j/s judged=2.82 j/s all=0.79
+Qwen3.6    earlier  cells=16 tok/judgment=   7532 length=0.155 j/s judged=25.45 j/s all=1.02
+R1-distill earlier  cells=16 tok/judgment=   7914 length=0.015 j/s judged=26.74 j/s all=1.07
+V4-Flash   earlier  cells=16 tok/judgment=   3456 length=0.017 j/s judged=11.68 j/s all=0.47
+
+=== per judge x benchmark ===
+Gemma4     aime2026           cells=10 tok/judgment=   5859 length=0.077 j/s judged=2.77 j/s all=0.75
+Gemma4     aime2026_pt        cells=10 tok/judgment=   6245 length=0.035 j/s judged=3.74 j/s all=1.05
+Gemma4     aime2026_tr        cells=10 tok/judgment=   6137 length=0.045 j/s judged=3.41 j/s all=0.75
+Gemma4     tubitak_math2026   cells=10 tok/judgment=   6991 length=0.074 j/s judged=4.64 j/s all=1.14
+Qwen3.6    aime2026           cells=10 tok/judgment=   5856 length=0.128 j/s judged=2.77 j/s all=0.74
+Qwen3.6    aime2026_pt        cells=10 tok/judgment=   6001 length=0.091 j/s judged=3.59 j/s all=1.00
+Qwen3.6    aime2026_tr        cells=10 tok/judgment=   5490 length=0.070 j/s judged=3.05 j/s all=0.67
+Qwen3.6    tubitak_math2026   cells=10 tok/judgment=   5319 length=0.025 j/s judged=3.53 j/s all=0.87
+R1-distill aime2026           cells= 4 tok/judgment=   8367 length=0.026 j/s judged=26.39 j/s all=1.27
+R1-distill aime2026_pt        cells= 4 tok/judgment=   7946 length=0.009 j/s judged=25.45 j/s all=0.93
+R1-distill aime2026_tr        cells= 4 tok/judgment=   7284 length=0.009 j/s judged=22.63 j/s all=0.36
+R1-distill tubitak_math2026   cells= 4 tok/judgment=   7817 length=0.014 j/s judged=28.60 j/s all=1.78
+V4-Flash   aime2026           cells= 4 tok/judgment=   3202 length=0.000 j/s judged=10.10 j/s all=0.49
+V4-Flash   aime2026_pt        cells= 4 tok/judgment=   2708 length=0.000 j/s judged=8.68 j/s all=0.32
+V4-Flash   aime2026_tr        cells= 4 tok/judgment=   2783 length=0.000 j/s judged=8.65 j/s all=0.14
+V4-Flash   tubitak_math2026   cells= 4 tok/judgment=   4032 length=0.035 j/s judged=14.75 j/s all=0.92
+
+=== range over cells: judge/solver (judged gens) ===
+Gemma4     min=1.68 max=37.32  ratio_all min=0.11 max=5.93
+Qwen3.6    min=1.47 max=31.41  ratio_all min=0.10 max=4.68
+R1-distill min=20.64 max=36.51  ratio_all min=0.12 max=4.85
+V4-Flash   min=7.40 max=18.80  ratio_all min=0.05 max=3.08
+
+=== error-injection study (cache parquet with judge_completion_tokens) ===
+judge_r1_8b_consolidated.parquet              judgments= 21345 judge tok mean=   2480 median=   1577 solver tok mean=  14930 ratio(sum)=0.17

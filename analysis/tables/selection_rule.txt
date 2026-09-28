@@ -1,0 +1,25 @@
+==============================================================================
+SELECTION RULE: solver budget 16384 and all four of EN/TR/PT/TUB present
+==============================================================================
+No-Judge     22 of 22 cells balanced  (100%)
+Qwen3.6      22 of 22 cells balanced  (100%)
+Gemma4       22 of 22 cells balanced  (100%)
+R1-distill    4 of  4 cells balanced  (100%)
+V4-Flash      5 of  8 cells balanced  (62%)
+
+==============================================================================
+1) ACCEPTANCE PER CORRECT GENERATION IN THE BALANCED SET (%)
+==============================================================================
+     judge  balanced cells   EN   TR   PT  TUB  EN denominator
+   Qwen3.6              22 95.4 96.1 96.6 85.9            7258
+    Gemma4              22 89.2 81.8 84.6 79.5            7258
+R1-distill               4 80.3 72.4 79.6 41.1             507
+  V4-Flash               5 81.0 68.5 79.3 43.6             541
+
+==============================================================================
+PAIRED DIFFERENCE: balanced cells, within cell (Wilcoxon)
+==============================================================================
+Qwen3.6     (cells with denominator >= 50: 11)   TR-EN  +1.7 p=0.831   PT-EN  +2.4 p=0.014   TUB-TR  -7.7 p=0.0098
+Gemma4      (cells with denominator >= 50: 11)   TR-EN  -0.6 p=0.831   PT-EN  -0.6 p=1.000   TUB-TR  -5.3 p=0.1475
+R1-distill: 1 cells with denominator >= 50, too few
+V4-Flash: 1 cells with denominator >= 50, too few

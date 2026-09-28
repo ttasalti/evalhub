@@ -1,0 +1,38 @@
+\begin{table*}[!htb]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\crnew{\begin{tabular}{lrrrrrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{chains (\%)} & \multicolumn{3}{c}{accepted, Qwen3.6 (\%)} & \multicolumn{3}{c}{accepted, Gemma4 (\%)} & \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Solver & target & mixed & English & target & mixed & English & target & mixed & English & $n$ \\
+\midrule
+Q2.5-7B & 3 & 1 & 96 & -- & -- & 55 & -- & -- & 51 & 264 \\
+Q2.5-32B & 64 & 1 & 36 & 54 & -- & 49 & 53 & -- & 48 & 348 \\
+Q2.5-7B-Inst & 99 & 1 & 0 & 55 & -- & -- & 53 & -- & -- & 381 \\
+Q2.5-32B-Inst & 99 & 1 & 0 & 65 & -- & -- & 64 & -- & -- & 678 \\
+\midrule
+Q3.5-4B-Base & 0 & 14 & 86 & -- & 99 & 99 & -- & 98 & 98 & 2456 \\
+Q3.5-9B-Base & 0 & 13 & 87 & -- & 99 & 99 & -- & 99 & 99 & 2985 \\
+Q3.5-4B & 100 & 0 & 0 & 92 & -- & -- & 90 & -- & -- & 2256 \\
+Q3.5-9B & 100 & 0 & 0 & 95 & -- & -- & 94 & -- & -- & 3123 \\
+G4-E2B & 99 & 1 & 0 & 81 & -- & -- & 80 & -- & -- & 1285 \\
+G4-E4B & 100 & 0 & 0 & 89 & -- & -- & 92 & -- & -- & 1727 \\
+\midrule
+\multicolumn{11}{l}{\textit{Portuguese exams (16 generations per question; thinking runs where no non-thinking run exists)}} \\
+Q2.5-7B & 38 & 2 & 60 & 91 & 97 & 96 & -- & -- & -- & 1297 \\
+Q2.5-32B & 93 & 2 & 6 & 93 & 93 & 95 & -- & -- & -- & 1808 \\
+Q2.5-7B-Inst & 100 & 0 & 0 & 96 & -- & -- & -- & -- & -- & 2081 \\
+Q2.5-32B-Inst & 100 & 0 & 0 & 98 & -- & -- & -- & -- & -- & 2345 \\
+Q3.5-4B-Base & 1 & 59 & 40 & 100 & 100 & 100 & 100 & 100 & 99 & 2490 \\
+Q3.5-9B-Base & 1 & 56 & 42 & 100 & 100 & 100 & 100 & 100 & 100 & 2541 \\
+Q3.5-4B-Think & 0 & 87 & 13 & -- & 100 & 100 & -- & 99 & 95 & 2496 \\
+Q3.5-9B-Think & 0 & 89 & 11 & -- & 100 & 100 & -- & 100 & 96 & 2529 \\
+G4-E2B-Think & 0 & 100 & 0 & -- & 99 & -- & -- & 99 & -- & 2419 \\
+G4-E4B-Think & 0 & 100 & 0 & -- & 100 & -- & -- & 100 & -- & 2448 \\
+\bottomrule
+\end{tabular}}
+\caption{\crnew{Language of the reasoning chains and acceptance by language, for the answer-correct generations of the ten solvers of Section~\ref{sec:results-coincide} at the 16k budget on the three non-English benchmarks (AIME PT, AIME TR and the Turkish olympiad, pooled), and below them on the Portuguese exams. A chain is \emph{target} when at least 80\% of its letters, mathematics removed, are in the benchmark's language, \emph{English} when at least 80\% are English, \emph{mixed} otherwise. Acceptance is the majority verdict; a cell with fewer than 20 chains is left blank. $n$ is the number of chains. Q2.5/Q3.5 = Qwen2.5/Qwen3.5 (-Inst instruct, -Base base, -Think thinking mode), G4 = Gemma-4-it.}}
+\label{tab:code-switching}
+\end{table*}

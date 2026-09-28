@@ -1,0 +1,35 @@
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{lccc}
+\toprule
+Variant & any & majority & all \\
+\midrule
+\multicolumn{4}{l}{\textit{V4-Flash}} \\
+Clean & 96.2 & 92.9 & 89.2 \\
+\cmidrule(lr){1-4}
+Intermediate numeric error & 96.1 & 93.1 & 90.1 \\
+Truncation error & 89.3 & 85.1 & 78.8 \\
+Final-answer error & 47.2 & 18.1 & 6.4 \\
+Consistent final-answer error & 49.0 & 24.6 & 12.4 \\
+\midrule
+\multicolumn{4}{l}{\textit{Qwen3.6}} \\
+Clean & 99.4 & 97.8 & 81.2 \\
+\cmidrule(lr){1-4}
+Intermediate numeric error & 99.2 & 98.2 & 81.0 \\
+Truncation error & 93.9 & 92.1 & 69.2 \\
+Final-answer error & 67.2 & 34.3 & 7.8 \\
+Consistent final-answer error & 75.6 & 54.2 & 27.8 \\
+\midrule
+\multicolumn{4}{l}{\textit{R1-distill}} \\
+Clean & 96.9 & 90.1 & 36.4 \\
+\cmidrule(lr){1-4}
+Intermediate numeric error & 96.0 & 91.9 & 42.2 \\
+Truncation error & 92.1 & 86.7 & 67.4 \\
+Final-answer error & 91.9 & 70.6 & 28.3 \\
+Consistent final-answer error & 80.3 & 61.8 & 23.1 \\
+\bottomrule
+\end{tabular}
+\caption{Acceptance rates (\%) under the three verification strategies of the original CoT-Pass@$k$ judge: a variant is accepted when at least one of its three judge generations approves it (any-correct), when more approve than reject (majority-correct), or when all three do (all-correct). The majority-correct column is the one plotted in Figure~\ref{fig:error-injection}. 720 original solutions per error type for \crnew{each judge; R1-distill is the judge the metric specifies}.}
+\label{tab:error-rules}
+\end{table}

@@ -1,0 +1,16 @@
+                    condition      judge   EN   TR    PT  TUB  PTex  pooled   n
+                clean control    Qwen3.6 97.9 96.5  99.3 95.1 100.0    97.8 720
+                clean control   V4-Flash 97.2 95.8  93.1 78.5 100.0    92.9 720
+                clean control R1-distill 93.8 87.5  92.4 78.5  98.6    90.1 720
+   intermediate numeric error    Qwen3.6 99.3 95.8 100.0 95.8 100.0    98.2 720
+   intermediate numeric error   V4-Flash 97.9 95.1  91.7 80.6 100.0    93.1 720
+   intermediate numeric error R1-distill 93.1 91.0  95.8 80.6  99.3    91.9 720
+                   truncation    Qwen3.6 90.3 92.4  91.0 87.5  99.3    92.1 720
+                   truncation   V4-Flash 86.8 86.8  84.0 68.8  99.3    85.1 720
+                   truncation R1-distill 86.1 87.5  85.4 75.0  99.3    86.7 720
+           final-answer error    Qwen3.6 51.4 29.9  33.3 36.1  20.8    34.3 720
+           final-answer error   V4-Flash 38.2 15.3  11.1 23.6   2.1    18.1 720
+           final-answer error R1-distill 79.2 67.4  65.3 57.6  83.3    70.6 720
+consistent final-answer error    Qwen3.6 68.8 67.4  62.5 42.4  29.9    54.2 720
+consistent final-answer error   V4-Flash 43.8 33.3  28.5  8.3   9.0    24.6 720
+consistent final-answer error R1-distill 86.8 77.1  69.4 39.6  36.1    61.8 720

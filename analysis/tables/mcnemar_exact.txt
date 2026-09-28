@@ -1,0 +1,75 @@
+=== POOLED (720 solutions) ===
+V4-Flash   clean vs intermediate       
+   n=720  A accept 92.9%  B accept 93.1%  diff +0.1
+   2x2: both accept 660  A-accept/B-reject 9  A-reject/B-accept 10  both reject 41
+   exact p = 1   (doubled tail 1, scipy 1, scipy doubled tail 1, chi-square corrected 1)
+V4-Flash   clean vs truncation         
+   n=720  A accept 92.9%  B accept 85.1%  diff -7.8
+   2x2: both accept 607  A-accept/B-reject 62  A-reject/B-accept 6  both reject 45
+   exact p = 8.18e-13   (doubled tail 8.18e-13, scipy 8.18e-13, scipy doubled tail 8.18e-13, chi-square corrected 2.56e-11)
+V4-Flash   clean vs final-answer       
+   n=720  A accept 92.9%  B accept 18.1%  diff -74.9
+   2x2: both accept 127  A-accept/B-reject 542  A-reject/B-accept 3  both reject 48
+   exact p = 4.69e-157   (doubled tail 4.69e-157, scipy 4.69e-157, scipy doubled tail 4.69e-157, chi-square corrected 1.64e-117)
+V4-Flash   final-answer vs consistent  
+   n=720  A accept 18.1%  B accept 24.6%  diff +6.5
+   2x2: both accept 38  A-accept/B-reject 92  A-reject/B-accept 139  both reject 451
+   exact p = 0.0024   (doubled tail 0.0024, scipy 0.0024, scipy doubled tail 0.0024, chi-square corrected 0.00247)
+
+Qwen3.6    clean vs intermediate       
+   n=720  A accept 97.8%  B accept 98.2%  diff +0.4
+   2x2: both accept 700  A-accept/B-reject 4  A-reject/B-accept 7  both reject 9
+   exact p = 0.549   (doubled tail 0.549, scipy 0.549, scipy doubled tail 0.549, chi-square corrected 0.546)
+Qwen3.6    clean vs truncation         
+   n=720  A accept 97.8%  B accept 92.1%  diff -5.7
+   2x2: both accept 658  A-accept/B-reject 46  A-reject/B-accept 5  both reject 11
+   exact p = 2.33e-09   (doubled tail 2.33e-09, scipy 2.33e-09, scipy doubled tail 2.33e-09, chi-square corrected 2.13e-08)
+Qwen3.6    clean vs final-answer       
+   n=720  A accept 97.8%  B accept 34.3%  diff -63.5
+   2x2: both accept 245  A-accept/B-reject 459  A-reject/B-accept 2  both reject 14
+   exact p = 3.58e-134   (doubled tail 3.58e-134, scipy 3.58e-134, scipy doubled tail 3.58e-134, chi-square corrected 4.25e-100)
+Qwen3.6    final-answer vs consistent  
+   n=720  A accept 34.3%  B accept 54.2%  diff +19.9
+   2x2: both accept 140  A-accept/B-reject 107  A-reject/B-accept 250  both reject 223
+   exact p = 2.56e-14   (doubled tail 2.56e-14, scipy 2.56e-14, scipy doubled tail 2.56e-14, chi-square corrected 5.67e-14)
+
+R1-distill clean vs intermediate       
+   n=720  A accept 90.1%  B accept 91.9%  diff +1.8
+   2x2: both accept 606  A-accept/B-reject 43  A-reject/B-accept 56  both reject 15
+   exact p = 0.228   (doubled tail 0.228, scipy 0.228, scipy doubled tail 0.228, chi-square corrected 0.228)
+R1-distill clean vs truncation         
+   n=720  A accept 90.1%  B accept 86.7%  diff -3.5
+   2x2: both accept 579  A-accept/B-reject 70  A-reject/B-accept 45  both reject 26
+   exact p = 0.0248   (doubled tail 0.0248, scipy 0.0248, scipy doubled tail 0.0248, chi-square corrected 0.0252)
+R1-distill clean vs final-answer       
+   n=720  A accept 90.1%  B accept 70.6%  diff -19.6
+   2x2: both accept 471  A-accept/B-reject 178  A-reject/B-accept 37  both reject 34
+   exact p = 2.58e-23   (doubled tail 2.58e-23, scipy 2.58e-23, scipy doubled tail 2.58e-23, chi-square corrected 1.32e-21)
+R1-distill final-answer vs consistent  
+   n=720  A accept 70.6%  B accept 61.8%  diff -8.8
+   2x2: both accept 339  A-accept/B-reject 169  A-reject/B-accept 106  both reject 106
+   exact p = 0.000174   (doubled tail 0.000174, scipy 0.000174, scipy doubled tail 0.000174, chi-square corrected 0.000185)
+
+=== R1-distill, per benchmark clean vs final-answer (144 solutions) ===
+R1-distill clean vs final-answer        [aime2026]
+   n=144  A accept 93.8%  B accept 79.2%  diff -14.6
+   2x2: both accept 107  A-accept/B-reject 28  A-reject/B-accept 7  both reject 2
+   exact p = 0.000508   (doubled tail 0.000508, scipy 0.000508, scipy doubled tail 0.000508, chi-square corrected 0.000723)
+R1-distill clean vs final-answer        [aime2026_pt]
+   n=144  A accept 92.4%  B accept 65.3%  diff -27.1
+   2x2: both accept 87  A-accept/B-reject 46  A-reject/B-accept 7  both reject 4
+   exact p = 4e-08   (doubled tail 4e-08, scipy 4e-08, scipy doubled tail 4e-08, chi-square corrected 1.79e-07)
+R1-distill clean vs final-answer        [aime2026_tr]
+   n=144  A accept 87.5%  B accept 67.4%  diff -20.1
+   2x2: both accept 90  A-accept/B-reject 36  A-reject/B-accept 7  both reject 11
+   exact p = 8.96e-06   (doubled tail 8.96e-06, scipy 8.96e-06, scipy doubled tail 8.96e-06, chi-square corrected 1.96e-05)
+R1-distill clean vs final-answer        [pt_exams_math]
+   n=144  A accept 98.6%  B accept 83.3%  diff -15.3
+   2x2: both accept 118  A-accept/B-reject 24  A-reject/B-accept 2  both reject 0
+   exact p = 1.05e-05   (doubled tail 1.05e-05, scipy 1.05e-05, scipy doubled tail 1.05e-05, chi-square corrected 3.81e-05)
+R1-distill clean vs final-answer        [tubitak_math2026]
+   n=144  A accept 78.5%  B accept 57.6%  diff -20.8
+   2x2: both accept 69  A-accept/B-reject 44  A-reject/B-accept 14  both reject 17
+   exact p = 0.0001   (doubled tail 0.0001, scipy 0.0001, scipy doubled tail 0.0001, chi-square corrected 0.00014)
+
+R1 largest per-benchmark exact p = 0.000508

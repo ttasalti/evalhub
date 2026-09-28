@@ -1,0 +1,15 @@
+V4-Flash        clean -> intermediate_error  diff  +0.1  95% [ -1.0,  +1.4]  |max| 1.4
+V4-Flash        clean -> truncated           diff  -7.8  95% [-10.0,  -5.7]  |max| 10.0
+V4-Flash        clean -> boxed_only          diff -74.9  95% [-78.1, -71.7]  |max| 78.1
+V4-Flash   boxed_only -> consistent_error    diff  +6.5  95% [ +2.5, +10.7]  |max| 10.7
+
+Qwen3.6         clean -> intermediate_error  diff  +0.4  95% [ -0.4,  +1.4]  |max| 1.4
+Qwen3.6         clean -> truncated           diff  -5.7  95% [ -7.6,  -3.9]  |max| 7.6
+Qwen3.6         clean -> boxed_only          diff -63.5  95% [-66.9, -59.7]  |max| 66.9
+Qwen3.6    boxed_only -> consistent_error    diff +19.9  95% [+14.9, +24.7]  |max| 24.7
+
+R1-distill      clean -> intermediate_error  diff  +1.8  95% [ -1.0,  +4.6]  |max| 4.6
+R1-distill      clean -> truncated           diff  -3.5  95% [ -6.4,  -0.6]  |max| 6.4
+R1-distill      clean -> boxed_only          diff -19.6  95% [-23.3, -15.8]  |max| 23.3
+R1-distill boxed_only -> consistent_error    diff  -8.8  95% [-13.2,  -4.3]  |max| 13.2
+

@@ -1,0 +1,40 @@
+\begin{table}[!htb]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\crnew{\begin{tabular}{llrrr}
+\toprule
+Condition & Edit & V4-Flash & Qwen3.6 & R1-distill \\
+\midrule
+\multicolumn{5}{l}{\textit{Intermediate numeric error}} \\
+ & $\pm1$ or $\pm2$ & 93 (404) & 99 (404) & 93 (404) \\
+ & one digit changed & 94 (235) & 99 (235) & 92 (235) \\
+ & two digits swapped & 91 (81) & 94 (81) & 86 (81) \\
+ & change $<$1\% & 88 (48) & 98 (48) & 90 (48) \\
+ & change 1--10\% & 91 (126) & 97 (126) & 91 (126) \\
+ & change 10--100\% & 94 (422) & 98 (422) & 92 (422) \\
+ & change $>$100\% & 95 (124) & 99 (124) & 93 (124) \\
+\addlinespace[2pt]
+\multicolumn{5}{l}{\textit{Final-answer error}} \\
+ & $\pm1$ or $\pm2$ & 14 (348) & 32 (348) & 68 (348) \\
+ & one digit changed & 18 (207) & 33 (207) & 71 (207) \\
+ & two digits swapped & 27 (165) & 40 (165) & 75 (165) \\
+ & change $<$1\% & 15 (166) & 38 (166) & 64 (166) \\
+ & change 1--10\% & 19 (173) & 36 (173) & 71 (173) \\
+ & change 10--100\% & 18 (234) & 32 (234) & 74 (234) \\
+ & change $>$100\% & 20 (147) & 31 (147) & 73 (147) \\
+\addlinespace[2pt]
+\multicolumn{5}{l}{\textit{Consistent final-answer error}} \\
+ & $\pm1$ or $\pm2$ & 25 (348) & 61 (348) & 57 (348) \\
+ & one digit changed & 20 (207) & 49 (207) & 58 (207) \\
+ & two digits swapped & 30 (165) & 47 (165) & 77 (165) \\
+ & change $<$1\% & 34 (166) & 71 (166) & 69 (166) \\
+ & change 1--10\% & 32 (173) & 69 (173) & 71 (173) \\
+ & change 10--100\% & 22 (234) & 49 (234) & 59 (234) \\
+ & change $>$100\% & 9 (147) & 26 (147) & 49 (147) \\
+\addlinespace[2pt]
+\bottomrule
+\end{tabular}}
+\caption{\crnew{Acceptance (\%, majority-correct) by the kind and the size of the injected edit, with the number of solutions in parentheses. Kind is how the wrong number was formed; change is $|\text{new}-\text{old}|/|\text{old}|$. Every row of a condition partitions the same 720 solutions.}}
+\label{tab:edit-size}
+\end{table}

@@ -108,6 +108,7 @@ target-version = "py312"
 # judge/generation prompt text (and the whitespace inside those strings) must
 # not be reformatted, so they are excluded from linting/formatting.
 extend-exclude = [
+    "analysis/src/vendor/masklid.py",
     "evalhub/benchmarks/cot/prompts.py",
     "evalhub/benchmarks/cot/judge.py",
     "evalhub/benchmarks/math/__init__.py",

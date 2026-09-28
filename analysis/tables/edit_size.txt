@@ -1,0 +1,41 @@
+
+=== A) acceptance % x edit kind x condition x judge (n = solutions) ===
+Intermediate numeric error       $\pm1$ or $\pm2$       V4-Flash:  92.8 [89.9, 95.0] n=404  Qwen3.6:  98.5 [96.8, 99.3] n=404  R1-distill:  93.1 [90.2, 95.2] n=404
+Intermediate numeric error       one digit changed      V4-Flash:  94.0 [90.2, 96.4] n=235  Qwen3.6:  99.1 [97.0, 99.8] n=235  R1-distill:  91.9 [87.7, 94.8] n=235
+Intermediate numeric error       two digits swapped     V4-Flash:  91.4 [83.2, 95.8] n=81  Qwen3.6:  93.8 [86.4, 97.3] n=81  R1-distill:  86.4 [77.3, 92.2] n=81
+Final-answer error               $\pm1$ or $\pm2$       V4-Flash:  13.5 [10.3, 17.5] n=348  Qwen3.6:  32.5 [27.8, 37.6] n=348  R1-distill:  68.4 [63.3, 73.1] n=348
+Final-answer error               one digit changed      V4-Flash:  18.4 [13.7, 24.2] n=207  Qwen3.6:  32.9 [26.8, 39.5] n=207  R1-distill:  71.0 [64.5, 76.8] n=207
+Final-answer error               two digits swapped     V4-Flash:  27.3 [21.1, 34.5] n=165  Qwen3.6:  40.0 [32.8, 47.6] n=165  R1-distill:  74.5 [67.4, 80.6] n=165
+Consistent final-answer error    $\pm1$ or $\pm2$       V4-Flash:  24.7 [20.5, 29.5] n=348  Qwen3.6:  60.6 [55.4, 65.6] n=348  R1-distill:  56.9 [51.6, 62.0] n=348
+Consistent final-answer error    one digit changed      V4-Flash:  20.3 [15.4, 26.3] n=207  Qwen3.6:  49.3 [42.5, 56.0] n=207  R1-distill:  58.0 [51.2, 64.5] n=207
+Consistent final-answer error    two digits swapped     V4-Flash:  29.7 [23.3, 37.1] n=165  Qwen3.6:  46.7 [39.2, 54.3] n=165  R1-distill:  77.0 [70.0, 82.7] n=165
+
+=== B) acceptance % x relative size x condition x judge ===
+Intermediate numeric error       $<$1\%                 V4-Flash:  87.5 [75.3, 94.1] n=48  Qwen3.6:  97.9 [89.1, 99.6] n=48  R1-distill:  89.6 [77.8, 95.5] n=48
+Intermediate numeric error       1--10\%                V4-Flash:  91.3 [85.0, 95.1] n=126  Qwen3.6:  96.8 [92.1, 98.8] n=126  R1-distill:  91.3 [85.0, 95.1] n=126
+Intermediate numeric error       10--100\%              V4-Flash:  93.6 [90.9, 95.6] n=422  Qwen3.6:  98.3 [96.6, 99.2] n=422  R1-distill:  92.2 [89.2, 94.4] n=422
+Intermediate numeric error       $>$100\%               V4-Flash:  95.2 [89.8, 97.8] n=124  Qwen3.6:  99.2 [95.6, 99.9] n=124  R1-distill:  92.7 [86.8, 96.1] n=124
+Final-answer error               $<$1\%                 V4-Flash:  15.1 [10.4, 21.3] n=166  Qwen3.6:  38.0 [30.9, 45.5] n=166  R1-distill:  64.5 [56.9, 71.3] n=166
+Final-answer error               1--10\%                V4-Flash:  19.1 [13.9, 25.6] n=173  Qwen3.6:  36.4 [29.6, 43.8] n=173  R1-distill:  70.5 [63.3, 76.8] n=173
+Final-answer error               10--100\%              V4-Flash:  18.4 [13.9, 23.8] n=234  Qwen3.6:  32.5 [26.8, 38.7] n=234  R1-distill:  73.5 [67.5, 78.7] n=234
+Final-answer error               $>$100\%               V4-Flash:  19.7 [14.1, 26.9] n=147  Qwen3.6:  30.6 [23.7, 38.5] n=147  R1-distill:  72.8 [65.1, 79.3] n=147
+Consistent final-answer error    $<$1\%                 V4-Flash:  34.3 [27.5, 41.8] n=166  Qwen3.6:  71.1 [63.8, 77.4] n=166  R1-distill:  68.7 [61.3, 75.2] n=166
+Consistent final-answer error    1--10\%                V4-Flash:  32.4 [25.8, 39.7] n=173  Qwen3.6:  69.4 [62.1, 75.8] n=173  R1-distill:  70.5 [63.3, 76.8] n=173
+Consistent final-answer error    10--100\%              V4-Flash:  21.8 [17.0, 27.5] n=234  Qwen3.6:  48.7 [42.4, 55.1] n=234  R1-distill:  58.5 [52.1, 64.7] n=234
+Consistent final-answer error    $>$100\%               V4-Flash:   8.8 [ 5.2, 14.5] n=147  Qwen3.6:  25.9 [19.5, 33.5] n=147  R1-distill:  49.0 [41.0, 57.0] n=147
+
+=== C) intermediate error, edit position (% of solution length) ===
+40--50\%    V4-Flash:  91.9 n=235  Qwen3.6:  97.0 n=235  R1-distill:  92.3 n=235
+50--60\%    V4-Flash:  94.0 n=252  Qwen3.6:  98.0 n=252  R1-distill:  90.9 n=252
+60--70\%    V4-Flash:  93.1 n=233  Qwen3.6:  99.6 n=233  R1-distill:  92.7 n=233
+
+=== D) largest gap within a condition (points), across kinds / across size bins (cells with n>=30) ===
+Intermediate numeric error       V4-Flash   kind   2.7  size   7.7
+Intermediate numeric error       Qwen3.6    kind   5.3  size   2.4
+Intermediate numeric error       R1-distill kind   6.6  size   3.2
+Final-answer error               V4-Flash   kind  13.8  size   4.7
+Final-answer error               Qwen3.6    kind   7.5  size   7.3
+Final-answer error               R1-distill kind   6.2  size   9.0
+Consistent final-answer error    V4-Flash   kind   9.4  size  25.5
+Consistent final-answer error    Qwen3.6    kind  14.0  size  45.2
+Consistent final-answer error    R1-distill kind  20.1  size  21.5
