@@ -37,7 +37,7 @@ benchmark leaf); G-Pass@k / mG-Pass@k metrics; new benchmarks (`aime2026` EN/TR/
 CSV plus the static plot suite (the Streamlit dashboard and the highlights/atlas
 PDFs were removed).
 
-06/27/2026 update: Documentation consolidated — the quick start now lives in the
+06/27/2026 update: Documentation consolidated, the quick start now lives in the
 `docs/user_guide.md` "Quick start" section (the standalone `docs/onboarding.md` was
 folded into it), and the plot-reading manual moved into `docs/reporting.md` (the
 standalone `docs/report_plots_guide.md` was removed).

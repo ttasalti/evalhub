@@ -1,13 +1,13 @@
 # User guide: running the CoT-Pass@K pipeline end to end
 
-A practical, copy-paste guide to running, sweeping, debugging, and extending the
-pipeline on your own. New here? Start with the **Quick start** below; for the CSV
-schema and the plot-reading manual, see [`reporting.md`](reporting.md).
+How to run, sweep, debug and extend the pipeline. The quick start below goes
+from a fresh clone to a report; the CSV schema and the plot-reading manual are
+in [`reporting.md`](reporting.md).
 
 ## 0. Quick start (5 minutes)
 
 From a fresh clone to a report on a single GPU, with a small open model and one
-benchmark (~5–10 min once the model is cached):
+benchmark; about 5 to 10 minutes once the model is cached:
 
 ```bash
 # 1. Install (core + base eval + reporting; add ,sglang to serve via SGLang)
@@ -31,9 +31,10 @@ evalhub report plot --csv ./report.csv --output-dir ./report_plots
 ```
 
 `run_eval_only.sh` starts a vLLM server, resolves the chat template, runs
-`evalhub gen` + `evalhub eval`, and tears the server down on exit. To also run the
-judge stage, set `JUDGE_MODEL`/`JUDGE_TASK` and use `run_judge_only.sh` (§4) or the
-full `run_end_to_end.sh` (§2). If a step fails, see **Debugging tips** (§8).
+`evalhub gen` and `evalhub eval`, and tears the server down on exit. To also run
+the judge stage, set `JUDGE_MODEL` and `JUDGE_TASK` and use `run_judge_only.sh`
+(§4) or the full `run_end_to_end.sh` (§2). If a step fails, see the debugging
+tips (§8).
 
 ## 1. One-time setup
 
@@ -66,7 +67,8 @@ scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \
     --output-root results
 ```
 
-Recognised CLI flags (precedence: **CLI args > env file > defaults**):
+Recognised CLI flags; CLI arguments take precedence over the env file, which
+takes precedence over the defaults:
 
 | Flag | Env var |
 |---|---|
@@ -82,8 +84,8 @@ Recognised CLI flags (precedence: **CLI args > env file > defaults**):
 | `-- ...` | passed straight through to `sbatch` |
 
 `submit.sh` writes the flags into a throwaway `.overrides_<ts>_<pid>.env`
-(gitignored) that the orchestrator sources *after* the base env, so values with
-spaces/commas round-trip cleanly.
+(gitignored) that the orchestrator sources after the base env, so values with
+spaces or commas survive the round trip.
 
 ## 3. Monitoring a job
 
@@ -96,9 +98,10 @@ tail -f logs/vllm_target_<JOBID>_aime2026.log               # live vLLM log (one
 
 ### Where results land (V5 layout: one folder per model)
 
-The sampling suffix (`__t<T>__max<N>__n<NS>`) lives on the **benchmark leaf**, so
-every model has a single folder; same tuple -> same path (idempotent re-run),
-different tuple -> different leaf (no collision).
+The sampling suffix (`__t<T>__max<N>__n<NS>`) lives on the benchmark leaf, so
+every model has a single folder. The same sampling tuple maps to the same path,
+which makes a re-run idempotent, and a different tuple to a different leaf, so
+runs never collide.
 
 ```
 <OUTPUT_ROOT>/
@@ -116,14 +119,15 @@ different tuple -> different leaf (no collision).
                 └── aime2026_cot_summary.json    # CoT-Pass@K after the judge veto
 ```
 
-The judge directory name is self-describing: `__basemax<N>` always records the
-*target's* max_completion_tokens (the length that was actually judged, this can
-differ from the judge's own `__max<N>`, e.g. a judge budgeted at 32768 judging a
-target run generated at 65536), and the judge's reasoning config is appended only
-when set to a non-default value: `[__re-<reasoning_effort>][__eb-<extra_body_slug>]`
-(omitted entirely when unset/`none`, no `__re-none__eb-none` noise in the common
-case). Set `JUDGE_REASONING_EFFORT` / `JUDGE_EXTRA_BODY` (+ a path-safe
-`JUDGE_EXTRA_BODY_TAG`) to drive thinking models (e.g. DeepSeek V4 Flash). The
+The judge directory name records the configuration. `__basemax<N>` is the
+target's max_completion_tokens, the length that was actually judged; it can
+differ from the judge's own `__max<N>`, for example a judge budgeted at 32768
+judging a target run generated at 65536. The judge's reasoning config is
+appended only when set to a non-default value, as
+`[__re-<reasoning_effort>][__eb-<extra_body_slug>]`, and omitted entirely when
+unset or `none`, so the common case carries no `__re-none__eb-none` suffix.
+`JUDGE_REASONING_EFFORT` and `JUDGE_EXTRA_BODY` (with a path-safe
+`JUDGE_EXTRA_BODY_TAG`) drive thinking models such as DeepSeek V4 Flash. The
 report exposes these as the `reasoning_effort` and `extra_body` columns.
 
 ## 4. Turning results into a report
@@ -154,8 +158,8 @@ scripts/orchestrate.sh scripts/configs/base.env sequential \
 ```
 
 `orchestrate.sh` submits one job per `(model, benchmark, temperature)` cell with
-the right Slurm dependencies; `sequential` chains them so they don't contend for
-the GPU.
+the right Slurm dependencies; `sequential` chains them so that they do not
+contend for the GPU.
 
 ## 6. Adding a model
 
@@ -221,25 +225,25 @@ scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/tubitak_math2026.env
 
 ## 8. Debugging tips
 
-- **Job FAILED, `.err` empty:** re-run the script directly with `bash -x` to get
-  a shell trace, or read the per-benchmark vLLM log under `logs/`.
-- **vLLM health timeout:** the model is still downloading or hit OOM. Raise
+- The job FAILED and `.err` is empty: re-run the script directly with `bash -x`
+  to get a shell trace, or read the per-benchmark vLLM log under `logs/`.
+- vLLM health timeout: the model is still downloading or hit OOM. Raise
   `HEALTH_TIMEOUT`, lower `TARGET_PARALLEL_COUNT`, or use a smaller model.
-- **`Missing required env vars`:** the env file wasn't loaded, pass it as `$1`
+- `Missing required env vars`: the env file was not loaded; pass it as `$1`
   or export `EVALHUB_PIPELINE_ENV=path/to/env`.
-- **`evalhub gen` AuthenticationError:** export `HOSTED_VLLM_API_BASE` /
-  `HOSTED_VLLM_API_KEY` (the orchestrators do this for you once vLLM is up).
-- **Empty CoT summary:** the base run produced no `correct=True` generations,
+- `evalhub gen` raises AuthenticationError: export `HOSTED_VLLM_API_BASE` and
+  `HOSTED_VLLM_API_KEY` (the orchestrators do this once vLLM is up).
+- Empty CoT summary: the base run produced no `correct=True` generations;
   increase `TARGET_N_SAMPLES` or pick an easier benchmark.
-- **`address already in use`:** another process holds `TARGET_PORT`, set
+- `address already in use`: another process holds `TARGET_PORT`; set
   `TARGET_PORT=30010` (or any free port) in the env file.
-- **`report aggregate` returns 0 rows:** no directory under `--results-root`
-  matched a recognised layout, confirm the dir names use the V5 layout (or a
-  legacy fallback).
-- **`ModuleNotFoundError: matplotlib` (on `report plot`):** install the report
-  extra: `pip install -e ".[report]"`.
+- `report aggregate` returns 0 rows: no directory under `--results-root`
+  matched a recognised layout; confirm the directory names use the V5 layout
+  (or a legacy fallback).
+- `ModuleNotFoundError: matplotlib` on `report plot`: install the report
+  extra with `pip install -e ".[report]"`.
 
-## 9. What each piece does (bird's-eye view)
+## 9. What each piece does
 
 | Path | Role |
 |---|---|

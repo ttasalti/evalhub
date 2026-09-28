@@ -102,10 +102,10 @@ and the `evalhub cot ...` post-processing stages together. All three are
 env-driven; see `scripts/cot_pipeline.env.example` for every knob.
 
 ```bash
-# Stage 1 only — base generation + base evaluation.
+# Stage 1 only: base generation + base evaluation.
 scripts/run_eval_only.sh scripts/cot_pipeline.env
 
-# Stages 2+3 only — judge an existing base run, then finalize.
+# Stages 2+3 only: judge an existing base run, then finalize.
 BASE_RESULTS_DIR="$HOME/metrics/Qwen2.5-7B-Instruct/aime2025" \
     scripts/run_judge_only.sh scripts/cot_pipeline.env
 
@@ -114,7 +114,7 @@ scripts/run_end_to_end.sh scripts/cot_pipeline.env
 ```
 
 Or run directly with the model, judge, benchmark, temperature, and sampling
-given on the command line — no env editing. `submit.sh` writes the flags into a
+given on the command line, no env editing. `submit.sh` writes the flags into a
 throwaway overrides file that the orchestrator sources after the base env
 (precedence: **CLI args > env file > defaults**):
 

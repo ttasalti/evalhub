@@ -58,6 +58,8 @@ Test your dataset integration:
 
 ## See also
 
-- [`user_guide.md`](user_guide.md) — quick start plus the full guide to running, debugging, and extending the pipeline.
-- [`reporting.md`](reporting.md) — full reference for the `evalhub report` sub-app and the long-form CSV schema.
-- [`../scripts/README.md`](../scripts/README.md) — HPC orchestrator scripts (`run_eval_only.sh`, `run_judge_only.sh`, `run_end_to_end.sh`) and their env contracts.
+- [`adding_a_benchmark.md`](adding_a_benchmark.md): a mathematics benchmark that works in both the Pass@K and the CoT-Pass@K stage, with the judge prompt choice and the report labels.
+
+- [`user_guide.md`](user_guide.md): quick start plus the full guide to running, debugging, and extending the pipeline.
+- [`reporting.md`](reporting.md): full reference for the `evalhub report` sub-app and the long-form CSV schema.
+- [`../scripts/README.md`](../scripts/README.md), HPC orchestrator scripts (`run_eval_only.sh`, `run_judge_only.sh`, `run_end_to_end.sh`) and their env contracts.

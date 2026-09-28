@@ -9,6 +9,7 @@
 
 <p align="center">
     <a href="#-about">📖 About</a> •
+    <a href="#-paper">📝 Paper</a> •
     <a href="#-features">✨ Features</a> •
     <a href="#-installation">📦 Installation</a> •
     <a href="#-quick-start">🚀 Quick Start</a> •
@@ -25,32 +26,68 @@ All-in-one benchmarking platform for evaluating Large Language Models (LLMs) wit
 
 > [!Note]
 > This repository is a fork of [`ysy-phoenix/evalhub`](https://github.com/ysy-phoenix/evalhub).
-> The upstream harness measures **Pass@K** only: whether a model reaches a correct
-> answer, never how it got there. This fork builds the judged variant on top of it,
-> end to end:
-> - a **CoT-Pass@K** pipeline — every base-correct generation is re-assessed by a
->   stronger judge LLM and majority-voted to keep or veto the original verdict;
-> - **local and API judge backends** — long-context judging served locally with vLLM
->   (SGLang also supported), plus a cached API path for hosted models;
-> - extra **math benchmarks** (`aime2026`, multilingual `aime2026_tr` / `aime2026_pt`,
->   `tubitak_math2026`, `pt_exams_math`);
-> - an `evalhub report` sub-app that **aggregates** an entire campaign into a master
->   CSV and renders publication-ready **tables and plots**.
+> The upstream harness measures Pass@K only: whether a model reaches a correct
+> answer, never how it got there. This fork adds the judged variant on top of it.
+> A CoT-Pass@K pipeline re-assesses every base-correct generation with a stronger
+> judge LLM and majority-votes the verdicts to keep or veto the original label.
+> The judge can run locally with vLLM (SGLang is also supported) for long-context
+> judging, or through a cached API path for hosted models. Five mathematics
+> benchmarks are added (`aime2026`, its translations `aime2026_tr` and
+> `aime2026_pt`, `tubitak_math2026` and `pt_exams_math`), and an `evalhub report`
+> sub-app aggregates an entire campaign into a master CSV and renders the tables
+> and plots.
 
-> [!Note]
-> **Research use.** That judging stage was then put under audit. Correct solutions
-> are corrupted with deterministic edits that damage the reasoning chain and the
-> final answer separately, so the correct verdict is known by construction. Across
-> five mathematical benchmarks in English, Turkish and Portuguese, the judge accepts
-> corrupted chains almost as often as clean ones and rejects them mainly when the
-> final answer is wrong — evidence that the step scores answer agreement rather than
-> the validity of the reasoning. See [`error_study/`](error_study/).
-> 
-> This audit is described in *"Does CoT-Pass@k Really Check the CoT? A Multilingual
-> Mathematical Audit"* (first author; under review, MRL Workshop @ EMNLP 2026).
+The judging stage itself is the subject of the paper described in the
+[Paper](#-paper) section below.
 
 > [!Warning]
-> This project is under active development and the API is not stable yet.
+> The pipeline layer is frozen at the configuration the paper reports. The API
+> of the Python package may still change.
+
+## 📝 Paper
+
+*Does CoT-Pass@k Really Check the CoT? A Multilingual Mathematical Audit.*
+Tarık Tuna Taşaltı, Burcu Hüdaverdi, David Semedo. Accepted at the 6th Workshop
+on Multilingual Representation Learning (MRL) at EMNLP 2026.
+
+Correct solutions are corrupted with deterministic edits that damage the
+reasoning chain and the final answer separately, so the correct verdict is
+known by construction. Across five mathematical benchmarks in English, Turkish
+and Portuguese, the judges accept corrupted chains almost as often as clean
+ones and reject them mainly when the final answer is wrong; on current solvers
+CoT-Pass@k then collapses onto Pass@k. The main tables are in
+[`docs/results.md`](docs/results.md).
+
+| Where | What |
+|---|---|
+| [`analysis/`](analysis/) | the scripts, data tables and figures behind every number in the paper; `analysis/README.md` maps each figure, table and quoted statistic to its script |
+| [`analysis/data/`](analysis/data/) | the published data layer: run-level metrics, per-question counts and per-solution judge verdicts (identifiers and counts only, no text) |
+| [`error_study/`](error_study/) | the deterministic error-injection study and its judge runners |
+| [`docs/results.md`](docs/results.md) | the main tables and figures of the paper, regenerated from `analysis/data` |
+| [`docs/benchmarks.md`](docs/benchmarks.md) | the five benchmarks, their sources, licences and translation protocol |
+| [`docs/adding_a_benchmark.md`](docs/adding_a_benchmark.md) | how to add a benchmark that works in both the Pass@K and the CoT-Pass@K stage |
+
+The benchmark suite and where each set comes from:
+
+| Benchmark | Language | Problems | Source | In this repository |
+|---|---|---|---|---|
+| `aime2026` | English | 30 | [MathArena/aime_2026](https://huggingface.co/datasets/MathArena/aime_2026) on Hugging Face (CC BY-NC-SA 4.0; problems by the [MAA](https://maa.org/maa-invitational-competitions/)) | downloaded at run time |
+| `aime2026_tr`, `aime2026_pt` | Turkish, Portuguese | 30 each | our translations of the set above, audited by native speakers (CC BY-NC-SA 4.0) | [`evalhub/benchmarks/math/aime2026_tr/`](evalhub/benchmarks/math/aime2026_tr/), [`aime2026_pt/`](evalhub/benchmarks/math/aime2026_pt/) |
+| `tubitak_math2026` | Turkish | 32 | [TÜBİTAK National Mathematics Olympiad 2026, first stage](https://bilimolimpiyatlari.tubitak.gov.tr/tr/gecmis-sinav-sorulari) (copyright TÜBİTAK; research use, removed on request) | [`evalhub/benchmarks/math/tubitak_math2026/`](evalhub/benchmarks/math/tubitak_math2026/) |
+| `pt_exams_math` | Portuguese | 166 | the mathematics questions of PHEB (Tavares et al., LREC 2026), Portuguese national exams 2006 to 2023, converted to open answer | [`evalhub/benchmarks/math/pt_exams_math/`](evalhub/benchmarks/math/pt_exams_math/) |
+
+The model generations and the judges' outputs are not released. Everything the
+paper reports can be recomputed from the tables in `analysis/data/`; the raw
+outputs can be regenerated with the pipeline in this repository.
+
+```bibtex
+@inproceedings{tasalti2026cotpassk,
+  title     = {Does {CoT}-{Pass}@k Really Check the {CoT}? A Multilingual Mathematical Audit},
+  author    = {Ta{\c{s}}alt{\i}, Tar{\i}k Tuna and H{\"u}daverdi, Burcu and Semedo, David},
+  booktitle = {Proceedings of the 6th Workshop on Multilingual Representation Learning (MRL)},
+  year      = {2026}
+}
+```
 
 ## ✨ Features
 
@@ -70,8 +107,7 @@ All-in-one benchmarking platform for evaluating Large Language Models (LLMs) wit
 
 ## 📦 Installation
 
-> [!Note]
-> [uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver.
+The instructions use [uv](https://github.com/astral-sh/uv), a fast Python package installer and resolver.
 
 ```bash
 uv venv --python 3.12
@@ -84,25 +120,141 @@ uv pip install -e ".[all]" # other options: [dev], [base], [report], [sglang]
 rm -rf ~/.cache/evalhub/
 ```
 
-Prefer conda? An `environment.yml` is provided (core evaluation + reporting):
+With conda, the provided `environment.yml` covers core evaluation and reporting:
 
 ```bash
 conda env create -f environment.yml
 conda activate evalhub
 ```
 
+Versions used for the experiments in the paper (Python 3.12 on Linux, NVIDIA
+A100 and H200 GPUs):
+
+| Package | Version |
+|---|---|
+| vllm | 0.19.0 |
+| torch | 2.10.0 |
+| transformers | 5.6.0 (development build, commit `947eff6e`) |
+| litellm | 1.80.0 |
+| pandas | 3.0.2 |
+| numpy | 2.2.6 |
+| scipy | 1.17.1 |
+| matplotlib | 3.10.8 (paper figures rendered with 3.7.0) |
+
 > [!Note]
-> Python 3.12 is the tested/recommended version. The model-serving stack
-> (vLLM / SGLang) is GPU/CUDA-version sensitive and is installed separately
-> from the core package — see [Quick Start](#-quick-start) below, or install the
-> SGLang extra with `pip install -e ".[sglang]"`.
+> Python 3.12 is the tested and recommended version. The model-serving stack
+> (vLLM or SGLang) is sensitive to the GPU and CUDA version and is installed
+> separately from the core package; see [Quick Start](#-quick-start) below, or
+> install the SGLang extra with `pip install -e ".[sglang]"`.
 
 ## 🚀 Quick Start
 
+### First run
+
+Three entry points, depending on what you want to measure. All three use
+Qwen3.5-0.8B so they fit on one GPU; the served-model stack is vLLM
+(`pip install vllm`). Fetch the two checkpoints first if the machine has no
+Hugging Face access at run time:
+
+```bash
+hf download Qwen/Qwen3.5-0.8B-Base && hf download Qwen/Qwen3.5-0.8B
+```
+
+**Pass@K only.** Generation and evaluation of one benchmark, no judge. Start
+a server, point the CLI at it, sample, grade:
+
+```bash
+vllm serve Qwen/Qwen3.5-0.8B-Base --port 30000 --chat-template scripts/templates/qwen3.5-base.jinja &
+export HOSTED_VLLM_API_BASE="http://0.0.0.0:30000/v1" HOSTED_VLLM_API_KEY="EMPTY"
+evalhub gen  --model hosted_vllm/Qwen/Qwen3.5-0.8B-Base --tasks aime2026_tr \
+    --temperature 0.6 --top-p 0.95 --n-samples 4 --max-completion-tokens 16384 --output-dir out/
+evalhub eval --tasks aime2026_tr --solutions out/aime2026_tr.jsonl --output-dir out/
+```
+
+`out/aime2026_tr_summary.json` holds Pass@k, G-Pass@k and mG-Pass@k;
+`out/aime2026_tr_results.jsonl` the per-generation correctness. The same two
+stages under Slurm, with the server managed for you:
+`scripts/submit.sh scripts/run_eval_only.sh scripts/configs/qwen_0.8b_demo.env`.
+
+**CoT-Pass@K on an existing run.** Judge the answer-correct generations of a
+base run you already have (the `out/` above), then apply the veto:
+
+```bash
+evalhub cot extract --base-results out/aime2026_tr_results.jsonl --base-raw out/aime2026_tr_raw.jsonl \
+    --output out/judge/cot_judge_tr_input.jsonl
+vllm serve Qwen/Qwen3.5-0.8B --port 30001 --chat-template scripts/templates/qwen3.5-think.jinja &
+HOSTED_VLLM_API_BASE="http://0.0.0.0:30001/v1" evalhub gen --model hosted_vllm/Qwen/Qwen3.5-0.8B \
+    --tasks cot_judge_tr --temperature 0.6 --top-p 0.95 --n-samples 3 --max-completion-tokens 16384 \
+    --output-dir out/judge/ --override-args '{"file_path": "out/judge/cot_judge_tr_input.jsonl"}'
+evalhub cot finalize --base-results out/aime2026_tr_results.jsonl --base-raw out/aime2026_tr_raw.jsonl \
+    --judge-solutions out/judge/cot_judge_tr_raw.jsonl --output-dir out/judge/ --benchmark aime2026_tr
+```
+
+`out/judge/aime2026_tr_cot_summary.json` holds CoT-Pass@k. Pick the judge task
+whose language matches the benchmark (`cot_judge`, `cot_judge_tr`,
+`cot_judge_pt`). Under Slurm the same stage is `run_judge_only.sh` with
+`BASE_RESULTS_DIR` pointing at the base run:
+
+```bash
+scripts/submit.sh scripts/run_judge_only.sh scripts/configs/qwen_0.8b_demo.env \
+    --benchmark aime2026_tr --set BASE_RESULTS_DIR=results_demo/base/Qwen3.5-0.8B-Base/aime2026_tr__t0.6__max16384__n4 \
+    --set JUDGE_TASK=cot_judge_tr
+```
+
+**Both, end to end.** The demo config runs generation, evaluation, extraction,
+three judge verdicts per generation, the vote and veto, and the report in one
+job. Without Slurm, plain bash starts and stops the servers itself; with Slurm,
+`submit.sh` turns the config's `SLURM_*` knobs into sbatch flags:
+
+```bash
+bash scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
+scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
+```
+
+The config samples 4 generations per problem on the three AIME 2026 sets. To
+run one benchmark with the matching judge prompt, pass overrides through
+`submit.sh`, or through an overrides file for plain bash; values there win over
+the config:
+
+```bash
+scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env \
+    --benchmarks aime2026_tr --set JUDGE_TASK=cot_judge_tr
+# or
+printf 'BENCHMARKS="aime2026_tr"\nJUDGE_TASK="cot_judge_tr"\n' > my_overrides.env
+EVALHUB_OVERRIDES_FILE=my_overrides.env bash scripts/run_end_to_end.sh scripts/configs/qwen_0.8b_demo.env
+```
+
+Where the results land (`OUTPUT_ROOT=results_demo` in the config):
+
+```
+results_demo/base/Qwen3.5-0.8B-Base/
+  aime2026_tr__t0.6__max16384__n4/
+    aime2026_tr_raw.jsonl          every generation
+    aime2026_tr_results.jsonl      per-generation correctness
+    aime2026_tr_summary.json       Pass@k, G-Pass@k, mG-Pass@k
+    aime2026_tr_per_task.csv       per-problem counts
+  judged_by/Qwen3.5-0.8B__state-think__t0.6__max16384__basemax16384/
+    aime2026_tr__t0.6__max16384__n4/
+      aime2026_tr_cot_judge_input.jsonl  the answer-correct generations handed to the judge
+      cot_judge_tr_raw.jsonl       three judge verdicts per correct generation
+      aime2026_tr_cot_majority.jsonl
+      aime2026_tr_cot_summary.json CoT-Pass@k after the veto
+results_demo/report.csv, report_tasks.csv, report_plots/
+```
+
+Then `evalhub report aggregate --results-root results_demo/ --output results_demo/report.csv`
+and `evalhub report plot --csv results_demo/report.csv --output-dir results_demo/report_plots/`
+rebuild the tables and plots over everything under the root (the end-to-end
+job already does this).
+
+`docs/user_guide.md` explains every knob, the result layout and the Slurm
+wrappers; `docs/adding_a_benchmark.md` shows how to plug in a new benchmark so
+that both stages work.
+
 ### Environment Variables
 
-Evalhub uses [litellm](https://www.litellm.ai/) to access model. Please first set the api_key and base_url according to the model provider you are using.
-For example, to use a local model served via vllm/sglang, you can set:
+EvalHub uses [litellm](https://www.litellm.ai/) to access models, so the API key and base URL have to be set for the provider in use.
+For a local model served with vLLM or SGLang:
 
 ```bash
 export HOSTED_VLLM_API_BASE="http://0.0.0.0:30000/v1"
@@ -118,7 +270,7 @@ python -m sglang.launch_server \
   --port 30000
 ```
 
-Additionally, evalhub uses loguru's logger, configured via `LOG_LEVEL` and `LOG_DIR`.
+Logging goes through loguru and is configured with `LOG_LEVEL` and `LOG_DIR`.
 
 ```bash
 export LOG_LEVEL="INFO" # default is "INFO"
@@ -141,35 +293,32 @@ evalhub eval --tasks livecodebench --solutions $HOME/metrics/Qwen/Qwen3-30B-A3B-
 evalhub view --results $HOME/metrics/Qwen/Qwen3-30B-A3B-Instruct-2507/livecodebench_results.json --max-display 20
 ```
 
-For more commands, please refer to [docs/cmds.md](docs/cmds.md).
+More commands are listed in [docs/cmds.md](docs/cmds.md).
 
 > [!Note]
 > `view` is supported for math and livecodebench tasks only now!
 
 ## 🧠 CoT-Pass@K Pipeline
 
-EvalHub ships a chain-of-thought-aware Pass@K extension: every base-correct
-generation is checked by a stronger judge LLM, and the per-generation verdicts
-are majority-voted to either keep or veto the original "correct" label.
+Every base-correct generation is checked by a stronger judge LLM, and the
+per-generation verdicts are majority-voted to either keep or veto the original
+"correct" label.
 
-End-to-end orchestrators live under [`scripts/`](scripts/README.md) and share a
-common bash library:
+The orchestrators live under [`scripts/`](scripts/README.md) and share a common
+bash library. `scripts/run_eval_only.sh` runs base generation and base
+evaluation only; `scripts/run_judge_only.sh` runs the judge stage over an
+existing base run, useful for re-judging with a different judge;
+`scripts/run_end_to_end.sh` is the single-job orchestrator that runs the
+target, the judge, the CoT finalize step and the report in sequence. All three
+are driven by environment variables (`scripts/cot_pipeline.env.example`
+documents every knob) and can be wrapped in a Slurm job. The quick start in
+[`docs/user_guide.md`](docs/user_guide.md) is a five-minute walk-through on a
+small model, and the same guide covers running, debugging and extending the
+pipeline; [`scripts/README.md`](scripts/README.md) describes the shell scripts
+and their env contracts.
 
-| Script | What it runs |
-|---|---|
-| `scripts/run_eval_only.sh` | Base generation + base evaluation only. |
-| `scripts/run_judge_only.sh` | Judge stage over an existing base run (handy for re-judging with a different judge). |
-| `scripts/run_end_to_end.sh` | Full target → judge → CoT finalize → report. The canonical single-job orchestrator. |
-
-All three are env-driven (`scripts/cot_pipeline.env.example` documents every knob)
-and Slurm-wrappable. See the [`docs/user_guide.md`](docs/user_guide.md) quick start
-for a five-minute walk-through on a small model.
-
-For a hands-on guide to running, debugging, and extending the pipeline on your
-own, see [`docs/user_guide.md`](docs/user_guide.md). For the shell scripts and
-their env contracts, see [`scripts/README.md`](scripts/README.md).
-
-For a single run with CLI-chosen model + benchmark (no env file editing):
+A single run with the model and benchmark chosen on the command line, without
+editing an env file:
 
 ```bash
 scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \
@@ -178,7 +327,7 @@ scripts/submit.sh scripts/run_end_to_end.sh scripts/configs/base.env \
     --benchmarks "aime2026 aime2026_tr aime2026_pt"
 ```
 
-For multi-model / multi-benchmark / multi-temperature sweeps, use the DAG
+Sweeps over several models, benchmarks or temperatures go through the DAG
 submitter:
 
 ```bash
@@ -188,15 +337,14 @@ scripts/orchestrate.sh scripts/configs/base.env sequential \
     --judge Qwen/Qwen3.5-0.8B
 ```
 
-`scripts/submit.sh` and `scripts/orchestrate.sh` both accept the same CLI
-override flags (`--model`, `--benchmark[s]`, `--judge`, ...) so the env
-file stays static while runs vary.
+`scripts/submit.sh` and `scripts/orchestrate.sh` accept the same CLI
+override flags (`--model`, `--benchmark[s]`, `--judge`, ...), so one env
+file serves many runs.
 
 ## 📊 Reporting
 
 The `evalhub report` sub-app aggregates every summary file under an
-`OUTPUT_ROOT` into a single long-form CSV and renders the publication-ready
-plot suite:
+`OUTPUT_ROOT` into a single long-form CSV and renders the plot suite:
 
 ```bash
 # 1. Aggregate every {benchmark}_summary.json / *_cot_summary.json into one CSV
@@ -206,19 +354,20 @@ evalhub report aggregate --results-root ./results --output ./report.csv
 evalhub report plot --csv ./report.csv --output-dir ./report_plots --format both
 ```
 
-Install the optional dependency group first: `uv pip install -e ".[report]"`.
-Full walk-through and CSV schema in [`docs/reporting.md`](docs/reporting.md).
+The optional dependency group has to be installed first: `uv pip install -e ".[report]"`.
+[`docs/reporting.md`](docs/reporting.md) has the full walk-through and the CSV schema.
 
 ## 🛠 Development
 
 ### New Dataset
 
-See [docs/tutorial.md](docs/tutorial.md) for more details.
+See [docs/adding_a_benchmark.md](docs/adding_a_benchmark.md) for a benchmark that
+works in both the Pass@K and the CoT-Pass@K stage, and [docs/tutorial.md](docs/tutorial.md)
+for the generic upstream walkthrough.
 
 ### Code Quality Tools
 
-> [!Note]
-> We use [Ruff](https://github.com/astral-sh/ruff) as our Python linter and formatter.
+[Ruff](https://github.com/astral-sh/ruff) is the Python linter and formatter.
 
 ```bash
 # Auto-fix issues
@@ -230,11 +379,10 @@ ruff format .
 
 ### Pre-commit Hooks
 
-> [!Note]
-> Pre-commit hooks automatically check your code before committing.
+Pre-commit hooks check the code before each commit.
 
 ```bash
-# Installation
+# 📦 Installation
 pre-commit install
 
 # Run all checks manually
@@ -250,13 +398,14 @@ pytest -W ignore::Warning
 
 ## 🛣 Roadmap
 
-See [docs/history.md](docs/history.md) for more details.
+[docs/history.md](docs/history.md) has the details.
 
 ## 🚧 Status
 
-Actively developed. The pipeline layer was written to drive a large multi-model
-campaign on a SLURM cluster and still carries environment-specific assumptions;
-a cleanup pass to generalise it is planned.
+Frozen at the configuration reported in the paper. The pipeline scripts were
+written to drive a multi-model campaign on a SLURM cluster; site-specific
+settings are read from environment variables and the config files under
+`scripts/configs/`, see [scripts/README.md](scripts/README.md).
 
 ## 🌐 Acknowledgements
 
@@ -268,4 +417,5 @@ a cleanup pass to generalise it is planned.
 
 ## 📄 License
 
-This project is licensed under the terms of the MIT license.
+This project is licensed under the terms of the MIT license. Third-party code
+and data keep their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

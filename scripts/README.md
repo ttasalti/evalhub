@@ -1,18 +1,17 @@
 # `scripts/`
 
-**Modified from the evalhub-original repository.**
-
-The folder was reset to evalhub-original-style minimalism. All legacy Slurm
-orchestrators and helper sub-pipelines (`vllm*.sh`, `judge_vllm3.sh`,
-`judge_only_all.sh`, `cot_judge_pipeline/`, `pass_k_pipeline/`,
-`configs/`, `utils/`) were deleted because their logic now lives inside the
-Python package and is exercised via `evalhub` CLI commands.
+Shell entry points around the `evalhub` CLI. The four scripts inherited from
+upstream (`serve.sh`, `router.sh`, `eval_code.sh`, `r1_recipe.sh`) are kept as
+they are; see `docs/baseline.md` for the R1 recipe they implement. Everything
+else in this folder belongs to the CoT-Pass@K pipeline added by this fork:
+env-driven orchestrators that start the vLLM servers, run the base and judge
+stages and write the report, plus the configs and chat templates they use.
 
 ## Layout
 
 | File | Purpose |
 |---|---|
-| `lib/pipeline_common.sh` | **Shared bash library**, env loading, template resolution, vLLM start/stop, default population, canonical output-path composition, and the high-level `pipeline_run_*` stage runners. Sourced by every orchestrator. |
+| `lib/pipeline_common.sh` | Shared bash library: env loading, template resolution, vLLM start/stop, default population, canonical output-path composition, and the high-level `pipeline_run_*` stage runners. Sourced by every orchestrator. |
 | `run_eval_only.sh` | Stage 1 only: base generation + base evaluation. Produces `*_results.jsonl` + `*_summary.json` under the canonical layout. |
 | `run_judge_only.sh` | Stages 2+3 over an existing base run: extract correct generations, run the judge LLM, majority-vote, CoT-Pass@K. |
 | `run_end_to_end.sh` | All three stages + report, single Slurm job, base + judge + CoT finalize + report. |
@@ -55,29 +54,29 @@ scripts/run_end_to_end.sh --help
 | Script | Required env | Notable optional env |
 |---|---|---|
 | `run_eval_only.sh`  | `TARGET_MODEL`, `BENCHMARK` | every `TARGET_*` sampling knob, `OUTPUT_ROOT`, `TARGET_PORT`, `HEALTH_TIMEOUT` |
-| `run_judge_only.sh` | `JUDGE_MODEL`, `BENCHMARK`, `TARGET_MODEL`, and **either** `BASE_RESULTS_DIR` **or** `BASE_RESULTS_FILE`+`BASE_RAW_FILE` | every `JUDGE_*` sampling knob, `OUTPUT_ROOT`, `JUDGE_PORT`, `HEALTH_TIMEOUT` |
+| `run_judge_only.sh` | `JUDGE_MODEL`, `BENCHMARK`, `TARGET_MODEL`, and either `BASE_RESULTS_DIR` or `BASE_RESULTS_FILE`+`BASE_RAW_FILE` | every `JUDGE_*` sampling knob, `OUTPUT_ROOT`, `JUDGE_PORT`, `HEALTH_TIMEOUT` |
 | `run_end_to_end.sh` | `TARGET_MODEL`, `JUDGE_MODEL`, `BENCHMARK` | every `TARGET_*` / `JUDGE_*` knob, ports, paths |
 
 ### Judge backend (`run_judge_only.sh`)
 
 By default the judge model is served locally on a GPU (`JUDGE_BACKEND=vllm`).
-Set `JUDGE_BACKEND=api` to route the judge to an external OpenAI-compatible
-endpoint instead, no GPU is launched. In that mode also set `JUDGE_API_BASE`
-and `JUDGE_API_KEY` (export the key or put it in the gitignored
-`scripts/secrets.env`; never commit it). Only the transport changes, the judge
-prompt, verdicts and metrics are identical. See
-[`configs/judge_api_deepseek.env`](configs/judge_api_deepseek.env) for a ready
+With `JUDGE_BACKEND=api` the judge requests go to an external OpenAI-compatible
+endpoint instead and no GPU is launched. In that mode also set `JUDGE_API_BASE`
+and `JUDGE_API_KEY`; export the key or put it in the gitignored
+`scripts/secrets.env`, and do not commit it. Only the transport changes: the
+judge prompt, the verdicts and the metrics are identical.
+[`configs/judge_api_deepseek.env`](configs/judge_api_deepseek.env) is a ready
 single-generation DeepSeek setup.
 
 ## HPC (Slurm) usage
 
-The scripts are intentionally **environment-agnostic**: they do not embed
-`#SBATCH` directives so they remain portable across HPC sites. When a job does
-not inherit an activated environment, export `EVALHUB_CONDA_SH` (the site's
-`conda.sh`) and `EVALHUB_CONDA_ENV` (default `evalhub_env`), or
-`EVALHUB_ENV_BIN` (the environment's `bin/` directory) before submitting. Wrap them in
-a one-line `sbatch` invocation, or copy the recommended header from the
-docstring at the top of each script. Example wrapper:
+The scripts carry no `#SBATCH` directives, so they stay portable across HPC
+sites. When a job does not inherit an activated environment, export
+`EVALHUB_CONDA_SH` (the site's `conda.sh`) and `EVALHUB_CONDA_ENV` (default
+`evalhub_env`), or `EVALHUB_ENV_BIN` (the environment's `bin/` directory)
+before submitting. Either wrap them in a one-line `sbatch` invocation or copy
+the recommended header from the docstring at the top of each script. An
+example wrapper:
 
 ```bash
 #!/usr/bin/env bash
@@ -105,7 +104,7 @@ done
 
 ## After the run: aggregation & plots
 
-Once you have one or more populated `OUTPUT_ROOT` directories, the
-`evalhub report` sub-app aggregates every summary file into a master CSV and
-renders the static plot suite. See [`docs/reporting.md`](../docs/reporting.md)
-for the full walk-through.
+Given one or more populated `OUTPUT_ROOT` directories, the `evalhub report`
+sub-app aggregates every summary file into a master CSV and renders the static
+plot suite. [`docs/reporting.md`](../docs/reporting.md) has the full
+walk-through.
