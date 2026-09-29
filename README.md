@@ -1,6 +1,7 @@
 # 🔮 EvalHub
 
 <p align="center">
+    <a href="https://arxiv.org/abs/2609.32622"><img src="https://img.shields.io/badge/arXiv-2609.32622-b31b1b.svg"></a>
     <a href="https://github.com/ttasalti/evalhub"><img src="https://img.shields.io/badge/Eval-Hub-blue.svg"></a>
     <a href="https://github.com/ttasalti/evalhub/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
     <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json"></a>
@@ -46,9 +47,10 @@ The judging stage itself is the subject of the paper described in the
 
 ## 📝 Paper
 
-*Does CoT-Pass@k Really Check the CoT? A Multilingual Mathematical Audit.*
+[*Does CoT-Pass@k Really Check the CoT? A Multilingual Mathematical Audit.*](https://arxiv.org/abs/2609.32622)
 Tarık Tuna Taşaltı, Burcu Hüdaverdi, David Semedo. Accepted at the 6th Workshop
 on Multilingual Representation Learning (MRL) at EMNLP 2026.
+Preprint: [arXiv:2609.32622](https://arxiv.org/abs/2609.32622).
 
 Correct solutions are corrupted with deterministic edits that damage the
 reasoning chain and the final answer separately, so the correct verdict is
@@ -90,6 +92,9 @@ entry will be updated with the ACL Anthology record when it appears; GitHub's
   author    = {Ta{\c{s}}alt{\i}, Tar{\i}k Tuna and H{\"u}daverdi, Burcu and Semedo, David},
   booktitle = {Proceedings of the 6th Workshop on Multilingual Representation Learning (MRL 2026)},
   year      = {2026},
+  eprint    = {2609.32622},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2609.32622},
   note      = {To appear. Workshop held at EMNLP 2026}
 }
 ```

@@ -19,4 +19,9 @@ preferred-citation:
       given-names: "David"
   collection-title: "Proceedings of the 6th Workshop on Multilingual Representation Learning (MRL 2026)"
   year: 2026
+  url: "https://arxiv.org/abs/2609.32622"
+  identifiers:
+    - type: other
+      value: "arXiv:2609.32622"
+      description: "arXiv preprint"
   notes: "To appear. Workshop held at EMNLP 2026"
